@@ -1,0 +1,17 @@
+{
+  "name": "obsidian-fountain-revived",
+  "version": "0.0.1",
+  "description": "fountain support for obsidian but it&#39;s actually actively maintained ;)",
+  "main": "lib/main.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "obsidian-plugin build --with-stylesheet=src/styles.css src/main.ts",
+    "dev": "obsidian-plugin dev --with-stylesheet=src/styles.css src/main.ts -v ~/projs/obsidian-dev/obsidian-kanban/test-vault"
+  },
+  "devDependencies": {
+    "fountain-js": "^1.0.0",
+    "obsidian": "obsidianmd/obsidian-api",
+    "obsidian-plugin-cli": "^0.4.3",
+    "typescript": "^4.1.5"
+  }
+}
