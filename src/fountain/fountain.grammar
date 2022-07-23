@@ -1,0 +1,41 @@
+@top TitlePage {
+
+}
+@top SceneHeading {
+	sh Text+
+}
+
+@top Lyric {
+	lyrc Text
+}
+
+@top Transition { 
+	trans
+}
+@top SceneNumber { "#" Text "#" }
+
+	hash { "#" }
+	lyrc { "~" }
+@tokens {
+	sh {
+		("INT" | "EXT" | "EST" | "int" | "ext" | "est" | "i/e") "."
+	}
+	BoneYard {
+		"/*" Text+ "*/"
+	}
+
+	Text { char+ }
+
+	whitespace { std.whitespace++ }
+	char {
+		$[\u{20}-\u{10fffe}]
+	}
+	trans {
+		(("FADE TO" whitespace ("BLACK" | "OUT") | "CUT TO BLACK" | Text whitespace "TO:") whitespace Text)
+	}
+	@precedence {
+		trans, BoneYard, whitespace, Text, misc
+	} 
+	misc {"C" | "F" | "/"}
+}
+@skip { BoneYard }

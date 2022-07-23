@@ -3,9 +3,7 @@
   "name": "Obsidian Fountain",
   "description": "fountain support for obsidian but it&#39;s actually actively maintained ;)",
   "author": "The Tablet",
-
   "authorUrl": "https://www.instagram.com/gamergirlandco",
-
-  "minAppVersion": "0.11.0",
+  "minAppVersion": "0.15.4",
   "version": "0.0.1"
 }

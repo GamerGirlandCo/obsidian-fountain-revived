@@ -1,12 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2019",
-    "module": "commonjs",
-    "emitDeclarationOnly": true,
+    "target": "ESNext",
+	"baseUrl": ".",
+    "module": "ESNext",
     "esModuleInterop": true,
     "skipLibCheck": true,
+	"allowJs": true,
     "moduleResolution": "node",
-    "forceConsistentCasingInFileNames": true
-  },
-  "include": ["src/**/*.ts", "types.d.ts"]
+    "forceConsistentCasingInFileNames": true,
+	"importHelpers": true,
+	"lib": ["DOM", "ES5", "ScriptHost", "ESNext"],
+	"outFile": "main.js",
+	"sourceRoot": "src"
+  }
 }
