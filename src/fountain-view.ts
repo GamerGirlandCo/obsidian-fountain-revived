@@ -19,7 +19,7 @@ export default class FountainView extends TextFileView {
 			})
 			this.codeMirror = new EditorView({
 				state: this.cmState,
-				parent: this.containerEl.getElementsByClassName("view-content")[0]
+				parent: this.containerEl.getElementsByClassName("view-content")[0],
 			})
 			console.log("constructor", this, this.app.workspace.getActiveFile(), this.file)
 	

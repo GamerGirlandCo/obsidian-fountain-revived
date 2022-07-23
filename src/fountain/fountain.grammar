@@ -1,44 +1,125 @@
-@top TitlePage {
-
-}
-@top SceneHeading {
-	sh Text+
+@top FountainScript {
+	scriptbody+
 }
 
-@top Lyric {
+scriptbody {
+	!Act !Sequence !Scene !Transition
+	!lc 
+	Section?
+	topofscene LineBreak
+	(Transition | Dialogue | Lyric | Centered | Note | Action | BoneYard)+
+
+}
+
+BoneYard {
+	
+	BYOpen Text BYClose
+}
+
+
+
+SceneHeading { !_sh _sh !snn hash snc hash }
+SceneNumber { hash snc+ hash }
+
+Transition { 
+	transition nl
+}
+
+Dialogue {
+	Character CharacterExt? nl
+	Text
+}
+
+Character {
+	!uc uc
+}
+CharacterExt {
+	OpenParen whitespace* Text whitespace* CloseParen
+}
+
+Action { Text }
+
+Centered { OpenCenter whitespace? Text whitespace? CloseCenter }
+
+Act {  hash whitespace+ Text }
+Sequence { hash hash whitespace+ Text }
+Scene { hash hash hash whitespace+ Text}
+
+
+Section { !Act !Sequence !Scene Act | Sequence | Scene }
+
+Lyric {
 	lyrc Text
 }
 
-@top Transition { 
-	trans
+Note { OpenNote Text CloseNote }
+
+LineBreak { nl nl }
+
+
+
+// composites
+
+topofscene {
+	!_sh !Text SceneHeading SceneNumber LineBreak
 }
-@top SceneNumber { "#" Text "#" }
+
+@tokens {
+	_sh {
+		(("INT" | "EXT" | "EST" | "int" | "ext" | "est" | "i/e") ".") | "." Text
+	}
+
+	snc {
+		@digit | "." | "-"
+	}
+	lyrc { "~" }
+	// by {
+	// }
+
+	OpenParen[closedBy="CloseParen"] { "(" }
+	CloseParen[openedBy="OpenParen"] { ")" }
+	
+	OpenNote[closedBy="CloseNote"] { "[[" }
+	CloseNote[openedBy="OpenNote"] { "]]" }
+	BYOpen[closedBy="BYClose"] { "/*" }
+	BYClose[openedBy="BYOpen"] { "*/" }
+	OpenCenter[closedBy="CloseCenter"] { ">" }
+	CloseCenter[openedBy="OpenCenter"] { "<" }
+
+	uc { @asciiUppercase }
 
 	hash { "#" }
-	lyrc { "~" }
-@tokens {
-	sh {
-		("INT" | "EXT" | "EST" | "int" | "ext" | "est" | "i/e") "."
-	}
-	BoneYard {
-		"/*" Text+ "*/"
-	}
-
-	LineBreak { whitespace whitespace }
-
+	nl { "\r" | "\n" | "\r" "\n" }
 	Text { char+ }
-
 	whitespace { std.whitespace++ }
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
-	trans {
-	// ((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO\:)|^(?:> *)(.+)
-		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | Text whitespace "TO:") | (">" whitespace+ Text+)
+	transition {
+		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | Text whitespace "TO:") | (">" whitespace+ Text)
 	}
 	@precedence {
-		trans, BoneYard, whitespace, Text, misc
-	} 
-	misc {"C" | "F" | "/"}
+		hash _sh OpenCenter CloseCenter BYOpen BYClose OpenNote CloseNote transition lyrc whitespace uc Text
+	}
+} 
+
+@precedence {
+	Act @cut
+	Sequence @cut
+	Scene @cut
+	BoneYard
+	scriptbody
+	topofscene
+	Section @cut
+	hash
+	_sh @cut
+	snn @cut
+	lc @cut
+	uc @cut
+	boneyard @cut
+	SceneHeading SceneNumber hash
+	Transition OpenNote Note SceneNumber SceneHeading whitespace Action
+	uc
+	Text
+	Text @cut
 }
-@skip { BoneYard }

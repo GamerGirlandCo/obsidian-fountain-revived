@@ -7,3 +7,5 @@ yarn.lock
 dumbass.ts
 main.js
 dist/
+z-dist/
+src/fountain/parser.*.js
