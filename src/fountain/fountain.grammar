@@ -24,6 +24,8 @@
 		"/*" Text+ "*/"
 	}
 
+	LineBreak { whitespace whitespace }
+
 	Text { char+ }
 
 	whitespace { std.whitespace++ }
@@ -31,7 +33,8 @@
 		$[\u{20}-\u{10fffe}]
 	}
 	trans {
-		(("FADE TO" whitespace ("BLACK" | "OUT") | "CUT TO BLACK" | Text whitespace "TO:") whitespace Text)
+	// ((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO\:)|^(?:> *)(.+)
+		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | Text whitespace "TO:") | (">" whitespace+ Text+)
 	}
 	@precedence {
 		trans, BoneYard, whitespace, Text, misc
