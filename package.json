@@ -5,11 +5,11 @@
   "main": "lib/main.js",
   "license": "MIT",
   "scripts": {
-    "dev": "obsidian-plugin dev src/main.ts",
-    "build": "obsidian-plugin build src/main.ts"
+    "build": "obsidian-plugin build src/main.ts -e esbuild.config.js",
+    "dev": "node esbuild.config.js"
   },
   "devDependencies": {
-    "@codemirror/language": "^6.2.1",
+    "@codemirror/language": "https://github.com/lishid/cm-language",
     "@codemirror/state": "^6.1.0",
     "@codemirror/view": "^6.1.0",
     "@lezer/common": "^1.0.0",
@@ -18,9 +18,10 @@
     "@rollup/plugin-node-resolve": "^13.3.0",
     "builtin-modules": "^3.3.0",
     "codemirror": "^6.0.1",
+    "esbuild": "^0.14.49",
     "fountain-js": "^1.0.0",
     "obsidian": "^0.15.4",
-    "obsidian-plugin-cli": "^0.4.3",
+    "obsidian-plugin-cli": "^0.8.1",
     "typescript": "^4.1.5"
   }
 }

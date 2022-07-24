@@ -1,125 +1,109 @@
+@precedence {
+	TitlePage
+	SceneHeading @left
+	SceneNumber @left
+	Transition @left
+	PageBreak @cut
+	Lyric
+	Note @cut
+	Action
+}
+
 @top FountainScript {
-	scriptbody+
+	TitlePage
+	(
+		SceneHeading
+		(
+			// Lyric nl | 
+			PageBreak {"===" "="*} nl | !Note Note nl | !Transition Transition nl | Lyric nl | !Action Action nl)*
+	)*
 }
 
-scriptbody {
-	!Act !Sequence !Scene !Transition
-	!lc 
-	Section?
-	topofscene LineBreak
-	(Transition | Dialogue | Lyric | Centered | Note | Action | BoneYard)+
-
+TitlePage {
+	nl* (desensitizedTitleField whitespace* colon whitespace* TContent nl)*
+}
+@external specialize {TContent} desensitizedTitleField from "./tokenizer" {
+	desensitizedTitleField
+}
+@external specialize {TContent} desensitizedSceneHeading from "./tokenizer" {
+	desensitizedSceneHeading
 }
 
-BoneYard {
-	
-	BYOpen Text BYClose
+SceneHeading {(desensitizedSceneHeading whitespace+ SceneNumber? nl) }
+SceneNumber { hash snc hash }
+
+
+@external specialize {TContent} Transition from "./tokenizer" {
+	Transition
+}
+
+@external specialize {TContent} Lyric from "./tokenizer" {
+	Lyric
+}
+
+@external specialize {MContent} Note from "./tokenizer" {
+	Note
 }
 
 
 
-SceneHeading { !_sh _sh !snn hash snc hash }
-SceneNumber { hash snc+ hash }
+// Transition { transition }
 
-Transition { 
-	transition nl
+
+Content { char+}
+
+
+@external specialize {TContent} PB from "./tokenizer" {
+	PB
 }
 
-Dialogue {
-	Character CharacterExt? nl
-	Text
+kw<term> { @specialize[@name={term}]<Content, term> }
+
+// Action {
+// 	(TContent nl)*
+// }
+
+@external specialize {TContent} Action from "./tokenizer" {
+	Action
 }
-
-Character {
-	!uc uc
-}
-CharacterExt {
-	OpenParen whitespace* Text whitespace* CloseParen
-}
-
-Action { Text }
-
-Centered { OpenCenter whitespace? Text whitespace? CloseCenter }
-
-Act {  hash whitespace+ Text }
-Sequence { hash hash whitespace+ Text }
-Scene { hash hash hash whitespace+ Text}
-
-
-Section { !Act !Sequence !Scene Act | Sequence | Scene }
-
-Lyric {
-	lyrc Text
-}
-
-Note { OpenNote Text CloseNote }
-
-LineBreak { nl nl }
-
-
-
-// composites
-
-topofscene {
-	!_sh !Text SceneHeading SceneNumber LineBreak
-}
-
 @tokens {
-	_sh {
-		(("INT" | "EXT" | "EST" | "int" | "ext" | "est" | "i/e") ".") | "." Text
-	}
-
 	snc {
 		@digit | "." | "-"
 	}
-	lyrc { "~" }
 	// by {
 	// }
+
+
 
 	OpenParen[closedBy="CloseParen"] { "(" }
 	CloseParen[openedBy="OpenParen"] { ")" }
 	
-	OpenNote[closedBy="CloseNote"] { "[[" }
-	CloseNote[openedBy="OpenNote"] { "]]" }
+	// OpenNote[closedBy="CloseNote"] { "[[" }
+	// CloseNote[openedBy="OpenNote"] { "]]" }
 	BYOpen[closedBy="BYClose"] { "/*" }
 	BYClose[openedBy="BYOpen"] { "*/" }
 	OpenCenter[closedBy="CloseCenter"] { ">" }
 	CloseCenter[openedBy="OpenCenter"] { "<" }
 
 	uc { @asciiUppercase }
-
+	
+	TContent { char+ }
+	MContent { TContent nl*}
+	colon { ":" }
+	eq { "=" }
 	hash { "#" }
 	nl { "\r" | "\n" | "\r" "\n" }
-	Text { char+ }
-	whitespace { std.whitespace++ }
+	whitespace { " " }
+	ws { @whitespace}
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
+	b1[@name=Note] { "[[" }
+	b2[@name=Note] { "]]" }
 	transition {
-		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | Text whitespace "TO:") | (">" whitespace+ Text)
+		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK")) | (">" whitespace+ TContent)
 	}
-	@precedence {
-		hash _sh OpenCenter CloseCenter BYOpen BYClose OpenNote CloseNote transition lyrc whitespace uc Text
-	}
-} 
+	@precedence { ws whitespace b1 b2 "===" TContent MContent eq nl char}
 
-@precedence {
-	Act @cut
-	Sequence @cut
-	Scene @cut
-	BoneYard
-	scriptbody
-	topofscene
-	Section @cut
-	hash
-	_sh @cut
-	snn @cut
-	lc @cut
-	uc @cut
-	boneyard @cut
-	SceneHeading SceneNumber hash
-	Transition OpenNote Note SceneNumber SceneHeading whitespace Action
-	uc
-	Text
-	Text @cut
-}
+} 
+// @skip {ws | nl*}

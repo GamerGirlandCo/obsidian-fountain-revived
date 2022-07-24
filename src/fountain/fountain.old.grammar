@@ -1,0 +1,149 @@
+@precedence {
+	LineBreak
+	SceneNumber @cut
+	SceneHeading @cut
+	Act
+	Sequence
+	Scene
+	TitlePage @cut
+	Transition Centered 
+	boneyard
+	BoneYard
+	Lyric
+	Note 
+	//scriptbody 
+	scriptbody
+	_sh
+	// topofscene
+	hash hash
+	Action @cut
+	whitespace 
+	nl 
+	ws
+	uc
+}
+
+@top FountainScript {
+	TitlePage
+	nl?
+	scriptbody+
+}
+
+
+@skip { ws}
+
+scriptbody {
+	Section?
+	SceneHeading LineBreak
+	(Transition | Dialogue | Lyric | Centered | Note | Action | BoneYard | PageBreak  | Synopsis)+
+	nl+
+}
+
+
+
+// kw<word> { @specialize[@name={word}]<identifier, word> }
+
+
+
+BoneYard {	BYOpen Text BYClose }
+
+
+
+
+SceneHeading {!SceneHeading desensitizedSceneHeading SceneNumber? }
+SceneNumber { hash snc+ hash }
+
+Transition { 
+	transition nl
+}
+
+Dialogue {
+	Character CharacterExt? nl
+	Text
+}
+
+Character {
+	uc
+}
+CharacterExt {
+	OpenParen whitespace* Text whitespace* CloseParen
+}
+
+Action { !Action Text }
+
+Centered { OpenCenter Text CloseCenter }
+
+Act {  hash whitespace+ Text }
+Sequence { hash hash whitespace+ Text }
+Scene { hash hash hash whitespace+ Text}
+
+
+Section { Act | Sequence | Scene }
+Synopsis { syn Text}
+
+Lyric {
+	lyrc Text
+}
+
+Note { OpenNote Text CloseNote }
+
+LineBreak { nl nl }
+PageBreak { pb }
+
+
+// composites
+
+TitlePage {
+	(!TitlePage _titlefield whitespace? titledelim whitespace? Text nl)+
+}
+
+@tokens {
+	_sh {
+		("int" | "ext" | "est" | "i/e") "." Text
+	}
+
+	_titlefield {
+		"title"|"credit"|("author" "s"?)| "source" | "notes" | "draft date" | "date" | "contact" | "copyright"
+	}
+
+	snc {
+		@digit | "." | "-"
+	}
+	lyrc { "~" }
+	// by {
+	// }
+
+	OpenParen[closedBy="CloseParen"] { "(" }
+	CloseParen[openedBy="OpenParen"] { ")" }
+	
+	OpenNote[closedBy="CloseNote"] { "[[" }
+	CloseNote[openedBy="OpenNote"] { "]]" }
+	BYOpen[closedBy="BYClose"] { "/*" }
+	BYClose[openedBy="BYOpen"] { "*/" }
+	OpenCenter[closedBy="CloseCenter"] { ">" }
+	CloseCenter[openedBy="OpenCenter"] { "<" }
+
+	uc { @asciiUppercase }
+	titledelim { ":" }
+	hash { "#" }
+	nl { "\r" | "\n" | "\r" "\n" }
+	Text { char+ }
+	whitespace { " " }
+	ws { @whitespace}
+	char {
+		$[\u{20}-\u{10fffe}]
+	}
+	syn { "==" }
+	pb {"===" "="*}
+	transition {
+		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | (Text whitespace)+ "TO:") | (">" whitespace+ Text)
+	}
+	@precedence {
+		hash pb syn snc _titlefield lyrc _sh transition OpenCenter CloseCenter BYOpen BYClose Note OpenNote CloseNote whitespace Text nl ws uc
+	}
+} 
+
+// @external tokens desensitizedSceneHeading from "./tokenizer" { desensitizedSceneHeading }
+@external specialize {_sh} desensitizedSceneHeading from "./tokenizer" {
+	desensitizedSceneHeading
+}

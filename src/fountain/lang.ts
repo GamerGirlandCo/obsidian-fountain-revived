@@ -1,4 +1,4 @@
-import {LRLanguage, Language, defineLanguageFacet} from "@codemirror/language";
+import {LRLanguage, LanguageSupport, defineLanguageFacet, foldInside, foldNodeProp} from "@codemirror/language";
 
 import { basicSetup } from "src/extensions";
 import {parser} from "./parser"
@@ -9,9 +9,13 @@ const facet = defineLanguageFacet({})
 export const Fountain = LRLanguage.define({
 	parser: parser.configure({
 		props: [
-		
+			foldNodeProp.add({
+				"SceneHeading Section ": foldInside
+			})
 		]
 	})
 })
 
-// export default new Language(facet, parser, basicSetup)
+export default function () {
+	return new LanguageSupport(Fountain)
+}

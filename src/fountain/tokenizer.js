@@ -1,48 +1,77 @@
-import {BoneYard, FountainScript, SceneHeading} from "./fountain.terms"
+import {TitlePage, SceneHeading, 
+	Lyric as lll , Note as n,
+	Action as a,
+	PageBreak
+} from "./parser.terms"
 
 import {ExternalTokenizer} from "@lezer/lr";
 
-const lowerUpperMap = [
-	[ 65, 97 ]
-	[ 66, 98 ],
-	[ 67, 99 ],
-	[ 68, 100 ],
-	[ 69, 101 ],
-	[ 70, 102 ],
-	[ 71, 103 ],
-	[ 72, 104 ],
-	[ 73, 105 ],
-	[ 74, 106 ],
-	[ 75, 107 ],
-	[ 76, 108 ],
-	[ 77, 109 ],
-	[ 78, 110 ],
-	[ 79, 111 ],
-	[ 80, 112 ],
-	[ 81, 113 ],
-	[ 82, 114 ],
-	[ 83, 115 ],
-	[ 84, 116 ],
-	[ 85, 117 ],
-	[ 86, 118 ],
-	[ 87, 119 ],
-	[ 88, 120 ],
-	[ 89, 121 ],
-	[ 90, 122 ],
-]
 
 const dot = 46
 const hash = 35
 
-export const scene_heading = new ExternalTokenizer((input, stack) => {
-	console.error("like a fish with hook in mouth")
-	console.error(input.peek(0), stack)
-	let first = input.peek(0);
-	let second = input.peek(1);
-	let third = input.peek()
-	console.error(first, second, third)
-	if(lowerUpperMap[8].contains(input.next)) {
-		input.acceptToken()
+export const desensitizedSceneHeading = (input, stack) => {
+	let rego = /^((?:(?:int|ext|est|i\/e)[. ]).+)|^(?:\.(?!\.+))(.+)/i
+	if(input.match(rego)) {
+		// console.debug("m", input, stack)
+		// console.log("m")
+		return SceneHeading
 	}
-	
-})
+	return -1
+}
+
+
+export const desensitizedTitleField = (input, stack) => {
+	let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim
+	// console.debug("dtf", input, stack)
+	if(input.toLowerCase().match(rego)) {
+		return TitlePage
+	} else {
+		return -1
+	}
+
+}
+export const Lyric = (input, stack) => {
+	let rego = /^~(?![ ]).+(?:\n.+)*/;
+	if(input.match(rego)) {
+		return lll
+	} else {
+		return -1
+	}
+
+}
+
+export const Note = (input, stack) => {
+	let rego = /^(\[\[)(\r|\n)*[\S\s\w]]+(\r|\n)*(\]\])/
+	if(input.match(rego)) {
+		console.log("nmatch", input)
+		return n;
+	}
+	return -1
+}
+
+
+export const Transition = (input, stack) => {
+	let rego =  /^(?:> *)(.+)|^(CUT|FADE)+ TO(\:|.*)/g
+	if(input.match(rego)) {
+	console.log("trans", input)
+		return Transition
+	} else {
+		return -1
+	}
+}
+
+export const PB = (input, stack) => {
+	let rego = /^={3,}/
+	if(input.match(rego)) {
+		return PageBreak
+	} else {
+		return -1
+	}
+}
+
+
+
+export const Action = (input, stack) => {
+	return a
+}
