@@ -1,7 +1,8 @@
 import {TitlePage, SceneHeading, 
 	Lyric as lll , Note as n,
 	Action as a,
-	PageBreak
+	PB as PageBreak,
+	Synopsis as sis
 } from "./parser.terms"
 
 import {ExternalTokenizer} from "@lezer/lr";
@@ -42,7 +43,7 @@ export const Lyric = (input, stack) => {
 }
 
 export const Note = (input, stack) => {
-	let rego = /^(\[\[)(\r|\n)*[\S\s\w]]+(\r|\n)*(\]\])/
+	let rego = /(?:\[{2}(?!\[+))([\s\S\r\n]*?)(?:\]{2}(?!\[+))/g
 	if(input.match(rego)) {
 		console.log("nmatch", input)
 		return n;
@@ -50,9 +51,8 @@ export const Note = (input, stack) => {
 	return -1
 }
 
-
 export const Transition = (input, stack) => {
-	let rego =  /^(?:> *)(.+)|^(CUT|FADE)+ TO(\:|.*)/g
+	let rego =  /^(CUT|FADE) TO(\:|.*)|^(?:>\s*)(.+)/g
 	if(input.match(rego)) {
 	console.log("trans", input)
 		return Transition
@@ -70,8 +70,17 @@ export const PB = (input, stack) => {
 	}
 }
 
+export const Synopsis = (input, stack) => {
+	let rego = /^(?:\=(?!\=+) *)(.*)/
+	if(input.match(rego)) {
+		return sis
+	} else {
+		return -1
+	}
+}
 
 
 export const Action = (input, stack) => {
-	return a
+	console.log("a", input)
+	return -1
 }
