@@ -13,76 +13,97 @@ import { syntaxTree, tokenClassNodeProp } from "@codemirror/language";
 import {EditorState, Text, Range, StateEffect, StateEffectType, StateField} from "@codemirror/state";
 
 import CodeMirror from "codemirror";
-import {EditorView, Decoration, DecorationSet, ViewUpdate} from "@codemirror/view";
-import { Fountain } from "fountain-js";
+import {EditorView, Decoration, DecorationSet, ViewUpdate, ViewPlugin} from "@codemirror/view";
 import { basicSetup } from "./extensions";
+import { ViewPluginClass } from "./editor";
 import fountain from "./fountain/lang"
 
+const myTheme = EditorView.theme({
+	".cm-line": {
+		fontFamily: "'Courier Final Draft', 'Courier Screenplay', Courier",
+		caretColor: "var(--text-normal) !important"
+	},
+	".cm-content": {
+		caretColor: "var(--text-normal) !important"
+	},
+	".cm-gutter": {
+		background: "var(--interactive-accent)"
+	}
+})
+
+const vp = ViewPlugin.fromClass(ViewPluginClass)
+const ext = [
+	myTheme,
+	vp,
+	fountain(),
+	...basicSetup,
+]
+
 // ...
-export class FountainView extends MarkdownView {
+export class FountainView extends TextFileView {
 	document: string;
 	cm: EditorView;
 	// state: EditorState
 	// mev: MarkdownEditView
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
-		// super.onLoadFile(this.file)
-		this.onLoadFile().then(() => {
-			console.log("edi", this.editor, this.getMode())
-			this.editor.cm.setState(EditorState.create({
-				doc: this.document,
-				extensions: [...basicSetup, 
-					fountain(),
-					// EditorView.updateListener.of.bind(this, function(e) {
-					// 	console.log("sweet dreams are made of", this)
-					// 	this.document = e.state.doc.toString();
-					// })
-				]
-				
-			}))
+		this.containerEl.setAttribute("data-type", "fountain")
+		let state = EditorState.create({
+			doc: "",
+			extensions: ext
 		})
+		this.cm = new EditorView({
+			state: state,
+			parent: this.containerEl.getElementsByClassName("view-content")[0],
+		})
+		// super.onLoadFile(this.file)
+		// this.onLoadFile().then(() => {
+		// 	console.log("edi", this.editor, this.getMode())
+		// 	this.editor.cm.setState(EditorState.create({
+		// 		doc: this.document,
+		// 		extensions: [...basicSetup, 
+		// 			fountain(),
+		// 			EditorView.updateListener.of.bind(this, function(e) {
+		// 				console.log("sweet dreams are made of", this)
+		// 				this.document = e.state.doc.toString();
+		// 			})
+		// 		]
+				
+		// 	}))
+		// })
 		
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
 	async onUnloadFile(file: TFile): Promise<void> {
 		await this.app.vault.adapter.write(normalizePath(file.path), this.getViewData())
 		this.clear()
+		console.log(":::")
+		// super.onUnloadFile(file)
 	}
-	async onLoadFile() {
-		console.debug("load fucker")
-		this.document = await this.app.vault.read(this.app.workspace.getActiveFile());
+	async onLoadFile(filee) {
+		console.debug("load fucker", filee)
+		this.document = await this.app.vault.read(filee);
 		console.debug("finally"/* , this.document */)
-		this.setViewData(this.document, false)
+		// this.setViewData(this.document)
 		this.app.workspace.on('editor-change', () => {
-			// console.log("sav")
-
 			this.requestSave();
 		});
 		// console.debug(f)
 		
-		// let state = EditorState.create({
-		// 	doc: "f",
-		// })
-		// this.cm = new EditorView({
-		// 	state: state,
-		// 	parent: this.containerEl.getElementsByClassName("view-content")[0],
-		// })
+		let state = EditorState.create({
+			doc: this.document,
+			extensions: ext
+		})
 		
+		this.cm.setState(state)
 		
 		this.app.workspace.iterateCodeMirrors(e => {
 			e.cm.setState(EditorState.create({
 				// doc: this.document,
-				extensions: [/* ..basicSetup,  */
-					fountain(),
-					// EditorView.updateListener.of.bind(this, function(e) {
-					// 	console.log("sweet dreams are made of", this)
-					// 	this.document = e.state.doc.toString();
-					// })
-				]
-				
+				extensions: ext
 			}))
-			console.debug("icm", e)
 		})
+		// 	console.debug("icm", e)
 		// console.log("constructor", this.file)
 		this.app.workspace.updateOptions()
 		
@@ -90,15 +111,25 @@ export class FountainView extends MarkdownView {
 	getViewType() {
 		return "fountain"
 	}
-	getViewData() { return this.editor.getValue() }
+	getViewData() { return this.document }
 	setViewData(data: string, clear: boolean): void {
-		this.editor.setValue(data)
+		this.document = data;
+		this.cm.setState(EditorState.create({
+			doc: this.document,
+			extensions: ext
+			
+		}))
+
 	}
-	
+
 	clear() {
-		this.editor.setValue('');
-		super.clear()
+		// this.editor.setValue('');
+		// super.clear()
 		// this.editor.clearHistory();
+		this.cm.setState(EditorState.create({
+			doc: "",
+			extensions: ext
+		}))
 	}
 	// getScroll(): number {
 	// 	return this.cm.state.doc.lineAt(this.cm.state.selection.main.head).number
@@ -119,136 +150,3 @@ export class FountainView extends MarkdownView {
 }
 
 
-export class ViewPluginClass {
-	manager: StatefulDecorationSet;
-	source = false;
-
-	constructor(view: EditorView) {
-		this.manager = new StatefulDecorationSet(view);
-		this.build(view);
-	}
-
-	update(update: ViewUpdate) {
-		if (!isLivePreview(update.view.state)) {
-			if (this.source == false) {
-				this.source = true;
-				this.manager.updateDecos([]);
-			}
-
-			return;
-		}
-		if (
-			update.docChanged ||
-			update.viewportChanged ||
-			update.selectionSet ||
-			this.source == true
-		) {
-			this.source = false;
-			this.build(update.view);
-		}
-	}
-
-	destroy() {}
-
-	build(view: EditorView) {
-		if (!isLivePreview(view.state)) return;
-		
-		const targetElements: TokenSpec[] = [];
-		
-		for (let { from, to } of view.visibleRanges) {
-			const tree = syntaxTree(view.state);
-			tree.iterate({
-				from,
-				to,
-				enter: ({type, from, to}) => {
-					const original = view.state.doc.sliceString(
-						from,
-						to
-					);
-					if(type.name.startsWith("⚠") || !original.trim()) return
-					const tokenProps =
-					type.prop(tokenClassNodeProp);
-
-					writeFileSync("C:\\tree.debug", JSON.stringify(tree, null, "\t"))
-					
-					const props = new Set(tokenProps?.split(" "));
-					console.debug("iteratetree", type.name, "", original)
-					// console.debug("iteratetree", original)
-				}
-			});
-		}
-		// 
-
-
-		this.manager.updateDecos(targetElements);
-	}
-}
-
-type TokenSpec = {
-	from: number;
-	to: number;
-	loc: { from: number; to: number };
-	attributes: [string, string][];
-	value: string;
-	index: number;
-};
-
-class StatefulDecorationSet {
-	editor: EditorView;
-	decoCache: { [cls: string]: Decoration } = Object.create(null);
-	sd: {
-		update: StateEffectType<DecorationSet>;
-		field: StateField<DecorationSet>;
-	}
-	
-
-	constructor(editor: EditorView) {
-		this.editor = editor; 
-		this.sd = defineStatefulDecoration()
-	}
-	
-	async computeAsyncDecorations(tokens: TokenSpec[]): Promise<DecorationSet | null> {
-		const decorations: Range<Decoration>[] = [];
-		for (let token of tokens) {
-			let deco = this.decoCache[token.value];
-			if (!deco) {
-				console.log("expensive async operation called");
-				await sleep(200); // simulate some slow IO operation
-				// deco = this.decoCache[token.value] = Decoration.widget({ widget: new EmojiWidget(randomEmoji()) });
-			}
-			decorations.push(deco.range(token.from, token.from));
-		}
-		return Decoration.set(decorations, true);
-	}
-	
-	debouncedUpdate = debounce(this.updateDecos, 100, true);
-	
-	async updateDecos(tokens: TokenSpec[]): Promise<void> {
-		const decorations = await this.computeAsyncDecorations(tokens);
-		// if our compute function returned nothing and the state field still has decorations, clear them out
-		if (decorations || this.editor.state.field(this.sd.field).size) {
-			this.editor.dispatch({ effects: this.sd.update.of(decorations || Decoration.none) });
-		}
-	}
-} 
-
-function defineStatefulDecoration(): {
-	update: StateEffectType<DecorationSet>;
-	field: StateField<DecorationSet>;
-} {
-	const update = StateEffect.define<DecorationSet>();
-	const field = StateField.define<DecorationSet>({
-		create(): DecorationSet {
-			return Decoration.none;
-		},
-		update(deco, tr): DecorationSet {
-			return tr.effects.reduce((deco, effect) => (effect.is(update) ? effect.value : deco), deco.map(tr.changes));
-		},
-		provide: field => EditorView.decorations.from(field),
-	});
-	return { update, field };
-}
-
-const isLivePreview = (state: EditorState) => {
-	return state.field(editorLivePreviewField);
-};

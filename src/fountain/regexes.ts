@@ -2,7 +2,7 @@ export const regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
 
     scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).+)|^(?:\.(?!\.+))(.+)/i,
-    scene_number: /( *#(.+)# *)/,
+    scene_number: /( *#(.+)# *)$/,
 
     transition: /^((?:FADE (?:TO BLACK|OUT)|CUT TO BLACK)\.|.+ TO\:)|^(?:> *)(.+)/,
 
