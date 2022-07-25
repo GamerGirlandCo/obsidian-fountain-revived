@@ -9,3 +9,4 @@ main.js
 dist/
 z-dist/
 src/fountain/parser.*.js
+src/fountain/parser.js
