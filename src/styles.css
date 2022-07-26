@@ -24,7 +24,7 @@
 
 [data-type="fountain"] > .view-content .cm-editor {
     margin: auto;
-    width: 60%;
+    /* width: 60%; */
     text-align: left;
     font: 12pt 'Courier Final Draft', 'Courier Screenplay', Courier;
     padding: 0pt 0 0 0pt;
