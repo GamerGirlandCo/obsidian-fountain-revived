@@ -50,10 +50,10 @@ class InlineWidget extends WidgetType {
 
 	toDOM(view: EditorView): HTMLElement {
 		if (!this.marker) {
-			return createSpan({ cls: 'criticmarkup-marker' });
+			return createSpan({ cls: 'fountain-marker' });
 		} else {
 			return createSpan({
-				cls: ['criticmarkup-marker', 'dividesubs'],
+				cls: ['fountain-marker'],
 				text: '🠚',
 			});
 		}
@@ -92,20 +92,21 @@ class InlineWidget extends WidgetType {
 function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	const selection = view.state.selection;
-
+	let iiii = 1;
 	for (const { from, to } of view.visibleRanges) {
 		const text = view.state.doc.sliceString(from, to);
 		const tree = Fountain.parser.parse(text);
 		let cursor = tree.cursor();
 		do {
+			iiii++
 			const start = cursor.from;
 			const end = cursor.to;
 			const name = cursor.name;
 			const texties = view.state.doc.sliceString(start, end)
 
-			if (name === 'FountainScript') continue;
+			if (name === 'FountainScript' || name === "⚠") continue;
 			if (selectionAndRangeOverlap(selection, start, end)) continue;
-			console.log("tree", name, texties)
+			console.log("tree", name, texties, iiii)
 
 			// if (name === 'DivideSubs') {
             //     const content = view.state.doc.sliceString(start, end);

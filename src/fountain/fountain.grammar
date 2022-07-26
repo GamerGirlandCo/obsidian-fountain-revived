@@ -1,8 +1,8 @@
 @detectDelim
 @precedence {
 	TitlePage
-	SceneHeading @left
 	SceneNumber @left
+	SceneHeading @left
 	Transition @left
 	Note @cut
 	PageBreak @cut
@@ -13,7 +13,7 @@
 @top FountainScript {
 	TitlePage
 	(
-		SceneHeading
+		SceneHeading !SceneNumber SceneNumber?
 		(
 			PB nl | !Note Note | !Transition Transition nl | Lyric nl | Synopsis | !Action Action nl)*
 	)*
@@ -31,7 +31,7 @@ TitlePage {
 	desensitizedSceneHeading
 }
 
-SceneHeading { (desensitizedSceneHeading whitespace+ SceneNumber?) }
+SceneHeading { (desensitizedSceneHeading whitespace+) }
 SceneNumber { (hash snc hash) }
 
 @external specialize {Notee} Note from "./tokenizer" {
@@ -39,7 +39,7 @@ SceneNumber { (hash snc hash) }
 }
 
 @external specialize {TContent} PB from "./tokenizer" {
-	PB
+	PB[@name="PageBreak"]
 }
 
 @external specialize {TContent} Transition from "./tokenizer" {
@@ -94,7 +94,7 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 
 	uc { @asciiUppercase }
 	
-	TContent { char+ }
+	TContent[@name=Action] { char+ }
 	MContent { TContent nl*}
 	colon { ":" }
 	eq { "=" }
@@ -105,8 +105,8 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
-	Action[@name=Action] {
-		(TContent nl)
+	Action {
+		(TContent)
 	}
 	b1[@name=Note] { "[[" }
 	b2[@name=Note] { "]]" }
