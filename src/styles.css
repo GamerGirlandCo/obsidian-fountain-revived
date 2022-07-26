@@ -5,7 +5,7 @@
     position: unset;
 }
 
-[data-type="fountain"] > .view-content .cm-editor {
+.screenplay {
     margin: 0;
     padding: 0;
     border: 0;
@@ -15,56 +15,58 @@
     vertical-align: baseline;
 }
 
-[data-type="fountain"] > .view-content .cm-editor {
+.screenplay {
     display: block;
 }
 
-[data-type="fountain"] > .view-content{
+
+/* Styles for Screenplain */
+
+.screenplay {
     margin: auto;
-	background-color: var(--background-secondary) !important;
-    width: 90%;
+    width: 60%;
     text-align: left;
     font: 12pt 'Courier Final Draft', 'Courier Screenplay', Courier;
     padding: 0pt 0 0 0pt;
     position: static;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>header {
+.screenplay>header {
     margin-bottom: 1em;
     border-bottom: 1px solid black;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>footer {
+.screenplay>footer {
     margin-top: 1em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>em {
+.screenplay>em {
     font-style: italic;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>p .bold {
+.screenplay>p .bold {
     font-weight: bold;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>br {
+.screenplay>br {
     clear: both;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>div.action p {
+.screenplay>div.action p {
     margin-top: 1em;
 }
 
 
 /* Dialogue */
 
-[data-type="fountain"] > .view-content .cm-editor>.dialogue h4 {
+.screenplay>.dialogue h4 {
     text-align: center;
     color: var(--bright-yellow) !important;
     font-weight: 500 !important;
     font-size: 18px !important;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.dialogue p {
+.screenplay>.dialogue p {
     text-align: left;
     margin-left: 20%;
 }
@@ -73,14 +75,14 @@
     text-decoration: underline;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.dialogue .parenthetical {
+.screenplay>.dialogue .parenthetical {
     padding-left: 10%;
 }
 
 
 /* Headers */
 
-[data-type="fountain"] > .view-content .cm-editor>h3 {
+.screenplay>h3 {
     margin-top: 2em;
     text-transform: uppercase;
     font-weight: bold !important;

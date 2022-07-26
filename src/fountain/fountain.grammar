@@ -1,174 +1,122 @@
 @detectDelim
 @precedence {
-	TitlePage @cut
-	SceneHeading 
-	SceneNumber
-	// Transition @left
-	Note
-	// PageBreak @cut
-	// Lyric
-	// Action
+	TitlePage
+	SceneHeading @left
+	SceneNumber @left
+	Transition @left
+	Note @cut
+	PageBreak @cut
+	Lyric
+	Action
 }
-// @top testor { Note }
 
 @top FountainScript {
-	(!TitlePage TitlePage)*
+	TitlePage
 	(
-		SceneHeading 
-		SceneNumber?
+		SceneHeading
 		(
-			Note
-			// PB nl | 
-			// "[[" Note
-			// | Transition
-			// | Synopsis
-			// Transition nl | Lyric nl | Synopsis | !Action TAction nl
-		)
-	)+
+			PB nl | !Note Note | !Transition Transition nl | Lyric nl | Synopsis | !Action Action nl)*
+	)*
 }
+
 
 TitlePage {
-	TP
+	nl* (desensitizedTitleField whitespace* colon whitespace* TContent nl)*
 }
 
-@external tokens TP from "./tokens" {TP}
-@external tokens SceneHeading from "./tokens" { SceneHeading }
-SceneNumber { ("#" snc+ "#") }
+@external specialize {TContent} desensitizedTitleField from "./tokenizer" {
+	desensitizedTitleField
+}
+@external specialize {TContent} desensitizedSceneHeading from "./tokenizer" {
+	desensitizedSceneHeading
+}
+
+SceneHeading { (desensitizedSceneHeading whitespace+ SceneNumber?) }
+SceneNumber { (hash snc hash) }
+
+@external specialize {Notee} Note from "./tokenizer" {
+	Note
+}
+
+@external specialize {TContent} PB from "./tokenizer" {
+	PB
+}
+
+@external specialize {TContent} Transition from "./tokenizer" {
+	Transition
+}
+
+@external specialize {TContent} Lyric from "./tokenizer" {
+	Lyric
+}
+
+@external specialize {TContent} Synopsis from "./tokenizer" {
+	Synopsis
+}
 
 
 
-
-@context TrackNote from "./tokens"
-// @context TrackSceneNumber from "./tokens"
-// @external tokens SceneNumber from "./tokens" { SceneNumber }
-@external tokens OpenNote from "./tokens" { OpenNote[closedBy="CloseNote"]}
-// @external tokens Transition from "./tokens" {Transition}
-
-// @external tokens from "./tokens" {}
-
-// TitlePage {
-// 	// (desensitizedTitleField sp* ":" sp* TContent)*
-// }
-
-// @external specialize {TContent} desensitizedTitleField from "./tokens" {
-// 	desensitizedTitleField
-// }
-// @external specialize {TContent} desensitizedSceneHeading from "./tokens" {
-// 	desensitizedSceneHeading
-// }
-
-// SceneHeading { (desensitizedSceneHeading whitespace+ SceneNumber?) }
-
-// @external specialize {TContent} PB from "./tokens" {
-// 	PB
-// }
-
-// @external specialize {TContent} Transition from "./tokens" {
-// 	Transition
-// }
-
-// @external specialize {TContent} Lyric from "./tokens" {
-// 	Lyric
-// }
-
-// @external specialize {TContent} Synopsis from "./tokens" {
-// 	Synopsis
-// }
-
-// Synopsis {
-// 	(eq | eq eq) whitespace? Content
-// }
-
-// @external specialize {TAction} Action from "./tokens" {
+// @external specialize {TContent} Action from "./tokenizer" {
 // 	Action
 // }
 // Transition { transition }
 
 
-// Content { char+ }
-
-Note {
-	OpenNote  CloseNote
-}
+Content { char+}
 
 
-// kw<term> { @specialize[@name={term}]<Content, term> }
+
+
+kw<term> { @specialize[@name={term}]<Content, term> }
+
 
 @tokens {
-	CloseNote[openedBy="OpenNote"] { "]]" }
-	char {
-		$[\u{20}-\u{10fffe}]
-	}
-	newline {
-		"\n" | "\r" | "\r\n"
-	}
-	// TContent { char+ }
-	sp { " " }
 	snc {
 		@digit | "." | "-"
 	}
-	@precedence { 
-		sp 
-		"#"
-		char
-		":" 
-		snc
-		// TContent 
+	// by {
+	// }
+
+
+
+	OpenParen[closedBy="CloseParen"] { "(" }
+	CloseParen[openedBy="OpenParen"] { ")" }
+	OpenNote[closedBy="CloseNote"] { "[[" }
+	CloseNote[openedBy="OpenNote"] { "]]" }
+	BYOpen[closedBy="BYClose"] { "/*" }
+	BYClose[openedBy="BYOpen"] { "*/" }
+	OpenCenter[closedBy="CloseCenter"] { ">" }
+	CloseCenter[openedBy="OpenCenter"] { "<" }
+
+	Notee {
+		OpenNote (TContent | nl)* CloseNote
 	}
-}
 
-@skip {
-	// char | 
-	sp | 
-	newline
-}
-@detectDelim
-
-
-// @tokens {
-// 	snc {
-// 		@digit | "." | "-"
-// 	}
-// 	// by {
-// 	// }
-
-
-
-// 	OpenParen[closedBy="CloseParen"] { "(" }
-// 	CloseParen[openedBy="OpenParen"] { ")" }
-// 	OpenNote[closedBy="CloseNote",@name=Note] { "[[" }
-// 	
-// 	BYOpen[closedBy="BYClose"] { "/*" }
-// 	BYClose[openedBy="BYOpen"] { "*/" }
-// 	OpenCenter[closedBy="CloseCenter"] { ">" }
-// 	CloseCenter[openedBy="OpenCenter"] { "<" }
-
-// 	Notee {
-// 		(TContent | nl)+
-// 	}
-
-// 	uc { @asciiUppercase }
+	uc { @asciiUppercase }
 	
-// 	MContent { TContent | nl}
-// 	colon { ":" }
-// 	eq { "=" }
-// 	hash { "#" }
-// 	nl { "\r" | "\n" | "\r" "\n" }
-// 	whitespace { " " }
-// 	ws { @whitespace}
-// 	}
-// 	TAction[@name=Action] {
-// 		(TContent nl)
-// 	}
-// 	b1 { "[[" }
-// 	b2 { "]]" }
-// 	// transition {
-// 	// 	(("FADE" " " ("TO BLACK" | "OUT") | "CUT TO BLACK")) | (">" whitespace+ TContent)
-// 	// }
-// 	@precedence { OpenNote CloseNote Notee ws whitespace b1 b2 "===" hash 
-// 	  MContent TContent TAction eq "\r" "\n" nl char}
+	TContent { char+ }
+	MContent { TContent nl*}
+	colon { ":" }
+	eq { "=" }
+	hash { "#" }
+	nl { "\r" | "\n" | "\r" "\n" }
+	whitespace { " " }
+	ws { @whitespace}
+	char {
+		$[\u{20}-\u{10fffe}]
+	}
+	Action[@name=Action] {
+		(TContent nl)
+	}
+	b1[@name=Note] { "[[" }
+	b2[@name=Note] { "]]" }
+	transition {
+		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK")) | (">" whitespace+ TContent)
+	}
+	@precedence { Notee ws whitespace b1 b2 "===" hash 
+	 TContent Action MContent eq "\r" "\n" nl char}
 
-// } 
+} 
 
 
-// @skip {ws}
+@skip {ws | "\r" "\n"}
