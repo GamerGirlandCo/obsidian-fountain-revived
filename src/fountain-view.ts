@@ -21,6 +21,9 @@ import fountain from "./fountain/lang"
 const theme = EditorView.theme({
 	".cm-line": {
 		caretColor: "var(--text-normal)"
+	},
+	".cm-foldGutter": {
+		backgroundColor: "var(--interactive-accent)"
 	}
 })
 
@@ -77,9 +80,7 @@ export class FountainView extends TextFileView {
 		this.document = data;
 		this.cm.setState(EditorState.create({
 			doc: this.document,
-			extensions: [/* ..basicSetup,  */
-				fountain(),
-			]
+			extensions: exts
 			
 		}))
 	}
@@ -87,7 +88,7 @@ export class FountainView extends TextFileView {
 	clear() {
 		this.cm.setState(EditorState.create({
 			doc: "",
-			extensions: [fountain()]
+			extensions: exts
 		}))
 		// this.editor.clearHistory();
 	}
