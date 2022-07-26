@@ -18,8 +18,16 @@ import { Fountain } from "fountain-js";
 import { basicSetup } from "./extensions";
 import fountain from "./fountain/lang"
 
+const theme = EditorView.theme({
+	".cm-line": {
+		caretColor: "var(--text-normal)"
+	}
+})
+
+const exts = [theme, fountain(), ...basicSetup]
+
 // ...
-export class FountainView extends MarkdownView {
+export class FountainView extends TextFileView {
 	document: string;
 	cm: EditorView;
 	// state: EditorState
@@ -27,20 +35,6 @@ export class FountainView extends MarkdownView {
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
 		// super.onLoadFile(this.file)
-		this.onLoadFile().then(() => {
-			console.log("edi", this.editor, this.getMode())
-			this.editor.cm.setState(EditorState.create({
-				doc: this.document,
-				extensions: [...basicSetup, 
-					fountain(),
-					// EditorView.updateListener.of.bind(this, function(e) {
-					// 	console.log("sweet dreams are made of", this)
-					// 	this.document = e.state.doc.toString();
-					// })
-				]
-				
-			}))
-		})
 		
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
@@ -52,7 +46,6 @@ export class FountainView extends MarkdownView {
 		console.debug("load fucker")
 		this.document = await this.app.vault.read(this.app.workspace.getActiveFile());
 		console.debug("finally"/* , this.document */)
-		this.setViewData(this.document, false)
 		this.app.workspace.on('editor-change', () => {
 			// console.log("sav")
 
@@ -60,29 +53,17 @@ export class FountainView extends MarkdownView {
 		});
 		// console.debug(f)
 		
-		// let state = EditorState.create({
-		// 	doc: "f",
-		// })
-		// this.cm = new EditorView({
-		// 	state: state,
-		// 	parent: this.containerEl.getElementsByClassName("view-content")[0],
-		// })
-		
-		
-		this.app.workspace.iterateCodeMirrors(e => {
-			e.cm.setState(EditorState.create({
-				// doc: this.document,
-				extensions: [/* ..basicSetup,  */
-					fountain(),
-					// EditorView.updateListener.of.bind(this, function(e) {
-					// 	console.log("sweet dreams are made of", this)
-					// 	this.document = e.state.doc.toString();
-					// })
-				]
-				
-			}))
-			console.debug("icm", e)
+		let state = EditorState.create({
+			doc: this.document,
+			extensions: exts
 		})
+		this.cm = new EditorView({
+			state: state,
+			parent: this.containerEl.getElementsByClassName("view-content")[0],
+		})
+		this.containerEl.setAttr("data-type", "fountain")
+		this.setViewData(this.document, false)
+		
 		// console.log("constructor", this.file)
 		this.app.workspace.updateOptions()
 		
@@ -90,14 +71,24 @@ export class FountainView extends MarkdownView {
 	getViewType() {
 		return "fountain"
 	}
-	getViewData() { return this.editor.getValue() }
+	getViewData() { return this.document }
 	setViewData(data: string, clear: boolean): void {
-		this.editor.setValue(data)
+		// this.cm.setState
+		this.document = data;
+		this.cm.setState(EditorState.create({
+			doc: this.document,
+			extensions: [/* ..basicSetup,  */
+				fountain(),
+			]
+			
+		}))
 	}
 	
 	clear() {
-		this.editor.setValue('');
-		super.clear()
+		this.cm.setState(EditorState.create({
+			doc: "",
+			extensions: [fountain()]
+		}))
 		// this.editor.clearHistory();
 	}
 	// getScroll(): number {

@@ -36,7 +36,7 @@ export const basicSetup: Extension[] = [
   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
   fountain(),
-  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+//   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   EditorView.lineWrapping,
   bracketMatching(),
   closeBrackets(),
@@ -54,4 +54,4 @@ export const basicSetup: Extension[] = [
     ...completionKeymap,
     ...lintKeymap,
   ]),
-].filter(ext => ext);
+]
