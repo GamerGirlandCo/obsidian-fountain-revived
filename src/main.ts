@@ -21,10 +21,10 @@ export default class ObsidianFountain extends Plugin {
 		// this.editor
 		this.registerExtensions(["fountain"], "fountain")
 		this.registerView("fountain", this.makeView)
-		this.registerEditorExtension([fountain(), ViewPlugin.fromClass(ViewPluginClass)])
+		this.registerEditorExtension([/* fountain(), */ ViewPlugin.fromClass(ViewPluginClass)])
 		this.app.workspace.updateOptions()
 		this.registerMarkdownCodeBlockProcessor("fountain", this.codeBlockProcessor.bind(this))
-		this.registerMarkdownPostProcessor(this.postProcessor.bind(this))
+		// this.registerMarkdownPostProcessor(this.postProcessor.bind(this))
 	}
 	async codeBlockProcessor(s, e) {
 		let container = e.createDiv({cls: "screenplay"})
