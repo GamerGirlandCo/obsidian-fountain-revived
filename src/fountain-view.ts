@@ -17,6 +17,7 @@ import {EditorView, Decoration, DecorationSet, ViewUpdate} from "@codemirror/vie
 import { Fountain } from "fountain-js";
 import { basicSetup } from "./extensions";
 import fountain from "./fountain/lang"
+import { inlinePlugin } from "./editor";
 
 const theme = EditorView.theme({
 	".cm-line": {
@@ -28,7 +29,7 @@ const theme = EditorView.theme({
 	}
 })
 
-const exts = [theme, fountain(), ...basicSetup]
+export const exts = [theme, fountain(), inlinePlugin(), ...basicSetup]
 
 // ...
 export class FountainView extends TextFileView {
@@ -39,14 +40,20 @@ export class FountainView extends TextFileView {
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
 		// super.onLoadFile(this.file)
-		
+		this.cm = new EditorView({
+			state: EditorState.create({
+				doc: "",
+				extensions: exts
+			}),
+			parent: this.containerEl.getElementsByClassName("view-content")[0],
+		})
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
 	async onUnloadFile(file: TFile): Promise<void> {
 		await this.app.vault.adapter.write(normalizePath(file.path), this.getViewData())
 		this.clear()
 	}
-	async onLoadFile() {
+	async onLoadFile(filee) {
 		console.debug("load fucker")
 		this.document = await this.app.vault.read(this.app.workspace.getActiveFile());
 		console.debug("finally"/* , this.document */)
@@ -61,10 +68,7 @@ export class FountainView extends TextFileView {
 			doc: this.document,
 			extensions: exts
 		})
-		this.cm = new EditorView({
-			state: state,
-			parent: this.containerEl.getElementsByClassName("view-content")[0],
-		})
+		this.cm.setState(state)
 		this.containerEl.setAttr("data-type", "fountain")
 		this.setViewData(this.document, false)
 		
@@ -87,10 +91,7 @@ export class FountainView extends TextFileView {
 	}
 	
 	clear() {
-		this.cm.setState(EditorState.create({
-			doc: "",
-			extensions: exts
-		}))
+		this.setViewData("")
 		// this.editor.clearHistory();
 	}
 	// getScroll(): number {

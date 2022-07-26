@@ -9,6 +9,7 @@ import fountain from "./fountain/lang"
 
 import { Fountain } from "fountain-js";
 import {FountainView} from "./fountain-view";
+import { inlinePlugin } from "./editor";
 
 export default class ObsidianFountain extends Plugin {
 	fountain: Fountain;
@@ -21,7 +22,7 @@ export default class ObsidianFountain extends Plugin {
 		// this.editor
 		this.registerExtensions(["fountain"], "fountain")
 		this.registerView("fountain", this.makeView)
-		this.registerEditorExtension([/* fountain(), */ ViewPlugin.fromClass(ViewPluginClass)])
+		this.registerEditorExtension([/* fountain(), */ inlinePlugin()])
 		this.app.workspace.updateOptions()
 		this.registerMarkdownCodeBlockProcessor("fountain", this.codeBlockProcessor.bind(this))
 		// this.registerMarkdownPostProcessor(this.postProcessor.bind(this))

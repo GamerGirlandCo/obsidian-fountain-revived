@@ -31,7 +31,9 @@ export const basicSetup: Extension[] = [
   highlightSpecialChars(),
   history(),
   foldGutter(),
-  drawSelection(),
+//   drawSelection({
+// 	drawRangeCursor: false
+// }),
   dropCursor(),
   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
@@ -43,7 +45,7 @@ export const basicSetup: Extension[] = [
   autocompletion(),
   rectangularSelection(),
   // highlightActiveLine(),
-  highlightSelectionMatches(),
+//   highlightSelectionMatches(),
   keymap.of([
     ...closeBracketsKeymap,
     ...defaultKeymap,
