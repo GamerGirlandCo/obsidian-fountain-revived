@@ -119,4 +119,4 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 } 
 
 
-@skip {ws | "\r" "\n"}
+@skip {ws | "\r" | "\n"}

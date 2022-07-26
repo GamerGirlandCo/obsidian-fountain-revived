@@ -31,26 +31,29 @@
     position: static;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-header {
+
+
+[data-type="fountain"] > .view-content .cm-editor .screenplay-header {
     margin-bottom: 1em;
     border-bottom: 1px solid black;
+	font-size: 2em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-footer {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-footer {
     margin-top: 1em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-em {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-em {
     font-style: italic;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>p .bold {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
     font-weight: bold;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>br {
+/* [data-type="fountain"] > .view-content .cm-editor>br {
     clear: both;
-}
+} */
 
 [data-type="fountain"] > .view-content .cm-editor>.screenplay-action p {
     margin-top: 1em;
@@ -59,14 +62,14 @@
 
 /* Dialogue */
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-dialogue.character {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue.character {
     text-align: center;
     color: var(--bright-yellow) !important;
     font-weight: 500 !important;
     font-size: 18px !important;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-dialogue.content {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue.content {
     text-align: left;
     margin-left: 20%;
 }
@@ -75,7 +78,7 @@
     text-decoration: underline;
 }
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-dialogue .parenthetical {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue .parenthetical {
     padding-left: 10%;
 }
 

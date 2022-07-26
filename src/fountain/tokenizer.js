@@ -40,9 +40,7 @@ export const Lyric = (input, stack) => {
 	} else {
 		return -1
 	}
-
 }
-
 export const Note = (input, stack) => {
 	let rego = /(\[{2}(?!\[+))([\s\S\r\n]*?)(?:\]{2}(?!\[+))/g
 	if(input.match(rego)) {
