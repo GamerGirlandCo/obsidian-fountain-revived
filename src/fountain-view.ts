@@ -50,19 +50,14 @@ export class FountainView extends TextFileView {
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
 	async onUnloadFile(file: TFile): Promise<void> {
-		await this.app.vault.adapter.write(normalizePath(file.path), this.getViewData())
+		console.log(":::")
+		await this.app.vault.adapter.write(normalizePath(file.path), this.document)
 		this.clear()
 	}
-	async onLoadFile(filee) {
+	async onLoadFile(filee: TFile) {
 		console.debug("load fucker")
 		this.document = await this.app.vault.read(this.app.workspace.getActiveFile());
 		console.debug("finally"/* , this.document */)
-		this.app.workspace.on('editor-change', async () => {
-			// console.log("sav")
-			this.setViewData(this.cm.state.doc.toString(), false)
-			await this.app.vault.adapter.write(normalizePath(this.file.path), this.cm.state.doc.toString())
-			this.requestSave();
-		});
 		// console.debug(f)
 		
 		let state = EditorState.create({
@@ -75,6 +70,12 @@ export class FountainView extends TextFileView {
 		
 		// console.log("constructor", this.file)
 		this.app.workspace.updateOptions()
+		this.app.workspace.on('editor-change', () => {
+			console.log("sav")
+			this.setViewData(this.cm.state.doc.toString(), false)
+			// await this.app.vault.adapter.write(normalizePath(filee.path), this.cm.state.doc.toString())
+			this.requestSave();
+		});
 		
 	}
 	getViewType() {

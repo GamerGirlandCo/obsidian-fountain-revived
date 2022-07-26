@@ -187,10 +187,7 @@ export function inlinePlugin(): ViewPlugin<any> {
 			update(update: ViewUpdate) {
 				// only activate in LP and not source mode
 				//@ts-ignore
-				if (!update.state.field(editorLivePreviewField)) {
-					this.decorations = Decoration.none;
-					return;
-				}
+				// console.log("updy")
 				if (
 					update.docChanged ||
 					update.viewportChanged ||
