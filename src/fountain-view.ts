@@ -56,7 +56,7 @@ export class FountainView extends TextFileView {
 	}
 	async onLoadFile(filee: TFile) {
 		console.debug("load fucker")
-		this.document = await this.app.vault.read(this.app.workspace.getActiveFile());
+		this.document = await this.app.vault.read(filee);
 		console.debug("finally"/* , this.document */)
 		// console.debug(f)
 		
