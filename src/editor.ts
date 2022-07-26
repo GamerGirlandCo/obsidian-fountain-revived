@@ -134,36 +134,38 @@ function inlineRender(view: EditorView) {
 			// 		}).range(end - 3, end)
 			// 	);
 
-			// 	let cssClass = '';
-			// 	switch (name) {
-			// 		case 'Deletion':
-			// 			cssClass = 'deletion';
-			// 			break;
-			// 		case 'Addition':
-			// 			cssClass = 'addition';
-			// 			break;
-			// 		case 'Comment':
-			// 			cssClass = 'comment';
-			// 			break;
-			// 		case 'Highlight':
-			// 			cssClass = 'highlight';
-			// 			break;
-			// 		case 'Substitution':
-			// 			cssClass = 'substitution';
-			// 			break;
-			// 		default:
-			// 			break;
-			// 	}
+
 			// 	// make sure that mark decoration isn't empty
 			// 	if (start + 3 !== end - 3) {
-			// 		widgets.push(
-			// 			Decoration.mark({
-			// 				class: `criticmarkup-${cssClass}`,
-			// 				attributes: { 'data-contents': 'string' },
-			// 			}).range(start + 3, end - 3)
-			// 		);
+			// 		
 			// 	}
 			// }
+			let cssClass = '';
+			switch (name) {
+				case 'TitlePage':
+					cssClass = 'header';
+					break;
+				case 'Transition':
+					cssClass = 'transition';
+					break;
+				case 'Lyric':
+					cssClass = 'lyric';
+					break;
+				case 'Highlight':
+					cssClass = 'highlight';
+					break;
+				case 'Substitution':
+					cssClass = 'substitution';
+					break;
+				default:
+					break;
+			}
+			widgets.push(
+				Decoration.mark({
+					class: `screenplay-${cssClass}`,
+					attributes: { 'data-contents': 'string' },
+				}).range(start-1, end + 3)
+			);
 		} while (cursor.next());
 	}
 
