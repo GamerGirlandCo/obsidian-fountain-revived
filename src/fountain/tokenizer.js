@@ -42,7 +42,7 @@ export const Lyric = (input, stack) => {
 	}
 }
 export const Note = (input, stack) => {
-	console.log(input)
+	console.log("notie", input)
 	let rego = /(\[{2})([\s\S]*)(\]{2})/
 	if(input.match(rego)) {
 		console.debug("nmatch", input)

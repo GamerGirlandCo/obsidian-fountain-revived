@@ -165,6 +165,8 @@ function inlineRender(view: EditorView) {
 					case "Note":
 						cssClass = 'note';
 						break;
+					case "Action":
+						cssClass = 'action'
 					default:
 						break;
 				}
