@@ -35,7 +35,7 @@ export const basicSetup: Extension[] = [
 // 	drawRangeCursor: false
 // }),
   dropCursor(),
-  EditorState.allowMultipleSelections.of(true),
+//   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
   fountain(),
 //   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
@@ -43,7 +43,7 @@ export const basicSetup: Extension[] = [
   bracketMatching(),
   closeBrackets(),
   autocompletion(),
-  rectangularSelection(),
+//   rectangularSelection(),
   // highlightActiveLine(),
 //   highlightSelectionMatches(),
   keymap.of([

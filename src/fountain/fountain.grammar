@@ -3,7 +3,7 @@
 	TitlePage
 	SceneNumber @left
 	SceneHeading @left
-	Transition @left
+	Transition
 	Note @cut
 	PageBreak @cut
 	Lyric
@@ -15,7 +15,7 @@
 	(
 		SceneHeading !SceneNumber SceneNumber?
 		(
-			PB  | !Note Note | !Transition Transition  | Lyric  | Synopsis | !Action Action )*
+			Transition | PB  | !Note Note | Lyric  | Synopsis | !Action Action )*
 	)*
 }
 
@@ -34,16 +34,16 @@ TitlePage {
 SceneHeading { (desensitizedSceneHeading whitespace+) }
 SceneNumber { (hash snc hash) }
 
+@external tokens Transition from "./tokenizer" {
+	Transition
+}
+
 @external specialize {TContent} Note from "./tokenizer" {
 	Note
 }
 
 @external specialize {TContent} PB from "./tokenizer" {
 	PB[@name="PageBreak"]
-}
-
-@external specialize {TContent} Transition from "./tokenizer" {
-	Transition
 }
 
 @external specialize {TContent} Lyric from "./tokenizer" {
@@ -55,6 +55,8 @@ SceneNumber { (hash snc hash) }
 }
 
 
+
+@context MarkupContext from "./tokenizer"
 
 // @external specialize {TContent} Action from "./tokenizer" {
 // 	Action
@@ -95,7 +97,7 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 	uc { @asciiUppercase }
 	
 	TContent[@name=Action] { char+ }
-	MContent { TContent nl*}
+	MContent { TContent }
 	colon { ":" }
 	eq { "=" }
 	hash { "#" }

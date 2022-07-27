@@ -2,10 +2,11 @@ import {TitlePage, SceneHeading,
 	Lyric as lll , Note as n,
 	Action as a,
 	PB as PageBreak,
+	Transition as ttt,
 	Synopsis as sis
 } from "./parser.terms"
 
-import {ExternalTokenizer} from "@lezer/lr";
+import {ContextTracker, ExternalTokenizer, InputStream} from "@lezer/lr";
 
 import { regex } from "./regexes";
 
@@ -42,7 +43,7 @@ export const Lyric = (input, stack) => {
 	}
 }
 export const Note = (input, stack) => {
-	console.log("notie", input)
+	// console.log("notie", input)
 	let rego = /(\[{2})([\s\S]*)(\]{2})/
 	if(input.match(rego)) {
 		console.debug("nmatch", input)
@@ -51,15 +52,17 @@ export const Note = (input, stack) => {
 	return -1
 }
 
-export const Transition = (input, stack) => {
+
+export const Transition = new ExternalTokenizer((input, stack) => {
 	let rego =  regex.transition
-	if(input.match(rego)) {
-		console.debug("trans", input, stack)
-		return Transition
+	console.log("trans", input.chunk, input.input.string)
+	if(input.chunk.match(rego)) {
+		input.advance()
+		input.acceptToken(ttt)
 	} else {
-		return -1
+		input.advance()
 	}
-}
+})
 
 export const PB = (input, stack) => {
 	let rego = /^={3,}/
@@ -81,8 +84,52 @@ export const Synopsis = (input, stack) => {
 	}
 }
 
-
 export const Action = (input, stack) => {
 	console.debug("a", input)
 	return -1
 }
+
+export const MarkupContext = new ContextTracker({
+	start: null,
+	shift(context, term, stack, input) {
+		let blip = input.next;
+		let boop = {};
+		let arewein;
+		if(input.next === "_".charCodeAt(0)) {
+			arewein = true
+			boop.type = "underline",
+			boop.char = "_"
+		} else if(
+				input.next === "*".charCodeAt(0) &&
+				input.peek(1) === "*".charCodeAt(0)
+			) {
+				arewein = true
+			boop.type = "bold";
+			boop.char = "**"
+		}
+		// console.log("termy", context, term, stack, input)
+		return arewein ? boop : context
+	},
+	reduce(context, term, stack, input) {
+		let blip = input.next;
+		let boop = {};
+		let arewein;
+		if(input.next === "_".charCodeAt(0)) {
+			arewein = true
+			boop.type = "underline",
+			boop.char = "_"
+		} else if(
+				input.next === "*".charCodeAt(0) &&
+				input.peek(1) === "*".charCodeAt(0)
+			) {
+				arewein = true
+			boop.type = "bold";
+			boop.char = "**"
+		}
+		// console.log("reddd", context, term, stack, input)
+		return arewein ? boop : context
+	},
+	reuse(context, node, stack, input) {
+		console.log("chode js", node)
+	}
+})

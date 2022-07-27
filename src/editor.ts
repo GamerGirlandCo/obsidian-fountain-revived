@@ -107,8 +107,8 @@ function inlineRender(view: EditorView) {
 				const texties = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'FountainScript' || name === "⚠") continue;
-				if (selectionAndRangeOverlap(selection, start, end)) continue;
-				console.log("tree", name, texties, iiii, whichline, start, end)
+				// if (selectionAndRangeOverlap(selection, start, end)) continue;
+				// console.log("tree", name, texties, iiii, whichline, start, end)
 	
 				// if (name === 'DivideSubs') {
 				//     const content = view.state.doc.sliceString(start, end);
@@ -159,8 +159,8 @@ function inlineRender(view: EditorView) {
 					case 'Highlight':
 						cssClass = 'highlight';
 						break;
-					case 'Substitution':
-						cssClass = 'substitution';
+					case 'Synopsis':
+						cssClass = 'synopsis';
 						break;
 					case "Note":
 						cssClass = 'note';
@@ -170,18 +170,18 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
-				console.log(cssClass)
-				if(start !== end) {
+				// console.log(cssClass)
 					widgets.push(
 						Decoration.line({
 							class: `screenplay-${cssClass}`,
 							attributes: { 'data-contents': 'string' },
 						}).range(whichline.from),
-						// Decoration.mark({
-						// 	class: `screenplay-${cssClass}`,
-						// 	attributes: { 'data-contents': 'string' },
-						// }).range(start, end)
+						Decoration.mark({
+							class: cssClass !== "header" ? `screenplay-${cssClass}` : "",
+							attributes: { 'data-contents': 'string' },
+						}).range(start, end)
 					);
+				if(start !== end) {
 				}
 			} while (cursor.next());
 		}
@@ -219,7 +219,7 @@ export function inlinePlugin(): ViewPlugin<any> {
 					update.viewportChanged ||
 					update.selectionSet
 				) {
-					this.render(update.view);
+					// this.render(update.view);
 				}
 				this.render(update.view)
 			}
