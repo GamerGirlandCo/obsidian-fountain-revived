@@ -11,6 +11,7 @@ import {
 	editorEditorField,
 	editorViewField,
 	editorLivePreviewField,
+	EditableFileView,
 } from 'obsidian';
 import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
@@ -93,83 +94,92 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	const selection = view.state.selection;
 	let iiii = 1;
-	for (const { from, to } of view.visibleRanges) {
-		const text = view.state.doc.sliceString(from, to);
-		const tree = Fountain.parser.parse(text);
-		let cursor = tree.cursor();
-		do {
+	try {
+		for (const { from, to } of view.visibleRanges) {
+			const text = view.state.doc.sliceString(from, to);
+			const tree = Fountain.parser.parse(text);
+			let cursor = tree.cursor();
 			iiii++
-			const start = cursor.from;
-			const end = cursor.to;
-			const name = cursor.name;
-			const texties = view.state.doc.sliceString(start, end)
-
-			if (name === 'FountainScript' || name === "⚠") continue;
-			if (selectionAndRangeOverlap(selection, start, end)) continue;
-			console.log("tree", name, texties, iiii)
-
-			// if (name === 'DivideSubs') {
-            //     const content = view.state.doc.sliceString(start, end);
-			// 	widgets.push(
-			// 		Decoration.replace({
-			// 			widget: new InlineWidget(name, content, view, true),
-			// 			inclusive: false,
-			// 			block: false,
-			// 		}).range(start, end)
-			// 	);
-			// } else {
-            //     const content = view.state.doc.sliceString(start + 3, end - 3);
-			// 	widgets.push(
-			// 		Decoration.replace({
-			// 			widget: new InlineWidget(name, content, view),
-			// 			inclusive: false,
-			// 			block: false,
-			// 		}).range(start, start + 3)
-			// 	);
-			// 	widgets.push(
-			// 		Decoration.replace({
-			// 			widget: new InlineWidget(name, content, view),
-			// 			inclusive: false,
-			// 			block: false,
-			// 		}).range(end - 3, end)
-			// 	);
-
-
-			// 	// make sure that mark decoration isn't empty
-			// 	if (start + 3 !== end - 3) {
-			// 		
-			// 	}
-			// }
-			let cssClass = '';
-			switch (name) {
-				case 'TitlePage':
-					cssClass = 'header';
-					break;
-				case 'Transition':
-					cssClass = 'transition';
-					break;
-				case 'Lyric':
-					cssClass = 'lyric';
-					break;
-				case 'Highlight':
-					cssClass = 'highlight';
-					break;
-				case 'Substitution':
-					cssClass = 'substitution';
-					break;
-				default:
-					break;
-			}
-			widgets.push(
-				Decoration.mark({
-					class: `screenplay-${cssClass}`,
-					attributes: { 'data-contents': 'string' },
-				}).range(start-1, end + 3)
-			);
-		} while (cursor.next());
+			do {
+				const start = cursor.from;
+				const end = cursor.to;
+				const name = cursor.name;
+				const texties = view.state.doc.sliceString(start, end)
+				const whichline = view.state.doc.lineAt(start)
+				if (name === 'FountainScript' || name === "⚠") continue;
+				if (selectionAndRangeOverlap(selection, start, end)) continue;
+				console.log("tree", name, texties, iiii, whichline, start, end)
+	
+				// if (name === 'DivideSubs') {
+				//     const content = view.state.doc.sliceString(start, end);
+				// 	widgets.push(
+				// 		Decoration.replace({
+				// 			widget: new InlineWidget(name, content, view, true),
+				// 			inclusive: false,
+				// 			block: false,
+				// 		}).range(start, end)
+				// 	);
+				// } else {
+				//     const content = view.state.doc.sliceString(start + 3, end - 3);
+				// 	widgets.push(
+				// 		Decoration.replace({
+				// 			widget: new InlineWidget(name, content, view),
+				// 			inclusive: false,
+				// 			block: false,
+				// 		}).range(start, start + 3)
+				// 	);
+				// 	widgets.push(
+				// 		Decoration.replace({
+				// 			widget: new InlineWidget(name, content, view),
+				// 			inclusive: false,
+				// 			block: false,
+				// 		}).range(end - 3, end)
+				// 	);
+	
+	
+				// 	// make sure that mark decoration isn't empty
+				// 	if (start + 3 !== end - 3) {
+				// 		
+				// 	}
+				// }
+				let cssClass = '';
+				switch (name) {
+					case 'TitlePage':
+						cssClass = 'header';
+						break;
+					case 'Transition':
+						cssClass = 'transition';
+						break;
+					case 'Lyric':
+						cssClass = 'lyric';
+						break;
+					case 'Highlight':
+						cssClass = 'highlight';
+						break;
+					case 'Substitution':
+						cssClass = 'substitution';
+						break;
+					default:
+						break;
+				}
+				widgets.push(
+					Decoration.line({
+						class: `screenplay-${cssClass}`,
+						attributes: { 'data-contents': 'string' },
+					}).range(whichline.from),
+					Decoration.mark({
+						class: `screenplay-${cssClass}`,
+						attributes: { 'data-contents': 'string' },
+					}).range(start, end)
+				);
+			} while (cursor.next());
+		}
+	} finally {
+		console.log(widgets)
+		return Decoration.set(widgets, true);
+	
 	}
 
-	return Decoration.set(widgets, true);
 }
 
 export function inlinePlugin(): ViewPlugin<any> {
@@ -184,6 +194,9 @@ export function inlinePlugin(): ViewPlugin<any> {
 
 			render(view: EditorView) {
 				this.decorations = inlineRender(view) ?? Decoration.none;
+			}
+			build(view: EditorView) {
+					
 			}
 
 			update(update: ViewUpdate) {
