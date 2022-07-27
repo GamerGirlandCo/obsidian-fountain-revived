@@ -165,6 +165,9 @@ function inlineRender(view: EditorView) {
 					case "Note":
 						cssClass = 'note';
 						break;
+					case "PageBreak":
+						cssClass = "page-break"
+						break;
 					case "Action":
 						cssClass = 'action'
 					default:
@@ -186,7 +189,7 @@ function inlineRender(view: EditorView) {
 			} while (cursor.next());
 		}
 	} finally {
-		console.log(widgets)
+		// console.log(widgets)
 		return Decoration.set(widgets, true);
 	
 	}

@@ -23,7 +23,6 @@ export const desensitizedSceneHeading = (input, stack) => {
 	return -1
 }
 
-
 export const desensitizedTitleField = (input, stack) => {
 	let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/i
 	// console.debug("dtf", input, stack)
@@ -46,26 +45,30 @@ export const Note = (input, stack) => {
 	// console.log("notie", input)
 	let rego = /(\[{2})([\s\S]*)(\]{2})/
 	if(input.match(rego)) {
-		console.debug("nmatch", input)
+		// console.debug("nmatch", input)
 		return n;
 	}
 	return -1
 }
 
 
-export const Transition = new ExternalTokenizer((input, stack) => {
-	let rego =  regex.transition
-	console.log("trans", input.chunk, input.input.string)
-	if(input.chunk.match(rego)) {
-		input.advance()
-		input.acceptToken(ttt)
+export const Twansition = (input, stack) => {
+	// let rego =  
+	// let rego =  
+	// console.log("make sure?")
+	if(input.match(regex.transition)) {
+		console.log("trans", input)
+		// input.advance()
+		return ttt
+		// input.acceptToken(ttt)
 	} else {
-		input.advance()
+		return -1
+		// input.advance()
 	}
-})
+}
 
 export const PB = (input, stack) => {
-	let rego = /^={3,}/
+	let rego = /={3,}/g
 	if(input.match(rego)) {
 		return PageBreak
 	} else {
@@ -74,7 +77,7 @@ export const PB = (input, stack) => {
 }
 
 export const Synopsis = (input, stack) => {
-	let rego = /^(\=\s*)(.*)/
+	let rego = /^(\={1,2}\s*)(.*)/
 
 	if(input.match(rego)) {
 		// console.debug("syn", input)
@@ -82,11 +85,6 @@ export const Synopsis = (input, stack) => {
 	} else {
 		return -1
 	}
-}
-
-export const Action = (input, stack) => {
-	console.debug("a", input)
-	return -1
 }
 
 export const MarkupContext = new ContextTracker({

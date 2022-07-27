@@ -1,7 +1,7 @@
 @detectDelim
 @precedence {
+	SceneNumber
 	TitlePage
-	SceneNumber @left
 	SceneHeading @left
 	Transition
 	Note @cut
@@ -15,10 +15,16 @@
 	(
 		SceneHeading !SceneNumber SceneNumber?
 		(
-			Transition | PB  | !Note Note | Lyric  | Synopsis | !Action Action )*
+			Transition | PB  | !Note Note | Lyric  | Synopsis | Character CharacterExtension? Dialogue | !Action Action )*
 	)*
 }
 
+
+@external specialize {TContent} Twansition from "./tokenizer" {
+	Twansition
+}
+
+Transition { Twansition }
 
 TitlePage {
 	(desensitizedTitleField whitespace* colon whitespace* TContent)*
@@ -33,10 +39,6 @@ TitlePage {
 
 SceneHeading { (desensitizedSceneHeading whitespace+) }
 SceneNumber { (hash snc hash) }
-
-@external tokens Transition from "./tokenizer" {
-	Transition
-}
 
 @external specialize {TContent} Note from "./tokenizer" {
 	Note
@@ -54,7 +56,17 @@ SceneNumber { (hash snc hash) }
 	Synopsis
 }
 
+Dialogue {
+	// Character CharacterExt?
+	TContent
+}
 
+Character {
+	uc
+}
+CharacterExtension {
+	OpenParen whitespace* TContent whitespace* CloseParen
+}
 
 @context MarkupContext from "./tokenizer"
 
@@ -115,7 +127,7 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 	transition {
 		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK")) | (">" whitespace+ TContent)
 	}
-	@precedence { Notee ws whitespace b1 b2 "===" hash 
+	@precedence { uc OpenParen CloseParen ws whitespace b1 b2 "===" hash 
 	 TContent Action MContent eq "\r" "\n" nl char}
 
 } 
