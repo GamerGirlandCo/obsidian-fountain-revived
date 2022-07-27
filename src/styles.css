@@ -37,7 +37,7 @@
     margin-bottom: 1em;
     /* border-bottom: 1px solid black; */
 	text-align: center;
-	font-weight: 600;
+	font-weight: 600 !important;
 	font-size: 2em;
 }
 
@@ -61,6 +61,9 @@
     margin-top: 1em;
 }
 
+[data-type="fountain"] > .view-content .cm-editor .screenplay-lyric {
+	font-style: italic;
+}
 
 /* Dialogue */
 

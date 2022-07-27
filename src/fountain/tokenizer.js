@@ -24,7 +24,7 @@ export const desensitizedSceneHeading = (input, stack) => {
 
 
 export const desensitizedTitleField = (input, stack) => {
-	let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gi
+	let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/i
 	// console.debug("dtf", input, stack)
 	if(input.toLowerCase().match(rego)) {
 		return TitlePage
@@ -34,7 +34,7 @@ export const desensitizedTitleField = (input, stack) => {
 }
 
 export const Lyric = (input, stack) => {
-	let rego = /^~(?![ ]).+(?:\n.+)*/;
+	let rego = /^~.+(?:\n.+)*/;
 	if(input.match(rego)) {
 		return lll
 	} else {
@@ -42,7 +42,8 @@ export const Lyric = (input, stack) => {
 	}
 }
 export const Note = (input, stack) => {
-	let rego = /(\[{2}(?!\[+))([\s\S\r\n]*?)(?:\]{2}(?!\[+))/g
+	console.log(input)
+	let rego = /(\[{2})([\s\S]*)(\]{2})/
 	if(input.match(rego)) {
 		console.debug("nmatch", input)
 		return n;

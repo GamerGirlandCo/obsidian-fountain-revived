@@ -22,7 +22,7 @@ import { inlinePlugin } from "./editor";
 const theme = EditorView.theme({
 	".cm-line": {
 		caretColor: "var(--text-normal)",
-		"font": "12pt 'Courier Final Draft', 'Courier Screenplay', Courier !important"
+		"font-family": "'Courier Final Draft', 'Courier Screenplay', Courier !important"
 	},
 	".cm-foldGutter": {
 		backgroundColor: "var(--interactive-accent)"

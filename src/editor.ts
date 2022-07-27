@@ -97,7 +97,7 @@ function inlineRender(view: EditorView) {
 	try {
 		for (const { from, to } of view.visibleRanges) {
 			const text = view.state.doc.sliceString(from, to);
-			const tree = Fountain.parser.parse(text);
+			const tree = Fountain.parser.parse(view.state.doc.toString());
 			let cursor = tree.cursor();
 			iiii++
 			do {
@@ -147,6 +147,9 @@ function inlineRender(view: EditorView) {
 					case 'TitlePage':
 						cssClass = 'header';
 						break;
+					case "SceneHeading":
+						cssClass = "scene-heading"
+						break;
 					case 'Transition':
 						cssClass = 'transition';
 						break;
@@ -159,19 +162,25 @@ function inlineRender(view: EditorView) {
 					case 'Substitution':
 						cssClass = 'substitution';
 						break;
+					case "Note":
+						cssClass = 'note';
+						break;
 					default:
 						break;
 				}
-				widgets.push(
-					Decoration.line({
-						class: `screenplay-${cssClass}`,
-						attributes: { 'data-contents': 'string' },
-					}).range(whichline.from),
-					Decoration.mark({
-						class: `screenplay-${cssClass}`,
-						attributes: { 'data-contents': 'string' },
-					}).range(start, end)
-				);
+				console.log(cssClass)
+				if(start !== end) {
+					widgets.push(
+						Decoration.line({
+							class: `screenplay-${cssClass}`,
+							attributes: { 'data-contents': 'string' },
+						}).range(whichline.from),
+						// Decoration.mark({
+						// 	class: `screenplay-${cssClass}`,
+						// 	attributes: { 'data-contents': 'string' },
+						// }).range(start, end)
+					);
+				}
 			} while (cursor.next());
 		}
 	} finally {
@@ -210,6 +219,7 @@ export function inlinePlugin(): ViewPlugin<any> {
 				) {
 					this.render(update.view);
 				}
+				this.render(update.view)
 			}
 		},
 		{ decorations: (v) => v.decorations }

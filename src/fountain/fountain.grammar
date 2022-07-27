@@ -15,13 +15,13 @@
 	(
 		SceneHeading !SceneNumber SceneNumber?
 		(
-			PB nl | !Note Note | !Transition Transition nl | Lyric nl | Synopsis | !Action Action nl)*
+			PB  | !Note Note | !Transition Transition  | Lyric  | Synopsis | !Action Action )*
 	)*
 }
 
 
 TitlePage {
-	nl* (desensitizedTitleField whitespace* colon whitespace* TContent nl)*
+	(desensitizedTitleField whitespace* colon whitespace* TContent)*
 }
 
 @external specialize {TContent} desensitizedTitleField from "./tokenizer" {
@@ -34,7 +34,7 @@ TitlePage {
 SceneHeading { (desensitizedSceneHeading whitespace+) }
 SceneNumber { (hash snc hash) }
 
-@external specialize {Notee} Note from "./tokenizer" {
+@external specialize {TContent} Note from "./tokenizer" {
 	Note
 }
 
