@@ -37,7 +37,7 @@ export const basicSetup: Extension[] = [
   dropCursor(),
 //   EditorState.allowMultipleSelections.of(true),
   indentOnInput(),
-  fountain(),
+//   fountain(),
 //   syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
   EditorView.lineWrapping,
   bracketMatching(),

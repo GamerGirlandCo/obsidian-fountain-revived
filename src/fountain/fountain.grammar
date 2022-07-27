@@ -3,69 +3,91 @@
 	SceneNumber
 	TitlePage
 	Character
-	Dialogue @left
+	dial @left
 	Parenthetical
 	SceneHeading @left
 	Transition
+	Underline
 	Note @cut
 	PageBreak @cut
 	Lyric
+	Dialogue @left
 	Action
 }
 
+// Dialogue {
+// 	!dial dial
+// }
+
+// @skip {ws | "\r" | "\n"}
+
+
 @top FountainScript {
-	TitlePage
+	// TitlePage*
 	(
-		SceneHeading !SceneNumber SceneNumber?
+		// SceneHeading !SceneNumber SceneNumber?
 		(
-			 (Character Parenthetical?) (!Dialogue Dialogue) | 
-			 Parenthetical | Transition | PB | Note | Lyric  | Synopsis 
-			//  | Action
-			 )*
-	)*
+			(
+			//  Parenthetical | Transition | 
+			//  PB | Note | Lyric | 
+			//  Synopsis | Dialogue | Action
+			Note | Underline
+			)
+		)
+	)
 }
-
-
-
-@external specialize {TContent} Character from "./tokenizer" {Character}
-@external specialize {TContent} Twansition from "./tokenizer" { Twansition }
-@external specialize {TContent} Parenthetical from "./tokenizer" { Parenthetical }
 // Parenthetical {
 // 	OpenParen char+ CloseParen
 // }
-
-Transition { Twansition }
-
-SceneNumber { (hash snc hash) }
-
-TitlePage {
-	(desensitizedTitleField whitespace* colon whitespace* TContent)*
-}
-
-@external specialize {TContent} desensitizedTitleField from "./tokenizer" {
-	desensitizedTitleField
-}
-@external specialize {TContent} desensitizedSceneHeading from "./tokenizer" {
-	desensitizedSceneHeading
-}
-
-SceneHeading { (desensitizedSceneHeading whitespace+) }
-
-Dialogue {
-	char+
-}
-@external specialize {TContent} Note from "./tokenizer" { Note }
-
-@external specialize {TContent} PB from "./tokenizer" { PB[@name="PageBreak"] }
-
-@external specialize {TContent} Lyric from "./tokenizer" { Lyric }
-
-@external specialize {TContent} Synopsis from "./tokenizer" { Synopsis }
-@external specialize {TContent} Action from "./tokenizer" { Action }
+// @external specialize {TContent} Character from "./tokenizer" {Character}
+// @external specialize {TContent} Twansition from "./tokenizer" { Twansition }
+// @external specialize {TContent} Parenthetical from "./tokenizer" { Parenthetical }
 
 
+// Transition { Twansition }
 
+// SceneNumber { (hash snc hash) }
+
+// TitlePage {
+// 	(desensitizedTitleField whitespace* colon whitespace* TContent)
+// }
+
+// @external specialize {TContent} desensitizedTitleField from "./tokenizer" {
+// 	desensitizedTitleField
+// }
+// @external specialize {TContent} desensitizedSceneHeading from "./tokenizer" {
+// 	desensitizedSceneHeading
+// }
+
+// SceneHeading { (desensitizedSceneHeading whitespace+) }
+
+// Dialogue {
+// 	char+
+// }
 @context MarkupContext from "./tokenizer"
+@external tokens Note_ from "./tokenizer" { Note_ }
+@external tokens Underline_ from "./tokenizer" { Underline_ }
+
+// @external specialize {TContent} PB from "./tokenizer" { PB[@name="PageBreak"] }
+
+// @external specialize {TContent} Lyric from "./tokenizer" { Lyric }
+
+// @external specialize {TContent} Synopsis from "./tokenizer" { Synopsis }
+// @external specialize {TContent} Action from "./tokenizer" { Action }
+// @external tokens Speech from "./tokenizer" { Speech }
+
+Note { OpenNote Note_ CloseNote }
+
+Underline { Underline_ }
+
+// Dialogue[@dynamicPrecedence=3] {
+// 	TContent ~ambig
+// }
+
+// Action[@dynamicPrecedence=-3] {
+// 	TContent ~ambig
+// }
+
 
 // @external specialize {TContent} Action from "./tokenizer" {
 // 	Action
@@ -73,7 +95,7 @@ Dialogue {
 // Transition { transition }
 
 
-Content { char+}
+// Content { char+}
 
 
 
@@ -105,7 +127,7 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 
 	uc { @asciiUppercase }
 	
-	TContent[@name=Action] { char+ }
+	TContent { char+ }
 	MContent { TContent }
 	colon { ":" }
 	eq { "=" }
@@ -116,18 +138,8 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
-	// Action {
-	// 	(TContent)
-	// }
-	b1[@name=Note] { "[[" }
-	b2[@name=Note] { "]]" }
-	transition {
-		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK")) | (">" whitespace+ TContent)
-	}
 	@precedence { uc OpenParen CloseParen ws whitespace b1 b2 "===" hash 
-	 TContent Action MContent eq "\r" "\n" nl char}
+	 OpenNote CloseNote TContent Action MContent eq "\r" "\n" nl char}
 
 } 
 
-
-@skip {ws | "\r" | "\n"}

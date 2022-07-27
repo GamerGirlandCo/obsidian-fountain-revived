@@ -203,8 +203,16 @@ function inlineRender(view: EditorView) {
 		return Decoration.set(widgets, true);
 	
 	}
-
 }
+
+export enum Enum {
+	Document = 1,
+	Fuck,
+	Going,
+	Outside
+}
+
+const something = Enum.Fuck
 
 export function inlinePlugin(): ViewPlugin<any> {
 	return ViewPlugin.fromClass(

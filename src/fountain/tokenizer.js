@@ -1,11 +1,18 @@
-import {TitlePage, SceneHeading, 
-	Lyric as lll , Note as n,
+import {
+	// TitlePage, SceneHeading, 
+	// Lyric as lll , 
 	// Action as a,
-	PB as PageBreak,
-	Transition as ttt,
-	Synopsis as sis,
-	Character as cc,
-	Parenthetical as para
+	// Note as n,
+	// PB as PageBreak,
+	// Transition as ttt,
+	// Synopsis as sis,
+	// Character as cc,
+	// Parenthetical as para,
+	Underline as ul,
+	CloseNote as cn,
+	OpenNote as on,
+	Note as n,
+	// Speech as sped
 } from "./parser.terms"
 
 import {ContextTracker, ExternalTokenizer, InputStream} from "@lezer/lr";
@@ -24,6 +31,8 @@ export const desensitizedSceneHeading = (input, stack) => {
 	}
 	return -1
 }
+
+
 
 export const desensitizedTitleField = (input, stack) => {
 	let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/i
@@ -44,7 +53,8 @@ export const Character = (input, stack) => {
 }
 
 export const Action = (input, stack) => {
-	return -1
+	// return -1
+	return a
 }
 
 export const Lyric = (input, stack) => {
@@ -55,15 +65,29 @@ export const Lyric = (input, stack) => {
 		return -1
 	}
 }
-export const Note = (input, stack) => {
-	// console.log("notie", input)
+export const Note_ = new ExternalTokenizer((input, stack) => {
 	let rego = /(\[{2})([\s\S]*)(\]{2})/
-	if(input.match(rego)) {
-		// console.debug("nmatch", input)
-		return n;
+	let isopening = input.next === "[".charCodeAt(0) &&
+		input.peek(1) === "[".charCodeAt(0)
+	let isclosing = input.next === "]".charCodeAt(0)
+	if(isopening) {
+		// console.log("yis?", String.fromCharCode(i.next), i.next === "[".charCodeAt(0)) 
+		// console.debug("notie", String.fromCharCode(input.next))
+		// console.log(input.input.string)
+		// console.log("isopen", String.fromCharCode(i.next))
+		return input.acceptToken(on)
+	} else if(isclosing) {
+		// console.log("is?", String.fromCharCode(i.next), i.next === "]".charCodeAt(0)) 
+		// console.log(input.input.string)
+
+		// console.log("store's closed")
+		if (input.next === "]".charCodeAt(0)) {
+			// console.log("pool!")
+			return input.acceptToken(cn)
+		}
 	}
-	return -1
-}
+	input.advance()
+})
 
 
 export const Twansition = (input, stack) => {
@@ -88,7 +112,10 @@ export const PB = (input, stack) => {
 }
 
 export const Parenthetical = (input, stack) => {
-	if(input.match(regex.parenthetical)) return para
+	if(input.match(regex.parenthetical)) {
+		console.debug("parenthetical", input)
+		return para
+	}
 	return -1
 }
 
@@ -98,14 +125,31 @@ export const Synopsis = (input, stack) => {
 	if(input.match(rego)) {
 		// console.debug("syn", input)
 		return sis
-	} else {
-		return -1
-	}
+	} 
+	return -1
 }
 
-export const Dialogue = new ExternalTokenizer((input, stack) => {
-
+export const Speech = new ExternalTokenizer( (input, stack) => {
+	console.debug("dial", input)
+	// if(input.split("").contains("\n")) return -1
+	// input.advance()
+	if(input.chunk.match(/.+/)) {
+		console.debug("dially", input)
+		return sped
+	}
+	return -1
 })
+
+export const Underline_ = new ExternalTokenizer((input, stack) => {
+	if(input.chunk.split("").contains("\n")) return
+	if(input.next === "_".charCodeAt(0)) {
+		console.debug("underline!", input)
+		// stack.context.mark = "underline"
+		input.acceptToken(ul)
+	}
+	input.advance()
+})
+
 
 export const MarkupContext = new ContextTracker({
 	start: null,
@@ -125,8 +169,8 @@ export const MarkupContext = new ContextTracker({
 			boop.type = "bold";
 			boop.char = "**"
 		}
-		// console.log("termy", context, term, stack, input)
-		return arewein ? boop : context
+		// console.debug("termy", context, term, stack, input)
+		return arewein && !context ? boop : context
 	},
 	reduce(context, term, stack, input) {
 		let blip = input.next;
@@ -144,8 +188,8 @@ export const MarkupContext = new ContextTracker({
 			boop.type = "bold";
 			boop.char = "**"
 		}
-		// console.log("reddd", context, term, stack, input)
-		return arewein ? boop : context
+		// console.debug("reddd", context, term, stack, input)
+		return arewein && !context ? boop : context
 	},
 	reuse(context, node, stack, input) {
 		console.log("chode js", node)
