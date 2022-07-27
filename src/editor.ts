@@ -93,7 +93,6 @@ class InlineWidget extends WidgetType {
 
 function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
-	const selection = view.state.selection;
 	let iiii = 1;
 	try {
 		for (const { from, to } of view.visibleRanges) {
@@ -180,7 +179,7 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
-				console.log(cssClass)
+				// console.log(cssClass)
 				if(start !== end) {
 						widgets.push(
 							Decoration.line({
