@@ -31,8 +31,8 @@ export const desensitizedTitleField = (input, stack) => {
 	} else {
 		return -1
 	}
-
 }
+
 export const Lyric = (input, stack) => {
 	let rego = /^~(?![ ]).+(?:\n.+)*/;
 	if(input.match(rego)) {

@@ -35,7 +35,9 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-header {
     margin-bottom: 1em;
-    border-bottom: 1px solid black;
+    /* border-bottom: 1px solid black; */
+	text-align: center;
+	font-weight: 600;
 	font-size: 2em;
 }
 
