@@ -3,7 +3,7 @@
 	SceneNumber
 	TitlePage
 	Character
-	Dialogue
+	Dialogue @left
 	Parenthetical
 	SceneHeading @left
 	Transition
@@ -18,7 +18,7 @@
 	(
 		SceneHeading !SceneNumber SceneNumber?
 		(
-			 (Character Parenthetical?) Dialogue+ | 
+			 (Character Parenthetical?) (!Dialogue Dialogue) | 
 			 Parenthetical | Transition | PB | Note | Lyric  | Synopsis 
 			//  | Action
 			 )*
@@ -29,9 +29,10 @@
 
 @external specialize {TContent} Character from "./tokenizer" {Character}
 @external specialize {TContent} Twansition from "./tokenizer" { Twansition }
-Parenthetical {
-	OpenParen char+ CloseParen
-}
+@external specialize {TContent} Parenthetical from "./tokenizer" { Parenthetical }
+// Parenthetical {
+// 	OpenParen char+ CloseParen
+// }
 
 Transition { Twansition }
 
@@ -51,7 +52,7 @@ TitlePage {
 SceneHeading { (desensitizedSceneHeading whitespace+) }
 
 Dialogue {
-	char
+	char+
 }
 @external specialize {TContent} Note from "./tokenizer" { Note }
 

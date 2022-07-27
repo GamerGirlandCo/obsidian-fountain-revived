@@ -176,6 +176,10 @@ function inlineRender(view: EditorView) {
 						break;
 					case "Action":
 						cssClass = 'action'
+						break;
+					case "Parenthetical":
+						cssClass = "parenthetical";
+						break;
 					default:
 						break;
 				}

@@ -4,7 +4,8 @@ import {TitlePage, SceneHeading,
 	PB as PageBreak,
 	Transition as ttt,
 	Synopsis as sis,
-	Character as cc
+	Character as cc,
+	Parenthetical as para
 } from "./parser.terms"
 
 import {ContextTracker, ExternalTokenizer, InputStream} from "@lezer/lr";
@@ -86,6 +87,10 @@ export const PB = (input, stack) => {
 	}
 }
 
+export const Parenthetical = (input, stack) => {
+	if(input.match(regex.parenthetical)) return para
+	return -1
+}
 
 export const Synopsis = (input, stack) => {
 	let rego = /^(\={1,2}\s*)(.*)/
@@ -97,6 +102,10 @@ export const Synopsis = (input, stack) => {
 		return -1
 	}
 }
+
+export const Dialogue = new ExternalTokenizer((input, stack) => {
+
+})
 
 export const MarkupContext = new ContextTracker({
 	start: null,

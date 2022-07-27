@@ -87,7 +87,7 @@
     text-decoration: underline;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue .parenthetical {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-parenthetical {
     padding-left: 10%;
 }
 
