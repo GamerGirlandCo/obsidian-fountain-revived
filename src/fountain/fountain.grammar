@@ -2,6 +2,9 @@
 @precedence {
 	SceneNumber
 	TitlePage
+	Character
+	Dialogue
+	Parenthetical
 	SceneHeading @left
 	Transition
 	Note @cut
@@ -15,16 +18,24 @@
 	(
 		SceneHeading !SceneNumber SceneNumber?
 		(
-			Transition | PB  | !Note Note | Lyric  | Synopsis | Character CharacterExtension? Dialogue | !Action Action )*
+			 (Character Parenthetical?) Dialogue+ | 
+			 Parenthetical | Transition | PB | Note | Lyric  | Synopsis 
+			//  | Action
+			 )*
 	)*
 }
 
 
-@external specialize {TContent} Twansition from "./tokenizer" {
-	Twansition
+
+@external specialize {TContent} Character from "./tokenizer" {Character}
+@external specialize {TContent} Twansition from "./tokenizer" { Twansition }
+Parenthetical {
+	OpenParen char+ CloseParen
 }
 
 Transition { Twansition }
+
+SceneNumber { (hash snc hash) }
 
 TitlePage {
 	(desensitizedTitleField whitespace* colon whitespace* TContent)*
@@ -38,35 +49,20 @@ TitlePage {
 }
 
 SceneHeading { (desensitizedSceneHeading whitespace+) }
-SceneNumber { (hash snc hash) }
-
-@external specialize {TContent} Note from "./tokenizer" {
-	Note
-}
-
-@external specialize {TContent} PB from "./tokenizer" {
-	PB[@name="PageBreak"]
-}
-
-@external specialize {TContent} Lyric from "./tokenizer" {
-	Lyric
-}
-
-@external specialize {TContent} Synopsis from "./tokenizer" {
-	Synopsis
-}
 
 Dialogue {
-	// Character CharacterExt?
-	TContent
+	char
 }
+@external specialize {TContent} Note from "./tokenizer" { Note }
 
-Character {
-	uc
-}
-CharacterExtension {
-	OpenParen whitespace* TContent whitespace* CloseParen
-}
+@external specialize {TContent} PB from "./tokenizer" { PB[@name="PageBreak"] }
+
+@external specialize {TContent} Lyric from "./tokenizer" { Lyric }
+
+@external specialize {TContent} Synopsis from "./tokenizer" { Synopsis }
+@external specialize {TContent} Action from "./tokenizer" { Action }
+
+
 
 @context MarkupContext from "./tokenizer"
 
@@ -119,9 +115,9 @@ kw<term> { @specialize[@name={term}]<Content, term> }
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
-	Action {
-		(TContent)
-	}
+	// Action {
+	// 	(TContent)
+	// }
 	b1[@name=Note] { "[[" }
 	b2[@name=Note] { "]]" }
 	transition {

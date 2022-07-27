@@ -1,9 +1,10 @@
 import {TitlePage, SceneHeading, 
 	Lyric as lll , Note as n,
-	Action as a,
+	// Action as a,
 	PB as PageBreak,
 	Transition as ttt,
-	Synopsis as sis
+	Synopsis as sis,
+	Character as cc
 } from "./parser.terms"
 
 import {ContextTracker, ExternalTokenizer, InputStream} from "@lezer/lr";
@@ -33,6 +34,18 @@ export const desensitizedTitleField = (input, stack) => {
 	}
 }
 
+export const Character = (input, stack) => {
+	if(input.match(/^[A-Z\s]+$/)) {
+		console.log("charry", input)
+		return cc
+	}
+	return -1
+}
+
+export const Action = (input, stack) => {
+	return -1
+}
+
 export const Lyric = (input, stack) => {
 	let rego = /^~.+(?:\n.+)*/;
 	if(input.match(rego)) {
@@ -53,11 +66,8 @@ export const Note = (input, stack) => {
 
 
 export const Twansition = (input, stack) => {
-	// let rego =  
-	// let rego =  
-	// console.log("make sure?")
 	if(input.match(regex.transition)) {
-		console.log("trans", input)
+		// console.log("trans", input)
 		// input.advance()
 		return ttt
 		// input.acceptToken(ttt)
@@ -75,6 +85,7 @@ export const PB = (input, stack) => {
 		return -1
 	}
 }
+
 
 export const Synopsis = (input, stack) => {
 	let rego = /^(\={1,2}\s*)(.*)/

@@ -15,6 +15,7 @@ import {
 } from 'obsidian';
 import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
+import { Character } from './fountain/parser.terms';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -108,7 +109,7 @@ function inlineRender(view: EditorView) {
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'FountainScript' || name === "⚠") continue;
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
-				// console.log("tree", name, texties, iiii, whichline, start, end)
+				console.log("tree", name, texties)
 	
 				// if (name === 'DivideSubs') {
 				//     const content = view.state.doc.sliceString(start, end);
@@ -144,6 +145,9 @@ function inlineRender(view: EditorView) {
 				// }
 				let cssClass = '';
 				switch (name) {
+					case "Character": 
+						cssClass = "character";
+						break;
 					case 'TitlePage':
 						cssClass = 'header';
 						break;
@@ -168,23 +172,26 @@ function inlineRender(view: EditorView) {
 					case "PageBreak":
 						cssClass = "page-break"
 						break;
+					case "Dialogue":
+						cssClass = "dialogue"
+						break;
 					case "Action":
 						cssClass = 'action'
 					default:
 						break;
 				}
-				// console.log(cssClass)
-					widgets.push(
-						Decoration.line({
-							class: `screenplay-${cssClass}`,
-							attributes: { 'data-contents': 'string' },
-						}).range(whichline.from),
-						Decoration.mark({
-							class: cssClass !== "header" ? `screenplay-${cssClass}` : "",
-							attributes: { 'data-contents': 'string' },
-						}).range(start, end)
-					);
+				console.log(cssClass)
 				if(start !== end) {
+						widgets.push(
+							Decoration.line({
+								class: `screenplay-${cssClass}`,
+								// attributes: { 'data-contents': 'string' },
+							}).range(whichline.from),
+							Decoration.mark({
+								class: cssClass !== "header" ? `screenplay-${cssClass}` : "",
+								// attributes: { 'data-contents': 'string' },
+							}).range(start, end)
+						);
 				}
 			} while (cursor.next());
 		}

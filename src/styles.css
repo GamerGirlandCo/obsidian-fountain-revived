@@ -47,17 +47,21 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-transition {
     font-style: italic;
+	font-size: 1.15em;
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
+	color: var(--text-accent);
     font-weight: bold;
+	font-size: 1.2em;
+	margin-top: 2em;
 }
 
 /* [data-type="fountain"] > .view-content .cm-editor>br {
     clear: both;
 } */
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-action p {
+[data-type="fountain"] > .view-content .cm-editor>.screenplay-action {
     margin-top: 1em;
 }
 
@@ -67,14 +71,14 @@
 
 /* Dialogue */
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue.character {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-character {
     text-align: center;
-    color: var(--bright-yellow) !important;
-    font-weight: 500 !important;
+    color: var(--yellow) !important;
+    font-weight: 600 !important;
     font-size: 18px !important;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue.content {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue {
     text-align: left;
     margin-left: 20%;
 }
