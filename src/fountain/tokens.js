@@ -1,5 +1,5 @@
 import { ExternalTokenizer } from "@lezer/lr"
-import { TitlePage, SceneHeading, Transition, Centered, Character, Speech } from "./parser.terms"
+import { TitlePage, SceneHeading, Transition, Centered, Character, Speech, Action } from "./parser.terms"
 
 const regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
@@ -20,8 +20,8 @@ const regex = {
     section: /^(#+)(?: *)(.*)/,
     synopsis: /^(?:\=(?!\=+) *)(.*)/,
 
-    note: /^(?:\[{2}(?!\[+))(.+)(?:\]{2}(?!\[+))$/,
-    note_inline: /(?:\[{2}(?!\[+))([\s\S]+?)(?:\]{2}(?!\[+))/g,
+    note: /^(\[{2}(?!\[+))(.+)(?:\]{2}(?!\[+))$/,
+    note_inline: /(\[{2}(?!\[+))([\s\S]+?)(?:\]{2}(?!\[+))/g,
     boneyard: /(^\/\*|^\*\/)$/g,
 
     page_break: /^\={3,}$/,
@@ -42,58 +42,32 @@ const regex = {
     whitespacer: /^\t+|^ {3,}/gm
 };
 
-let previous = []
-
 export const desensitizedSceneHeading =  (input, stack) => {
-    let rego = /^(((int|ext|est|i\/e)\.).+)/i
-	console.debug("mm", input, stack)
+    let rego = /^(int|ext|est|i\/e)\..+/igm
     if(input.match(rego)) {
-        // console.log("m")
-        // input.acceptToken(SceneHeading)
-		previous.unshift(SceneHeading)
+		console.debug("mm", input, stack)
 		return SceneHeading
     } 
-	if(input.toLowerCase().match(/^((title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gims)) {
-		previous.unshift(TitlePage)
-		return TitlePage
-	}
-	if(input.match(/^[A-Z\-\s\(\)\.\^]+$/g)) {
-		previous.unshift(Character)
-		return Character
-	}
-	if(input.match())
-	if(previous[0] === Character && previous[1] !== Transition) {
-		previous.unshift(Speech)
-		return Speech
-	}
-	if(previous[0] === Character) {
-		previous.unshift(Speech)
-		return Speech
-	}
-	
 	return -1
-	
 }
 
-export const somethingtransition = (input, stack) => {
+export const somethingTransition = (input, stack) => {
 	if(input.match(regex.transition) && !input.endsWith("<")) {
-		console.log("trans")
+		// console.log("trans")
 		return Transition
-	} else if(input.match(regex.centered)) {
-		console.log("blip")
+	} else if(input.match(regex.centered) && input.trim().endsWith("<")) {
+		// console.log("blip")
 		return Centered
 	}
+	return Action
 }
 
-// export const desensitizedTitleField = (input, stack) => {
-//     let rego = /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim
-//     console.debug("dtf", input, stack)
-//     if(input.toLowerCase().match(rego)) {
-//         // input.acceptToken(TitlePage)
-// 		return TitlePage
-//     } else {
-// 		return Action
-//         // input.advance()
-//     }
-// }
+export const desensitizedTitleField = (input, stack) => {
+    let rego = /^(title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:/gis
+    if(input.toLowerCase().match(rego)) {
+		console.debug("dtf", input, stack)
+        // input.acceptToken(TitlePage)
+		return TitlePage
+    }
+}
 

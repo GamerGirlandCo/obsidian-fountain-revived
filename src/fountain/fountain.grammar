@@ -1,16 +1,16 @@
 @precedence {
+	Centered @cut
+	Centered @left
 	TitlePage @cut
-	SceneHeading @left
 	SceneNumber
 	Speech @left
 	Speech @cut
-	Character @left
 	dial @cut
 	Parenthetical @left
 	OpenParen @left
+	OpenParen @cut
 	CloseParen @left
-	Centered @cut
-	Note
+	Note @left
 	OpenNote @left
 	CloseNote @left
 	SceneHeading
@@ -19,23 +19,26 @@
 	Transition @cut
 	Act @left
 	Sequence @left
+	SceneHeading
 	Scene @left
+	Character @left
 	Transition @left
 	BoneYard
 	BYOpen @left
 	BYClose @left
 	PageBreak @left
 	Synopsis @left
-	//scriptbody 
+	Text @left
 	scriptbody
-	_sh
-	// topofscene
+	Text @left
 	hash
-	Action @right
+	Action
+	fmt
+	
 	// char @right
 }
 
-@skip {  } { } 
+// @skip { "\n" }
 
 @top FountainScript {
 	TitlePage*
@@ -45,68 +48,51 @@
 
 scriptbody {
 	(Act | Sequence | Scene)?
-	SceneHeading
-	(Transition | Parenthetical | 
+	SceneHeading SceneNumber?
+	(Transition | Parenthetical | Character |
 		Lyric | Centered | Note | BoneYard | 
-		PageBreak | Synopsis | Character Speech+ | Action)+
+		PageBreak | Synopsis | Speech | Action)+
 }
 
 
-TitlePage {
-	!TitlePage desensitizedTitleField multiline<Text> 
-}
-SceneHeading { !SceneHeading desensitizedSceneHeading 
-SceneNumber? }
+TitlePage { !TitlePage desensitizedTitleField }
+SceneHeading { desensitizedSceneHeading }
 
 
-BoneYard {	!BYOpen BYOpen !BYClose BYClose }
+BoneYard {	!BYOpen BYOpen char+ !BYClose BYClose }
 
+Transition { !Transition somethingTransition }
 
-
-
-
-
-
-Transition { 
-	!Transition transition 
-}
-
-Character {
-	!Character (uc | whitespace | "^")+ Parenthetical?
-}
-Speech {
-    !Speech !dial char
-}
+Character { !Character charc+ Parenthetical? "\n" }
+Speech { !Speech (Text | fmt) "\n" }
 
 Parenthetical {
-	 !OpenParen OpenParen !CloseParen CloseParen
+	!Parenthetical  OpenParen (Text | fmt) CloseParen "\n"
 }
 
-Action { Text }
 
-Centered { !Centered ">"  "<" }
+Centered { !Centered ">" (Text | fmt) "<" }
 
-Act {  !Act hash  }
-Sequence { !Sequence hash hash }
-Scene { !Scene hash hash hash  }
+Act {  !Act hash Text }
+Sequence { !Sequence hash hash Text }
+Scene { !Scene hash hash hash Text }
 
 
 // Section { Act | Sequence | Scene }
-Synopsis { !Synopsis syn} 
+Synopsis { !Synopsis syn (Text | fmt) "\n" } 
 
-Lyric {
-	!Lyric lyrc 
-}
+Lyric { !Lyric lyrc Text | fmt "\n"}
 
-Note { !OpenNote OpenNote  !CloseNote CloseNote }
+Note { !Note "[[" (Text | fmt) ("\n")* "]]" "\n" }
 
 // LineBreak {   }
 PageBreak { !PageBreak pb }
 
-multiline<expr> { (expr ("\n" expr)*)+}
+multiline<expr> { expr (expr)+}
 
 // composites
-
+Action { Text | fmt }
+// @detectDelim
 
 
 @tokens {
@@ -116,13 +102,13 @@ multiline<expr> { (expr ("\n" expr)*)+}
 		std.digit | "." | "-"
 	}
 	lyrc { "~" }
-	underline { "_" }
 
-	// by {
-	// }
+	Bold {  "**" char+ "**" }
+	Italic { "*" char+ "*" }
+	Underline { "_" char+ "_" }
 
-	OpenParen[closedBy="CloseParen"] { "(" }
-	CloseParen[openedBy="OpenParen"] { ")" }
+	OpenParen[closedBy="CloseParen",@name=Parenthetical] { "(" }
+	CloseParen[openedBy="OpenParen",@name=Parenthetical] { ")" }
 	
 	OpenNote[closedBy="CloseNote",@name=Note] { "[[" }
 	CloseNote[openedBy="OpenNote",@name=Note] { "]]" }
@@ -130,27 +116,31 @@ multiline<expr> { (expr ("\n" expr)*)+}
 	BYClose[openedBy="BYOpen"] { "*/" }
 
 	uc { std.asciiUppercase+ }
+	charc {uc | "^" | " " }
 	hash { "#" }
+	fmt { Underline | Bold | Italic }
 	Text { char+ }
-	whitespace{ " " }
-	ws { std.whitespace }
+	text2 { (char+) }
+	ws { std.whitespace | std.whitespace+ | std.whitespace++ | " " | "\r" | "\n" }
 	char {
 		$[\u{20}-\u{10fffe}]
 	}
 	syn { "==" }
 	pb {"===" "="*}
-	transition {
-		(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | char+ "TO:") | (">" whitespace* char+)
-	}
+	// transition {
+	// 	(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | char+ "TO:") | (">" whitespace* char+)
+	// }
 	@precedence {
-		syn pb ">" "<" "^" transition SceneNumber hash OpenNote CloseNote OpenParen CloseParen lyrc BYOpen BYClose uc "\n" whitespace ws char Text
+		fmt ws syn pb ">" "<"
+		charc transition SceneNumber hash "[[" "]]" OpenParen CloseParen lyrc BYOpen BYClose uc "\n" 
+		whitespace char Text text2
 	}
 }
 
-
-@external specialize {Text} desensitizedSceneHeading from "./tokens" {
-	desensitizedSceneHeading
-}
+@external specialize {Text} somethingTransition from "./tokens" {somethingTransition}
 @external specialize {Text } desensitizedTitleField from "./tokens" {
 	desensitizedTitleField
+}
+@external specialize {Text} desensitizedSceneHeading from "./tokens" {
+	desensitizedSceneHeading
 }

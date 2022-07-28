@@ -141,8 +141,11 @@ function inlineRender(view: EditorView) {
 				// 		
 				// 	}
 				// }
-				let cssClass = '';
+				let cssClass: string = '';
 				switch (name) {
+					case "SceneNumber":
+						cssClass = "scene-number";
+						break;
 					case "Character": 
 						cssClass = "character";
 						break;
@@ -164,9 +167,6 @@ function inlineRender(view: EditorView) {
 					case 'Synopsis':
 						cssClass = 'synopsis';
 						break;
-					case "Note":
-						cssClass = 'note';
-						break;
 					case "PageBreak":
 						cssClass = "page-break"
 						break;
@@ -185,22 +185,34 @@ function inlineRender(view: EditorView) {
 					case "Centered":
 						cssClass = "centered"
 						break;
+					case "Note":
+						cssClass = "note"
+						break;
+					case "Underline":
+						cssClass = "underline"
+						break;
 					default:
 						break;
 				}
 
 				// console.log(cssClass)
 				if(start !== end) {
+					if((cssClass === "scene-number" || cssClass === "underline")) {
+						console.log("inline", cssClass)
+						Decoration.mark({
+							class: `screenplay-${cssClass}`,
+							// attributes: { 'data-contents': 'string' },
+						}).range(start -1, end + 1)
+						
+					} else {
+						console.log("notinline", cssClass)
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-${cssClass}`,
 								// attributes: { 'data-contents': 'string' },
 							}).range(whichline.from),
-							Decoration.mark({
-								class: cssClass !== "header" ? `screenplay-${cssClass}` : "",
-								// attributes: { 'data-contents': 'string' },
-							}).range(start, end)
 						);
+					}
 				}
 			} while (cursor.next());
 		}
