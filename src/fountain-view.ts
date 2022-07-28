@@ -49,6 +49,7 @@ export class FountainView extends TextFileView {
 		})
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
+	
 	async onUnloadFile(file: TFile): Promise<void> {
 		console.log(":::")
 		await this.app.vault.adapter.write(normalizePath(file.path), this.cm.state.doc.toString())

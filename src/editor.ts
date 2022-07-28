@@ -173,6 +173,9 @@ function inlineRender(view: EditorView) {
 					case "Dialogue":
 						cssClass = "dialogue"
 						break;
+					case "Speech":
+						cssClass = "dialogue"
+						break;
 					case "Action":
 						cssClass = 'action'
 						break;
@@ -185,7 +188,7 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
-				
+
 				// console.log(cssClass)
 				if(start !== end) {
 						widgets.push(

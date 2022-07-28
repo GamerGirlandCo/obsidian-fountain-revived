@@ -78,6 +78,10 @@
     font-size: 18px !important;
 }
 
+.screenplay-centered {
+	text-align: center;
+}
+
 [data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue {
     text-align: left;
     margin-left: 20%;
