@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ESNext",
 	"baseUrl": ".",
-    "module": "ESNext",
+    "module": "CommonJS",
     "esModuleInterop": true,
     "skipLibCheck": true,
 	"allowJs": true,
@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
 	"importHelpers": true,
 	"lib": ["DOM", "ES5", "ScriptHost", "ESNext"],
-	"outFile": "main.js",
-	"sourceRoot": "src"
-  }
+	
+	// "outFile": "./dist/main.js",
+  },
+  "include": ["src/**/*", "print-lezer-tree.mts"]
 }

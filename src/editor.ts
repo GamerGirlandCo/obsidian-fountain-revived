@@ -15,7 +15,6 @@ import {
 } from 'obsidian';
 import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
-import { Character } from './fountain/parser.terms';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -107,8 +106,8 @@ function inlineRender(view: EditorView) {
 				const texties = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'FountainScript' || name === "⚠") continue;
-				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 				console.log("tree", name, texties)
+				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
 				//     const content = view.state.doc.sliceString(start, end);
@@ -180,9 +179,13 @@ function inlineRender(view: EditorView) {
 					case "Parenthetical":
 						cssClass = "parenthetical";
 						break;
+					case "Centered":
+						cssClass = "centered"
+						break;
 					default:
 						break;
 				}
+				
 				// console.log(cssClass)
 				if(start !== end) {
 						widgets.push(

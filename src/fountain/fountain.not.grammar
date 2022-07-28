@@ -1,0 +1,144 @@
+@context MarkupContext from "./tokens"
+// Dialogue {
+// 	!dial dial
+// }
+
+// @skip {ws}
+
+
+@top FountainScript {
+	TitlePage
+	(
+		SceneHeading SceneNumber?
+		
+		(
+			
+			//  PB | 
+		Note | Lyric | Parenthetical
+		Note | Lyric | Parenthetical
+		 Synopsis | Dialogue | Transition |  Action
+		//   |Formatted
+		)	
+	)+
+}
+
+// @external specialize {TContent} Character from "./tokens" {Character}
+// @external specialize {TContent} Parenthetical from "./tokens" { Parenthetical }
+
+multiline<expr> { expr ("\n" expr)*}
+
+Transition { Twansition }
+
+SceneNumber { (hash snc hash) }
+
+TitlePage {
+	//title|credit|author[s]?|source|notes|draft date|date|contact|copyright
+	desensitizedTitleField 
+	multiline<TContent>*
+}
+
+SceneHeading { desensitizedSceneHeading whitespace+ }
+
+// Dialogue {
+//     Character CharacterExt? 
+//     char+
+// }
+
+
+Character {
+    uc+
+}
+CharacterExt {
+    Parenthetical
+}
+Parenthetical {
+    OpenParen char+ CloseParen
+}
+// @external specialize {TContent} PB from "./tokens" { PB[@name="PageBreak"] }
+
+// @external specialize {TContent} Lyric from "./tokens" { Lyric }
+
+// @external specialize {TContent} Synopsis from "./tokens" { Synopsis }
+// @external specialize {TContent} Action from "./tokens" { Action }
+// @external tokens Speech from "./tokens" { Speech }
+
+Note { OpenNote (char)+ CloseNote }
+Synopsis { "=" char+} 
+Lyric {
+	"~" char+
+}
+
+// Centered { OpenCenter char+ CloseCenter }
+
+Underline { Underline_ }
+Italic { Italic_ }
+
+Dialogue[@dynamicPrecedence=3] { TContent ~ambig }
+
+Action[@dynamicPrecedence=-3] {	TContent ~ambig }
+
+
+// @external specialize {TContent} Action from "./tokens" {
+// 	Action
+// }
+// Transition { transition }
+
+
+// Content { char+}
+
+
+
+
+// kw<term> { @specialize[@name={term}]<Content, term> }
+
+
+@tokens {
+	snc {
+		@digit | "." | "-"
+	}
+	// by {
+	// }
+
+
+
+	OpenParen[closedBy="CloseParen"] { "(" }
+	CloseParen[openedBy="OpenParen"] { ")" }
+	OpenNote[closedBy="CloseNote"] { "[[" }
+	CloseNote[openedBy="OpenNote"] { "]]" }
+	BYOpen[closedBy="BYClose"] { "/*" }
+	BYClose[openedBy="BYOpen"] { "*/" }
+	OpenCenter[closedBy="CloseCenter"] { ">" }
+	CloseCenter[openedBy="OpenCenter"] { "<" }
+
+	Notee {
+		OpenNote (TContent | nl)* CloseNote
+	}
+
+	uc { @asciiUppercase }
+	
+	TContent { char+ }
+	MContent { char }
+	colon { ":" }
+	eq { "=" }
+	hash { "#" }
+	nl { "\r" | "\n" | "\r" "\n" }
+	whitespace { " " }
+	ws { @whitespace+ }
+	char {
+		$[\u{20}-\u{10fffe}]
+	}
+	@precedence { uc OpenCenter CloseCenter OpenParen CloseParen ws whitespace "=" "~" "===" hash 
+	 OpenNote CloseNote TContent Action MContent eq "\r" "\n" nl char}
+
+} 
+
+
+
+@external specialize {TContent} desensitizedTitleField from "./tokens" {
+	desensitizedTitleField
+}
+@external specialize {TContent} desensitizedSceneHeading from "./tokens" {
+	desensitizedSceneHeading
+}
+
+@external specialize {TContent} Twansition from "./tokens" { Twansition }
