@@ -32,44 +32,42 @@
 	scriptbody
 	Text @left
 	hash
-	Action
 	fmt
+	Action 
 	
 	// char @right
 }
 
-// @skip { "\n" }
+// @skip {  } { NewLine {"\n"}}
 
 @top FountainScript {
 	TitlePage*
 	scriptbody+
 }
 
-
 scriptbody {
 	(Act | Sequence | Scene)?
 	SceneHeading SceneNumber?
-	(Transition | Parenthetical | Character |
+	(Transition | Parenthetical | Character  |
 		Lyric | Centered | Note | BoneYard | 
-		PageBreak | Synopsis | Speech | Action)+
+		PageBreak | Synopsis | Speech)+
 }
 
-
-TitlePage { !TitlePage desensitizedTitleField }
+TitlePage { !TitlePage TitlePage2 }
 SceneHeading { desensitizedSceneHeading }
-
 
 BoneYard {	!BYOpen BYOpen char+ !BYClose BYClose }
 
 Transition { !Transition somethingTransition }
 
-Character { !Character charc+ Parenthetical? "\n" }
-Speech { !Speech (Text | fmt) "\n" }
+Character { !Character charc+ Parenthetical* "\n" }
+Speech { !Speech text2 "\n" }
 
 Parenthetical {
-	!Parenthetical  OpenParen (Text | fmt) CloseParen "\n"
+	!Parenthetical  OpenParen 
+	ParenContent { Text | fmt } 
+	CloseParen "\n"
 }
-
 
 Centered { !Centered ">" (Text | fmt) "<" }
 
@@ -81,9 +79,9 @@ Scene { !Scene hash hash hash Text }
 // Section { Act | Sequence | Scene }
 Synopsis { !Synopsis syn (Text | fmt) "\n" } 
 
-Lyric { !Lyric lyrc Text | fmt "\n"}
+Lyric { !Lyric lyrc Text "\n"}
 
-Note { !Note "[[" (Text | fmt) ("\n")* "]]" "\n" }
+Note { !Note "[[" Text ("\n")* "]]" "\n" }
 
 // LineBreak {   }
 PageBreak { !PageBreak pb }
@@ -91,7 +89,7 @@ PageBreak { !PageBreak pb }
 multiline<expr> { expr (expr)+}
 
 // composites
-Action { Text | fmt }
+// Action { Text | fmt }
 // @detectDelim
 
 
@@ -107,20 +105,20 @@ Action { Text | fmt }
 	Italic { "*" char+ "*" }
 	Underline { "_" char+ "_" }
 
-	OpenParen[closedBy="CloseParen",@name=Parenthetical] { "(" }
-	CloseParen[openedBy="OpenParen",@name=Parenthetical] { ")" }
+	OpenParen[@name=Parenthetical] { "(" }
+	CloseParen[@name=Parenthetical] { ")" }
 	
-	OpenNote[closedBy="CloseNote",@name=Note] { "[[" }
-	CloseNote[openedBy="OpenNote",@name=Note] { "]]" }
+	OpenNote[@name=Note] { "[[" }
+	CloseNote[@name=Note] { "]]" }
 	BYOpen[closedBy="BYClose"] { "/*" }
 	BYClose[openedBy="BYOpen"] { "*/" }
 
 	uc { std.asciiUppercase+ }
-	charc {uc | "^" | " " }
+	charc {uc | "^" | " " "." | OpenParen | CloseParen}
 	hash { "#" }
 	fmt { Underline | Bold | Italic }
 	Text { char+ }
-	text2 { (char+) }
+	text2 { fmt | Text }
 	ws { std.whitespace | std.whitespace+ | std.whitespace++ | " " | "\r" | "\n" }
 	char {
 		$[\u{20}-\u{10fffe}]
@@ -131,16 +129,16 @@ Action { Text | fmt }
 	// 	(("FADE" whitespace ("TO BLACK" | "OUT") | "CUT TO BLACK") | char+ "TO:") | (">" whitespace* char+)
 	// }
 	@precedence {
-		fmt ws syn pb ">" "<"
-		charc transition SceneNumber hash "[[" "]]" OpenParen CloseParen lyrc BYOpen BYClose uc "\n" 
+		fmt syn pb ">" "<"
+		charc SceneNumber hash "[[" "]]" OpenParen CloseParen lyrc BYOpen BYClose uc "\n" 
 		whitespace char Text text2
 	}
 }
 
 @external specialize {Text} somethingTransition from "./tokens" {somethingTransition}
-@external specialize {Text } desensitizedTitleField from "./tokens" {
-	desensitizedTitleField
+@external specialize { text2 } somethingTransition from "./tokens" {
+	TitlePage2
 }
-@external specialize {Text} desensitizedSceneHeading from "./tokens" {
+@external specialize { Text } desensitizedSceneHeading from "./tokens" {
 	desensitizedSceneHeading
 }

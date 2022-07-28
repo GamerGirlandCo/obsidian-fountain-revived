@@ -1,5 +1,6 @@
 import { ExternalTokenizer } from "@lezer/lr"
-import { TitlePage, SceneHeading, Transition, Centered, Character, Speech, Action } from "./parser.terms"
+import { TitlePage, SceneHeading, Transition, Centered, Character, Speech,
+	Lyric, Note } from "./parser.terms"
 
 const regex = {
     title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gim,
@@ -21,7 +22,7 @@ const regex = {
     synopsis: /^(?:\=(?!\=+) *)(.*)/,
 
     note: /^(\[{2}(?!\[+))(.+)(?:\]{2}(?!\[+))$/,
-    note_inline: /(\[{2}(?!\[+))([\s\S]+?)(?:\]{2}(?!\[+))/g,
+    note_inline: /(\[{2}(?!\[+))([\s\S]+?)(?:\]{2}(?!\[+))/gm,
     boneyard: /(^\/\*|^\*\/)$/g,
 
     page_break: /^\={3,}$/,
@@ -43,31 +44,69 @@ const regex = {
 };
 
 export const desensitizedSceneHeading =  (input, stack) => {
-    let rego = /^(int|ext|est|i\/e)\..+/igm
-    if(input.match(rego)) {
-		console.debug("mm", input, stack)
-		return SceneHeading
-    } 
-	return -1
+    // let rego = 
+    
 }
+
+let previous = []
 
 export const somethingTransition = (input, stack) => {
 	if(input.match(regex.transition) && !input.endsWith("<")) {
-		// console.log("trans")
+		// console.log("trans", input)
 		return Transition
 	} else if(input.match(regex.centered) && input.trim().endsWith("<")) {
 		// console.log("blip")
 		return Centered
 	}
-	return Action
-}
+	if(input.match(/^(\.|int|ext|est|i\/e)\.\s?.+/igm)) {
+		console.debug("mm", input, stack)
+		return SceneHeading
+    } 
 
-export const desensitizedTitleField = (input, stack) => {
-    let rego = /^(title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:/gis
+	if(input.startsWith("~")) return Lyric
+	// if(input.match(regex.note_inline) || input.match(regex.note)) return Note
+	let rego = /^(title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:.*/sgim
+	// console.debug("dtf", input, stack, input.match(rego))
     if(input.toLowerCase().match(rego)) {
-		console.debug("dtf", input, stack)
         // input.acceptToken(TitlePage)
+		previous.unshift(TitlePage)
 		return TitlePage
     }
+	// if(previous[2] === TitlePage) {
+	// 	return TitlePage
+	// }
+	if(input.match(rego)) {
+        // console.log("m")
+        // input.acceptToken(SceneHeading)
+		previous.unshift(SceneHeading)
+		return SceneHeading
+    } 
+	if(input.toLowerCase().match(/^((title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:)/gims)) {
+		previous.unshift(TitlePage)
+		return TitlePage
+	}
+	if(input.match(/^[A-Z\-\s\(\)\.\^]+$/g)) {
+		previous.unshift(Character)
+		return Character
+	}
+	if(input.match())
+	if(previous[0] === Character && previous[1] !== Transition) {
+		previous.unshift(Speech)
+		return Speech
+	}
+	if(previous[0] === Character) {
+		previous.unshift(Speech)
+		return Speech
+	}
+	return 
 }
+
+// export const desensitizedTitleField = (input, stack) => {
+//     let rego = /^(title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:/gim
+//     if(input.toLowerCase().match(rego)) {
+// 		console.debug("dtf", input, stack, input.match(rego))
+//         // input.acceptToken(TitlePage)
+// 		return TitlePage
+//     }
+// }
 
