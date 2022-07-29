@@ -241,9 +241,9 @@ export class Line {
 const DefaultSkipMarkup: {
 	[type: number]: (bl: CompositeBlock, cx: BlockContext, line: Line) => boolean;
 } = {
-	[Type.Screenplay]() {
-		return true;
-	},
+	// [Type.Screenplay]() {
+	// 	return true;
+	// },
 	// [Type.SceneNumber](bl, cx, line) {
 	// 	console.debug("type.scenenumber")
 	// 	if(line.next !== 35) return false;
@@ -394,17 +394,17 @@ const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
 	LinkReference: undefined,
-	TitlePage(cx, line) {
-		// console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
-		if(!line.text.toLowerCase().match(regex.title_page) || cx.prevNode[0] < 3) {
-			return false
-		}
-		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.TitlePage, from)
-		return true
+	// TitlePage(cx, line) {
+	// 	// console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
+	// 	if(!line.text.toLowerCase().match(regex.title_page)) {
+	// 		return false
+	// 	}
+	// 	let from = cx.lineStart + line.pos;
+	// 	cx.nextLine()
+	// 	cx.addNode(Type.TitlePage, from)
+	// 	return true
 		
-	},
+	// },
 	
 	Transition(cx, line) {
 		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
@@ -461,6 +461,13 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Character, from)
 		cx.nextLine()
 	},
+	Parenthetical(cx, line) {
+		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
+		let from = cx.lineStart + line.pos
+		cx.addNode(Type.Parenthetical, from)
+		cx.nextLine()
+		return true
+	},
 	Dialogue(cx, line) {
 		let from = cx.lineStart + line.pos;
 		// console.log("diaaaaa", cx.prevNode)
@@ -471,12 +478,9 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
-	Parenthetical(cx, line) {
-		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
-		let from = cx.lineStart + line.pos
-		cx.addNode(Type.Parenthetical, from)
-		cx.nextLine()
-		return true
+	LineBreak(cx, line) {
+		if(line.text.length < 1) return true
+		return false
 	},
 	Action(cx, line) {
 		if(cx.prevNode[0] === 3) return false
@@ -1423,7 +1427,7 @@ export class FountainParser extends Parser {
 			}
 		}
 
-		if (nonEmpty(config.parseInline)) {
+		if (true) {
 			for (let spec of config.parseInline) {
 				let found = inlineNames.indexOf(spec.name);
 				if (found > -1) {
@@ -1718,6 +1722,16 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	if(next !== 91) return -1
 	// 	let after = cx.slice(pos, pos+1)
 	// },
+	TitlePage(cx, next, start) {
+		console.log("tpwawa", cx.text)
+		let bo = ":".charCodeAt(0)
+		if(cx.text.match(regex.title_page)) {
+			return cx.append(elt(Type.TitlePage, start, start + 2))
+		} else if(cx.parts[cx.parts.length - 1].type === Type.TitlePage) {
+			return cx.append(elt(Type.TitlePage, start, start + 2))
+		}
+		return -1
+	},
 	SceneNumber(cx, next, start) {
 		let ploos = 1
 		// if(next !== "#".charCodeAt(0)) return -1;
