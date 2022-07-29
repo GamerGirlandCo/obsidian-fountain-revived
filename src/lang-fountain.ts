@@ -422,15 +422,15 @@ const DefaultBlockParsers: {
 		return true
 	},
 	
-	SceneHeading(cx, line) {
-		if(!line.text.match(regex.scene_heading)) {
-			return false
-		}
-		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.SceneHeading, from)
-		return true
-	},
+	// SceneHeading(cx, line) {
+	// 	if(!line.text.match(regex.scene_heading)) {
+	// 		return false
+	// 	}
+	// 	let from = cx.lineStart + line.pos;
+	// 	cx.nextLine()
+	// 	cx.addNode(Type.SceneHeading, from)
+	// 	return true
+	// },
 	PageBreak(cx, line) {
 		if(isPageBreak(line, cx, false) < 0) return false;
 		let from = cx.lineStart + line.pos;
@@ -737,12 +737,33 @@ class SectionParser implements LeafBlockParser {
 	}
 }
 
+class TitlePageParser implements LeafBlockParser {
+	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
+		console.log("tpwawa", cx, leaf)
+		let bo = ":".charCodeAt(0)
+		if(line.text.match(regex.title_page)) {
+			cx.addElement(elt(Type.TitlePage, line.pos, line.text.length -1))
+		} else if(cx.stack[cx.stack.length - 1]?.type === Type.TitlePage) {
+			cx.addElement(elt(Type.TitlePage, line.pos, line.text.length -1))
+		}
+		return true;
+	}
+
+	finish() {
+		return false;
+	}
+}
+
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
 	Section() {
 		return new SectionParser();
 	},
+	TitlePage(cx, bl) {
+		console.log("in here", cx, bl)
+		return new TitlePageParser()
+	}
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -1357,7 +1378,7 @@ export class FountainParser extends Parser {
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
 			for (let token of this.inlineParsers) {
-				// console.log("tokyn", token)
+				// console.log("tokyn", token.name)
 				if (token) {
 					let result = token(cx, next, pos);
 					if (result >= 0) {
@@ -1608,32 +1629,62 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	let after = cx.slice(pos, pos+1)
 	// },
 	TitlePage(cx, next, start) {
-		console.log("tpwawa", cx.text)
+		// console.log("tpwawa", cx, start)
 		let bo = ":".charCodeAt(0)
 		if(cx.text.match(regex.title_page)) {
-			return cx.append(elt(Type.TitlePage, start, start + 2))
+			// return cx.addElement(elt(Type.TitlePage, cx.offset, cx.end - 2))
 		} else if(cx.parts[cx.parts.length - 1]?.type === Type.TitlePage) {
-			return cx.append(elt(Type.TitlePage, start, start + 1))
+			// return cx.addElement(elt(Type.TitlePage, cx.offset, cx.end - 2))
 		}
 		return -1
 	},
-	SceneNumber(cx, next, start) {
-		// let ploos = 1
-		// if(next !== "#".charCodeAt(0)) return -1;
-		// while(next === 35) ploos++
-		// if(ploos < 2) return -1
-		let startmeup = cx.text.indexOf("#")
-		let myend = cx.text.lastIndexOf("#") + 1 
-		console.debug(startmeup, myend)
-		if(startmeup !== -1 && myend > 0 && myend > startmeup + 1) {
-			console.debug("type.sceenyweeny", String.fromCharCode(next), cx.text)
-			console.log(cx.text.slice(startmeup, myend))
-			cx.append(elt(Type.SceneNumber, startmeup, myend))
+	SceneHeading(cx, next, start) {
+		// console.log("cakeeee", cx.text)
+		if(!cx.text.match(regex.scene_heading)) {
+			return -1
+		}
+		let pos = start + 1
+		let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
+		let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
+		console.log("cakewalk", start, pos, startup, myend)
+		let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
+		console.log("cake", cake)
+		// return -1
 		
+		// if(startup !== -1) {
+		if(cake.length > 2) {
+			let elemm = elt(Type.SceneHeading, pos - 2, start + cx.text.length, [elt(Type.SceneNumber, startup + cx.offset, myend +1)])
+			console.log("eylem",elemm)
+			return cx.addElement(elemm)
+			// cx.addElement(elt(Type.SceneNumber, startup + cx.offset, myend +1))
+			// cx.addElement()
+			// return cx.addElement(elt(Type.SceneHeading, pos, cx.text.length + 1,
+			// 	[elt(Type.SceneNumber, startup, myend +1)])
+			
+			// )
+		} else {
+			let elemm = elt(Type.SceneHeading, pos, start + cx.text.length)
+			console.log("cxelem", elemm)
+			return cx.addElement(elemm)
 		}
-		// cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
-		return -1
+		// let from = cx.lineStart + line.pos;
+		// cx.nextLine()
+		// cx.addNode(Type.SceneHeading, from)
+		// return true
 	},
+	// SceneNumber(cx, next, start) {
+	// 	let startmeup = cx.text.indexOf("#")
+	// 	let myend = cx.text.lastIndexOf("#") + 1 
+	// 	console.debug(startmeup, myend)
+	// 	if(startmeup !== -1 && myend > 0 && myend > startmeup + 1) {
+	// 		console.debug("type.sceenyweeny", String.fromCharCode(next), cx.text)
+	// 		console.log(cx.text.slice(startmeup, myend))
+	// 		return cx.addElement(elt(Type.SceneNumber, startmeup, myend))
+		
+	// 	}
+	// 	// cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
+	// 	return -1
+	// },
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;
 		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1
@@ -1660,29 +1711,6 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		return cx.append(new InlineDelimiter(EmphasisUnderline, start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
 		
 	},
-	// Bold(cx, next, start) {
-	// 	if(next != 42) return -1
-	// 	let ast = "*".charCodeAt(0)
-	// 	let pos = start + 1;
-	// 	let mynext = pos + 1
-	// 	let actualstart = start + 1
-	// 	while (cx.char(pos) == ast) {
-	// 		pos++
-	// 		mynext++
-	// 	};
-	// 	let before = cx.slice(start - 1, start),
-	// 		after = cx.slice(pos, pos + 1);
-	// 	let sBefore = /\s|^$/.test(before),
-	// 		sAfter = /\s|^$/.test(after);
-	// 	let leftFlanking = !sAfter && (sBefore);
-	// 	let rightFlanking = !sBefore && (sAfter);
-		
-	// 	let hasBold = cx.char(actualstart) === ast && next === ast
-	// 	let canOpen = leftFlanking && ((next == 42 && cx.char(pos + 1) ===  ast) || !rightFlanking);
-	// 	let canClose = rightFlanking && ((next == 42 && cx.char(pos + 1) ===  ast) || !leftFlanking);
-	// 	return cx.append(new InlineDelimiter(EmphasisBold, start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
-
-	// },
 	Emphasis(cx, next, start) {
 		let ast = "*".charCodeAt(0)
 		if (next != 42 /* <asterisk> */) return -1;
@@ -1771,11 +1799,14 @@ export class InlineContext {
 	/// Get a substring of this inline section. Again uses
 	/// document-relative positions.
 	slice(from: number, to: number) {
+		console.debug("slicing:from", from, from - this.offset)
+		console.debug("slicing:to", to, to - this.offset)
 		return this.text.slice(from - this.offset, to - this.offset);
 	}
 
 	/// @internal
 	append(elt: Element | InlineDelimiter) {
+		console.debug("appendion", elt)
 		this.parts.push(elt);
 		return elt.to;
 	}

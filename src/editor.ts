@@ -103,7 +103,7 @@ function inlineRender(view: EditorView) {
 	const all = view.state.doc.toString()
 	try {
 		for (const { from, to } of view.visibleRanges) {
-			// visualize(parser.parse(all).cursor(), view.state.doc.toString())
+			visualize(parser.parse(all).cursor(), view.state.doc.toString())
 			const text = view.state.doc.sliceString(from, to);
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
@@ -171,9 +171,6 @@ function inlineRender(view: EditorView) {
 					case 'Lyrics':
 						cssClass = 'lyric';
 						break;
-					case 'Highlight':
-						cssClass = 'highlight';
-						break;
 					case 'Synopsis':
 						cssClass = 'synopsis';
 						break;
@@ -207,8 +204,13 @@ function inlineRender(view: EditorView) {
 						class: `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
 						block: false
-					}).range(start, end)
-					)
+					}).range(start, end))
+				} else if( name === "SceneHeading") {
+					widgets.push(Decoration.mark({
+						class: `screenplay-scene-heading`,
+						inclusive: false,
+						block: false
+					}).range(start, end))
 				}
 				// console.log(cssClass)
 				 else if(start !== end) {
