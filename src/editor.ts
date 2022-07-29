@@ -15,6 +15,9 @@ import {
 } from 'obsidian';
 import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
+import {parser} from "./lang-fountain"
+import {visualize} from "@colin_t/lezer-tree-visualizer";
+import { SceneNumber } from './fountain/parser.terms';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -31,13 +34,17 @@ function selectionAndRangeOverlap(
 }
 
 class InlineWidget extends WidgetType {
+	private customClass
 	constructor(
 		readonly name: string,
 		readonly text: string,
 		private view: EditorView,
-		private marker: boolean = false
+		private marker: boolean = false,
+		customClass: string,
+
 	) {
 		super();
+		this.customClass = customClass
 	}
 
 	// Widgets only get updated when the text changes/the element gets focus and loses it
@@ -50,16 +57,16 @@ class InlineWidget extends WidgetType {
 	}
 
 	toDOM(view: EditorView): HTMLElement {
+		let bool = this.text === "(" || this.text === ")" || this.text === "#"
 		if (!this.marker) {
-			return createSpan({ cls: 'fountain-marker' });
+			return createSpan({ cls: ['screenplay-marker', ...this.customClass.split(" ")] });
 		} else {
 			return createSpan({
-				cls: ['fountain-marker'],
-				text: '🠚',
+				cls: ['screenplay-marker', ...this.customClass.split(" ")],
+				text: bool ? "" : this.text
 			});
 		}
 	}
-
 	/* Make the markers only editable when shift is pressed (or navigated inside with the keyboard
 	 * or the mouse is placed at the end, but that is always possible regardless of this method).
 	 * If the widgets should always be expandable, make this always return false.
@@ -93,10 +100,12 @@ class InlineWidget extends WidgetType {
 function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
+	const all = view.state.doc.toString()
+	visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	try {
 		for (const { from, to } of view.visibleRanges) {
 			const text = view.state.doc.sliceString(from, to);
-			const tree = Fountain.parser.parse(view.state.doc.toString());
+			const tree = parser.parse(all);
 			let cursor = tree.cursor();
 			iiii++
 			do {
@@ -105,7 +114,7 @@ function inlineRender(view: EditorView) {
 				const name = cursor.name;
 				const texties = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
-				if (name === 'FountainScript' || name === "⚠") continue;
+				if (name === 'Screenplay' || name === "⚠") continue;
 				console.log("tree", name, texties)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
@@ -158,7 +167,7 @@ function inlineRender(view: EditorView) {
 					case 'Transition':
 						cssClass = 'transition';
 						break;
-					case 'Lyric':
+					case 'Lyrics':
 						cssClass = 'lyric';
 						break;
 					case 'Highlight':
@@ -177,10 +186,7 @@ function inlineRender(view: EditorView) {
 						cssClass = "dialogue"
 						break;
 					case "Action":
-						cssClass = 'action'
-						break;
-					case "Parenthetical":
-						cssClass = "parenthetical";
+						cssClass = 'action';
 						break;
 					case "Centered":
 						cssClass = "centered"
@@ -188,31 +194,36 @@ function inlineRender(view: EditorView) {
 					case "Note":
 						cssClass = "note"
 						break;
-					case "Underline":
-						cssClass = "underline"
-						break;
 					default:
 						break;
 				}
-
+				if(name === "Underline" || name === "Italic" || name === "Parenthetical" || name === "Bold" || name=== "SceneNumber") {
+					const content = view.state.doc.sliceString(start, end);
+					widgets.push(Decoration.mark({
+						class: `screenplay-marker ${name.toLowerCase()}`,
+						inclusive: true,
+						block: false
+					}).range(start, end)
+					)
+				}
 				// console.log(cssClass)
-				if(start !== end) {
-					if((cssClass === "scene-number" || cssClass === "underline")) {
-						console.log("inline", cssClass)
-						Decoration.mark({
-							class: `screenplay-${cssClass}`,
-							// attributes: { 'data-contents': 'string' },
-						}).range(start -1, end + 1)
-						
-					} else {
-						console.log("notinline", cssClass)
+				 else if(start !== end) {
+						// console.log("notinline", cssClass)
 						widgets.push(
 							Decoration.line({
-								class: `screenplay-${cssClass}`,
+								class: cssClass !== "" && `screenplay-${cssClass}`,
 								// attributes: { 'data-contents': 'string' },
 							}).range(whichline.from),
 						);
-					}
+					// if((cssClass === "scene-number" || cssClass === "underline" || cssClass === "bold" || cssClass === "italic")) {
+					// 	// console.log("inline", cssClass)
+					// 	Decoration.mark({
+					// 		class: `screenplay-${cssClass}`,
+					// 		// attributes: { 'data-contents': 'string' },
+					// 	}).range(start, end)
+						
+					// } else {
+					// }
 				}
 			} while (cursor.next());
 		}

@@ -8,7 +8,7 @@ import {
 	Setting,
 	debounce, editorLivePreviewField, normalizePath } from "obsidian";
 	import {writeFileSync} from "node:fs"
-import { syntaxTree, tokenClassNodeProp } from "@codemirror/language";
+import { Language, syntaxTree, tokenClassNodeProp } from "@codemirror/language";
 
 import {EditorState, Text, Range, StateEffect, StateEffectType, StateField} from "@codemirror/state";
 
@@ -18,6 +18,7 @@ import { Fountain } from "fountain-js";
 import { basicSetup } from "./extensions";
 import fountain from "./fountain/lang"
 import { inlinePlugin } from "./editor";
+import { FountainParser, parser, ftn } from "./lang-fountain";
 
 const theme = EditorView.theme({
 	".cm-line": {
@@ -29,7 +30,7 @@ const theme = EditorView.theme({
 	}
 })
 
-export const exts = [theme, fountain(), inlinePlugin(), ...basicSetup]
+export const exts = [theme, inlinePlugin(), ftn, ...basicSetup]
 
 // ...
 export class FountainView extends TextFileView {
@@ -49,7 +50,7 @@ export class FountainView extends TextFileView {
 		})
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 	}
-	
+
 	async onUnloadFile(file: TFile): Promise<void> {
 		console.log(":::")
 		await this.app.vault.adapter.write(normalizePath(file.path), this.cm.state.doc.toString())

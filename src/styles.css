@@ -87,8 +87,14 @@
     margin-left: 20%;
 }
 
-.underline {
+.screenplay-marker.underline {
     text-decoration: underline;
+}
+.screenplay-marker.italic {
+	font-style: italic;
+}
+.screenplay-marker.bold {
+	font-weight: bold !important;
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-parenthetical {
