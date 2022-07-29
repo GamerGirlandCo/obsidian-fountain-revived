@@ -82,10 +82,12 @@ export enum Type {
 	Escape,
 	TitlePage,
 	TitlePageField,
+
 	SceneHeading,
 	Transition,
 	Dialogue,
 	Character,
+	CharacterExt,
 	Parenthetical,
 	Action,
 	Centered,
@@ -106,6 +108,7 @@ export enum Type {
 	// inlines
 	SceneNumber,
 	Note,
+	
 	
 	OpenNote,
 	CloseNote,
@@ -241,6 +244,18 @@ const DefaultSkipMarkup: {
 	[Type.Screenplay]() {
 		return true;
 	},
+	// [Type.SceneNumber](bl, cx, line) {
+	// 	console.debug("type.scenenumber")
+	// 	if(line.next !== 35) return false;
+	// 	line.markers.push(
+	// 			elt(Type.SceneNumberMarker, cx.lineStart + line.pos, cx.lineStart + line.pos + 1)
+	// 		)
+	// 	line.moveBase(
+	// 		line.pos + (space(line.text.charCodeAt(line.pos + 1)) ? 2 : 1)
+	// 		)
+	// 		bl.end = cx.lineStart + line.text.length;
+	// 		return true
+	// }
 };
 
 export function space(ch: number) {
@@ -262,14 +277,6 @@ function isFencedCode(line: Line) {
 		for (let i = pos; i < line.text.length; i++)
 			if (line.text.charCodeAt(i) == 96) return -1;
 	return pos;
-}
-
-function isSynopsis(line: Line) {
-	if(line.next !== 61) return -1
-	let pos = line.pos + 1;
-	while (pos < line.text.length && line.text.charCodeAt(pos) === line.next) pos++
-	if(pos < line.pos + 2) return -1;
-	return pos
 }
 
 function isBlockquote(line: Line) {
@@ -388,20 +395,15 @@ const DefaultBlockParsers: {
 } = {
 	LinkReference: undefined,
 	TitlePage(cx, line) {
-		console.debug("titlepage", line, cx.prevNode, Type.TitlePage)
-		let blip = cx.stack[0].children as Tree[]
-		let blop = blip[blip.length - 1] as Tree
-		if(!line.text.match(regex.title_page) ) {
+		// console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
+		if(!line.text.toLowerCase().match(regex.title_page) || cx.prevNode[0] < 3) {
 			return false
-		} 
-		if(cx.block.type === Type.TitlePage) {
-			let from = cx.lineStart + line.pos;
-			cx.addNode(Type.TitlePage, from)
-			cx.nextLine()
-			return true
-			
 		}
-		return false
+		let from = cx.lineStart + line.pos;
+		cx.nextLine()
+		cx.addNode(Type.TitlePage, from)
+		return true
+		
 	},
 	
 	Transition(cx, line) {
@@ -419,6 +421,7 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Centered, from)
 		return true
 	},
+	
 	SceneHeading(cx, line) {
 		if(!line.text.match(regex.scene_heading)) {
 			return false
@@ -446,7 +449,7 @@ const DefaultBlockParsers: {
 	},
 	Synopsis(cx, line) {
 		// console.debug("synopsis", line.text)
-		if(isSynopsis(line) < 0) return false
+		if(!line.text.startsWith("=")) return false
 		let from = cx.lineStart + line.pos;
 		cx.nextLine()
 		cx.addNode(Type.Synopsis, from)
@@ -457,6 +460,30 @@ const DefaultBlockParsers: {
 		let from = cx.lineStart + line.pos;
 		cx.addNode(Type.Character, from)
 		cx.nextLine()
+	},
+	Dialogue(cx, line) {
+		let from = cx.lineStart + line.pos;
+		// console.log("diaaaaa", cx.prevNode)
+		if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
+			cx.addNode(Type.Dialogue, from)
+			cx.nextLine()
+			return true
+		}
+		return false
+	},
+	Parenthetical(cx, line) {
+		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
+		let from = cx.lineStart + line.pos
+		cx.addNode(Type.Parenthetical, from)
+		cx.nextLine()
+		return true
+	},
+	Action(cx, line) {
+		if(cx.prevNode[0] === 3) return false
+		let from = cx.lineStart + line.pos
+		cx.addNode(Type.Action, from)
+		cx.nextLine()
+		return true
 	},
 	/* Character(cx, line) */
 	// BlockNote(cx, line) {
@@ -692,7 +719,7 @@ class SectionParser implements LeafBlockParser {
 		cx.addLeafElement(
 			leaf,
 			elt(
-				next == 61 ? Type.Synopsis : Type.Parenthetical,
+				next == 61 ? Type.Action : Type.Parenthetical,
 				leaf.start,
 				cx.prevLineEnd(),
 				[...cx.parser.parseInline(leaf.content, leaf.start), underlineMark]
@@ -748,7 +775,7 @@ export class BlockContext implements PartialParse {
 	rangeI = 0;
 	/// @internal
 	absoluteLineEnd: number;
-	prevNode: CompositeBlock = null
+	prevNode: Type[] = []
 
 	/// @internal
 	constructor(
@@ -775,6 +802,13 @@ export class BlockContext implements PartialParse {
 
 	get parsedPos() {
 		return this.absoluteLineStart;
+	}
+
+	setPrevCurr(block: Type | Tree) {
+		this.prevNode.pop()
+		// this.prevNode.unshift(t.type.id)
+		if(block instanceof Tree) block = block.type.id;
+		this.prevNode.unshift(block)
 	}
 
 	advance() {
@@ -993,12 +1027,13 @@ export class BlockContext implements PartialParse {
 	/// @internal
 	addNode(block: Type | Tree, from: number, to?: number) {
 		if (typeof block == "number")
-			block = new Tree(
-				this.parser.nodeSet.types[block],
-				none,
-				none,
-				(to ?? this.prevLineEnd()) - from
+		block = new Tree(
+			this.parser.nodeSet.types[block],
+			none,
+			none,
+			(to ?? this.prevLineEnd()) - from
 			);
+		this.setPrevCurr(block)
 		this.block.addChild(block, from - this.block.from);
 	}
 
@@ -1025,7 +1060,6 @@ export class BlockContext implements PartialParse {
 
 	/// @internal
 	finishContext() {
-		this.prevNode = this.stack[this.stack.length - 2 < 0 ? 0 : this.stack.length - 2]
 		let cx = this.stack.pop()!;
 		let top = this.stack[this.stack.length - 1];
 		top.addChild(cx.toTree(this.parser.nodeSet), cx.from - top.from);
@@ -1056,6 +1090,8 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
+		let whatisit = this.prevNode[0] || 0
+		let booleanValue = whatisit > 4 ? Type.Action : Type.TitlePage
 		this.addNode(
 			this.buffer
 				.writeElements(inline, -leaf.start)
@@ -1651,13 +1687,13 @@ const EmphasisItalic: DelimiterType = {
 	resolve: "Italic",
 	mark: "ItalicMark"
 }
-const ParentheticalThingy: DelimiterType = {
-	resolve: "Parenthetical",
-	mark: "Parenthetical"
+const CharacterExtension: DelimiterType = {
+	resolve: "CharacterExt",
+	mark: "CharacterExt"
 }
 const SceneNumberThingy: DelimiterType = {
-	resolve: "SceneNumber",
-	mark: "SceneNumber"
+	resolve: "SceneNumberMarker",
+	mark: "SceneNumberMarker"
 }
 class InlineDelimiter {
 	constructor(
@@ -1682,13 +1718,22 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	if(next !== 91) return -1
 	// 	let after = cx.slice(pos, pos+1)
 	// },
-	Parenthetical(cx, next, start) {
+	SceneNumber(cx, next, start) {
+		let ploos = 1
+		// if(next !== "#".charCodeAt(0)) return -1;
+		while(next === 35) ploos++
+		if(ploos < 2) return -1
+		console.debug("type.sceenyweeny", String.fromCharCode(next))
+		cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
+		return Type.SceneNumber
+	},
+	CharacterExt(cx, next, start) {
 		let pos = start + 1;
 		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1
 		while(cx.char(pos) === 41 || cx.char(pos) === 40) pos++
 		let after = cx.slice(pos, pos+1);
 		return cx.append(
-				new InlineDelimiter(ParentheticalThingy,start, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
+				new InlineDelimiter(CharacterExtension,start, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
 			)
 	},
 	Underline (cx, next, start) {
@@ -1771,16 +1816,18 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	}
 	// 	return -1;
 	// },
-	SceneNumber(cx, next, start) {
-		if(String.fromCharCode(next) !== "#") return -1
-		let actualstart = start;
-		let pos = start + 1;
-		// while(cx.char(pos) !== "#".charCodeAt(0)) pos++
-		console.log("scenenumber", pos, actualstart)
-		return cx.append(
-			new InlineDelimiter(SceneNumberThingy,start, pos, (pos > actualstart && next === "#".charCodeAt(0)) ? Mark.Close : Mark.Open)
-			)
-	}
+	// SceneNumber(cx, next, start) {
+	// 	let actualstart = start;
+	// 	let pos = start + 1;
+	// 	console.log("scenenumber", pos, actualstart)
+	// 	let blabbermouth = cx.slice(actualstart, cx.end)
+	// 	if(String.fromCharCode(pos) !== "#") return -1
+	// 	console.log("liars!", blabbermouth)
+	// 	while(cx.char(pos) === "#".charCodeAt(0)) pos++
+	// 	return cx.append(
+	// 		new InlineDelimiter(SceneNumberThingy,start, pos, (pos > actualstart && cx.char(pos) === "#".charCodeAt(0)) ? Mark.Close : Mark.Open)
+	// 		)
+	// }
 
 };
 
@@ -2010,7 +2057,9 @@ function injectMarks(
 // reused if their next sibling is also being reused.
 const NotLast = [
 	Type.Dialogue,
-	Type.TitlePage,
+	// Type.TitlePage,
+	// Type.SceneHeading,
+	// Type.Synopsis,
 	// Type.Action,
 	Type.BlockNote,
 	Type.BoneYard

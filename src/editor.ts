@@ -150,7 +150,7 @@ function inlineRender(view: EditorView) {
 				// 		
 				// 	}
 				// }
-				
+
 				let cssClass: string = '';
 				switch (name) {
 					case "SceneNumber":
@@ -195,10 +195,13 @@ function inlineRender(view: EditorView) {
 					case "Note":
 						cssClass = "note"
 						break;
+					case "Parenthetical":
+						cssClass ="parenthetical"
+						break;
 					default:
 						break;
 				}
-				if(name === "Underline" || name === "Italic" || name === "Parenthetical" || name === "Bold" || name=== "SceneNumber") {
+				if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold" || name=== "SceneNumber") {
 					const content = view.state.doc.sliceString(start, end);
 					widgets.push(Decoration.mark({
 						class: `screenplay-marker ${name.toLowerCase()}`,

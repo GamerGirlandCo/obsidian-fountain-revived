@@ -47,7 +47,8 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-transition {
     font-style: italic;
-	font-size: 1.15em;
+	font-size: 0.85em;
+	color: var(--blue-highlighter)
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
@@ -96,9 +97,12 @@
 .screenplay-marker.bold {
 	font-weight: bold !important;
 }
+.screenplay-marker.character-ext, .screenplay-parenthetical {
+	    padding-left: 10%;
+}
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-marker.parenthetical:first-of-type {
-    padding-left: 10%;
+[data-type="fountain"] > .view-content .cm-editor .screenplay-parenthetical:first-of-type {
+
 }
 
 
