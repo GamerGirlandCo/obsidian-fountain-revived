@@ -468,27 +468,27 @@ const DefaultBlockParsers: {
 		cx.nextLine()
 		return true
 	},
-	Dialogue(cx, line) {
-		let from = cx.lineStart + line.pos;
-		// console.log("diaaaaa", cx.prevNode)
-		if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
-			cx.addNode(Type.Dialogue, from)
-			cx.nextLine()
-			return true
-		}
-		return false
-	},
+	// Dialogue(cx, line) {
+	// 	let from = cx.lineStart + line.pos;
+	// 	// console.log("diaaaaa", cx.prevNode)
+	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
+	// 		cx.addNode(Type.Dialogue, from)
+	// 		cx.nextLine()
+	// 		return true
+	// 	}
+	// 	return false
+	// },
 	LineBreak(cx, line) {
-		if(line.text.length < 1) return true
+		if(line.text.length < 2) return true
 		return false
 	},
-	Action(cx, line) {
-		if(cx.prevNode[0] === 3) return false
-		let from = cx.lineStart + line.pos
-		cx.addNode(Type.Action, from)
-		cx.nextLine()
-		return true
-	},
+	// Action(cx, line) {
+	// 	if(cx.prevNode[0] === 3) return false
+	// 	let from = cx.lineStart + line.pos
+	// 	cx.addNode(Type.Action, from)
+	// 	cx.nextLine()
+	// 	return true
+	// },
 	/* Character(cx, line) */
 	// BlockNote(cx, line) {
 		
@@ -1342,123 +1342,6 @@ export class FountainParser extends Parser {
 		return parse;
 	}
 
-	/// Reconfigure the parser.
-	configure(spec: MarkdownExtension) {
-		let config = resolveConfig(spec);
-		if (!config) return this;
-		let { nodeSet, skipContextMarkup } = this;
-		let blockParsers = this.blockParsers.slice(),
-			leafBlockParsers = this.leafBlockParsers.slice(),
-			blockNames = this.blockNames.slice(),
-			inlineParsers = this.inlineParsers.slice(),
-			inlineNames = this.inlineNames.slice(),
-			endLeafBlock = this.endLeafBlock.slice(),
-			wrappers = this.wrappers;
-
-		if (nonEmpty(config.defineNodes)) {
-			skipContextMarkup = Object.assign({}, skipContextMarkup);
-			let nodeTypes = nodeSet.types.slice(),
-				styles: { [selector: string]: Tag | readonly Tag[] } | undefined;
-			for (let s of config.defineNodes) {
-				let { name, block, composite, style } =
-					typeof s == "string" ? ({ name: s } as NodeSpec) : s;
-				if (nodeTypes.some((t) => t.name == name)) continue;
-				if (composite)
-					(skipContextMarkup as any)[nodeTypes.length] = (
-						bl: CompositeBlock,
-						cx: BlockContext,
-						line: Line
-					) => composite!(cx, line, bl.value);
-				let id = nodeTypes.length;
-				let group = composite
-					? ["Block", "BlockContext"]
-					: !block
-					? undefined
-					: id >= Type.Act && id <= Type.Scene
-					? ["Block", "LeafBlock", "Section"]
-					: ["Block", "LeafBlock"];
-				nodeTypes.push(
-					NodeType.define({
-						id,
-						name,
-						props: group && [[NodeProp.group, group]],
-					})
-				);
-				if (style) {
-					if (!styles) styles = {};
-					if (Array.isArray(style) || style instanceof Tag)
-						styles[name] = style;
-					else Object.assign(styles, style);
-				}
-			}
-			nodeSet = new NodeSet(nodeTypes);
-			if (styles) nodeSet = nodeSet.extend(styleTags(styles));
-		}
-
-		if (nonEmpty(config.props)) nodeSet = nodeSet.extend(...config.props);
-
-		if (nonEmpty(config.remove)) {
-			for (let rm of config.remove) {
-				let block = this.blockNames.indexOf(rm),
-					inline = this.inlineNames.indexOf(rm);
-				if (block > -1)
-					blockParsers[block] = leafBlockParsers[block] = undefined;
-				if (inline > -1) inlineParsers[inline] = undefined;
-			}
-		}
-
-		if (nonEmpty(config.parseBlock)) {
-			for (let spec of config.parseBlock) {
-				let found = blockNames.indexOf(spec.name);
-				if (found > -1) {
-					blockParsers[found] = spec.parse;
-					leafBlockParsers[found] = spec.leaf;
-				} else {
-					let pos = spec.before
-						? findName(blockNames, spec.before)
-						: spec.after
-						? findName(blockNames, spec.after) + 1
-						: blockNames.length - 1;
-					blockParsers.splice(pos, 0, spec.parse);
-					leafBlockParsers.splice(pos, 0, spec.leaf);
-					blockNames.splice(pos, 0, spec.name);
-				}
-				if (spec.endLeaf) endLeafBlock.push(spec.endLeaf);
-			}
-		}
-
-		if (true) {
-			for (let spec of config.parseInline) {
-				let found = inlineNames.indexOf(spec.name);
-				if (found > -1) {
-					inlineParsers[found] = spec.parse;
-				} else {
-					let pos = spec.before
-						? findName(inlineNames, spec.before)
-						: spec.after
-						? findName(inlineNames, spec.after) + 1
-						: inlineNames.length - 1;
-					inlineParsers.splice(pos, 0, spec.parse);
-					inlineNames.splice(pos, 0, spec.name);
-				}
-			}
-		}
-
-		if (config.wrap) wrappers = wrappers.concat(config.wrap);
-
-		return new FountainParser(
-			nodeSet,
-			blockParsers,
-			leafBlockParsers,
-			blockNames,
-			endLeafBlock,
-			skipContextMarkup,
-			inlineParsers,
-			inlineNames,
-			wrappers
-		);
-	}
-
 	/// @internal
 	getNodeType(name: string) {
 		let found = this.nodeTypes[name];
@@ -1473,7 +1356,8 @@ export class FountainParser extends Parser {
 		let cx = new InlineContext(this, text, offset);
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
-			for (let token of this.inlineParsers)
+			for (let token of this.inlineParsers) {
+				// console.log("tokyn", token)
 				if (token) {
 					let result = token(cx, next, pos);
 					if (result >= 0) {
@@ -1481,7 +1365,8 @@ export class FountainParser extends Parser {
 						continue outer;
 					}
 				}
-			pos++;
+				pos++;
+			}
 		}
 		return cx.resolveMarkers(0);
 	}
@@ -1727,19 +1612,27 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let bo = ":".charCodeAt(0)
 		if(cx.text.match(regex.title_page)) {
 			return cx.append(elt(Type.TitlePage, start, start + 2))
-		} else if(cx.parts[cx.parts.length - 1].type === Type.TitlePage) {
-			return cx.append(elt(Type.TitlePage, start, start + 2))
+		} else if(cx.parts[cx.parts.length - 1]?.type === Type.TitlePage) {
+			return cx.append(elt(Type.TitlePage, start, start + 1))
 		}
 		return -1
 	},
 	SceneNumber(cx, next, start) {
-		let ploos = 1
+		// let ploos = 1
 		// if(next !== "#".charCodeAt(0)) return -1;
-		while(next === 35) ploos++
-		if(ploos < 2) return -1
-		console.debug("type.sceenyweeny", String.fromCharCode(next))
-		cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
-		return Type.SceneNumber
+		// while(next === 35) ploos++
+		// if(ploos < 2) return -1
+		let startmeup = cx.text.indexOf("#")
+		let myend = cx.text.lastIndexOf("#") + 1 
+		console.debug(startmeup, myend)
+		if(startmeup !== -1 && myend > 0 && myend > startmeup + 1) {
+			console.debug("type.sceenyweeny", String.fromCharCode(next), cx.text)
+			console.log(cx.text.slice(startmeup, myend))
+			cx.append(elt(Type.SceneNumber, startmeup, myend))
+		
+		}
+		// cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
+		return -1
 	},
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;

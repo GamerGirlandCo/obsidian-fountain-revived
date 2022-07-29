@@ -101,9 +101,9 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
 	const all = view.state.doc.toString()
-	// visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	try {
 		for (const { from, to } of view.visibleRanges) {
+			// visualize(parser.parse(all).cursor(), view.state.doc.toString())
 			const text = view.state.doc.sliceString(from, to);
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
