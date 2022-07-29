@@ -243,7 +243,19 @@ const DefaultSkipMarkup: {
 } = {
 	[Type.Screenplay]() {
 		return true;
-	}
+	},
+	// [Type.SceneNumber](bl, cx, line) {
+	// 	console.debug("type.scenenumber")
+	// 	if(line.next !== 35) return false;
+	// 	line.markers.push(
+	// 			elt(Type.SceneNumberMarker, cx.lineStart + line.pos, cx.lineStart + line.pos + 1)
+	// 		)
+	// 	line.moveBase(
+	// 		line.pos + (space(line.text.charCodeAt(line.pos + 1)) ? 2 : 1)
+	// 		)
+	// 		bl.end = cx.lineStart + line.text.length;
+	// 		return true
+	// }
 };
 
 export function space(ch: number) {
@@ -307,10 +319,6 @@ function isLyric(line: Line, cx: BlockContext, breaking: boolean) {
 			line.skipSpace(line.pos) < line.text.length) */
 		? 1
 		: -1;
-}
-function isSceneNumber(line: Line, cx: BlockContext) {
-	console.log("isn", line, cx)
-	return (line.next === 35) ? 1 : -1
 }
 
 
@@ -387,18 +395,13 @@ const DefaultBlockParsers: {
 } = {
 	LinkReference: undefined,
 	TitlePage(cx, line) {
-		let from = cx.lineStart + line.pos;
-		if(!line.text.toLowerCase().match(regex.title_page)) {
+		// console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
+		if(!line.text.toLowerCase().match(regex.title_page) || cx.prevNode[0] < 3) {
 			return false
-		} else if(cx.prevNode[0] === Type.TitlePage) {
-			console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
-			
-			cx.nextLine()
-			cx.addElement( elt(Type.TitlePage, from, cx.absoluteLineEnd - 1))
-			return true
 		}
+		let from = cx.lineStart + line.pos;
 		cx.nextLine()
-		cx.addElement( elt(Type.TitlePage, from, cx.absoluteLineEnd - 1))
+		cx.addNode(Type.TitlePage, from)
 		return true
 		
 	},
@@ -420,7 +423,6 @@ const DefaultBlockParsers: {
 	},
 	
 	SceneHeading(cx, line) {
-		// console.debug("sceneheading", cx, line)
 		if(!line.text.match(regex.scene_heading)) {
 			return false
 		}
@@ -453,13 +455,6 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
-	Parenthetical(cx, line) {
-		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
-		let from = cx.lineStart + line.pos
-		cx.addNode(Type.Parenthetical, from)
-		cx.nextLine()
-		return true
-	},
 	Character(cx, line) {
 		if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 		let from = cx.lineStart + line.pos;
@@ -476,9 +471,15 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
-
+	Parenthetical(cx, line) {
+		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
+		let from = cx.lineStart + line.pos
+		cx.addNode(Type.Parenthetical, from)
+		cx.nextLine()
+		return true
+	},
 	Action(cx, line) {
-		if(cx.prevNode[0] === Type.TitlePage) return false
+		if(cx.prevNode[0] === 3) return false
 		let from = cx.lineStart + line.pos
 		cx.addNode(Type.Action, from)
 		cx.nextLine()
@@ -704,24 +705,6 @@ function lineEnd(text: string, pos: number) {
 	return pos;
 }
 
-class SceneNumberParser implements LeafBlockParser {
-	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		let startmeup = line.text.indexOf("#")
-		let myend = line.text.lastIndexOf("#") + 1 
-		if(startmeup !== -1 && myend > 0) {
-			console.log(line.text.slice(startmeup, myend))
-			cx.addLeafElement(leaf, elt(Type.SceneNumberMarker, startmeup, myend))
-			cx.finishLeaf(leaf)
-			return true;
-		}
-		this.finish()
-	}
-
-	finish() {
-		return false;
-	}
-}
-
 class SectionParser implements LeafBlockParser {
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
 		let underline = line.depth < cx.stack.length ? -1 : isSetextUnderline(line);
@@ -756,9 +739,6 @@ const DefaultLeafBlocks: {
 	Section() {
 		return new SectionParser();
 	},
-	// SceneNumber() {
-	// 	return new SceneNumberParser()
-	// }
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -766,7 +746,6 @@ const DefaultLeafBlocks: {
 
 const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	(_, line) => isSection(line) >= 0,
-	// (p, line) => isSceneNumber(line, p) >=0,
 	// (_, line) => isFencedCode(line) >= 0,
 	(_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
@@ -1490,8 +1469,7 @@ export class FountainParser extends Parser {
 		let cx = new InlineContext(this, text, offset);
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
-			for (let token of this.inlineParsers){
-				console.log("tokrn", token)
+			for (let token of this.inlineParsers)
 				if (token) {
 					let result = token(cx, next, pos);
 					if (result >= 0) {
@@ -1499,7 +1477,6 @@ export class FountainParser extends Parser {
 						continue outer;
 					}
 				}
-			}
 			pos++;
 		}
 		return cx.resolveMarkers(0);
@@ -1715,7 +1692,7 @@ const CharacterExtension: DelimiterType = {
 	mark: "CharacterExt"
 }
 const SceneNumberThingy: DelimiterType = {
-	resolve: "SceneNumber",
+	resolve: "SceneNumberMarker",
 	mark: "SceneNumberMarker"
 }
 class InlineDelimiter {
@@ -1741,10 +1718,19 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	if(next !== 91) return -1
 	// 	let after = cx.slice(pos, pos+1)
 	// },
+	SceneNumber(cx, next, start) {
+		let ploos = 1
+		// if(next !== "#".charCodeAt(0)) return -1;
+		while(next === 35) ploos++
+		if(ploos < 2) return -1
+		console.debug("type.sceenyweeny", String.fromCharCode(next))
+		cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
+		return Type.SceneNumber
+	},
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;
 		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1
-		while(cx.char(pos) === 40 || cx.char(pos) === 41) pos++
+		while(cx.char(pos) === 41 || cx.char(pos) === 40) pos++
 		let after = cx.slice(pos, pos+1);
 		return cx.append(
 				new InlineDelimiter(CharacterExtension,start, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
@@ -1917,7 +1903,6 @@ export class InlineContext {
 	resolveMarkers(from: number) {
 		for (let i = from; i < this.parts.length; i++) {
 			let close = this.parts[i];
-			console.log("closedoff",close.type)
 			if (
 				!(
 					close instanceof InlineDelimiter &&
@@ -1926,6 +1911,7 @@ export class InlineContext {
 				)
 			)
 				continue;
+
 			let emp = close.type == EmphasisItalic || close.type === EmphasisBold;
 			let un = close.type == EmphasisUnderline
 			let closeSize = close.to - close.from;
