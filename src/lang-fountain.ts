@@ -711,9 +711,10 @@ class SceneNumberParser implements LeafBlockParser {
 		if(startmeup !== -1 && myend > 0) {
 			console.log(line.text.slice(startmeup, myend))
 			cx.addLeafElement(leaf, elt(Type.SceneNumberMarker, startmeup, myend))
-		
+			cx.finishLeaf(leaf)
+			return true;
 		}
-		return true;
+		this.finish()
 	}
 
 	finish() {
@@ -755,9 +756,9 @@ const DefaultLeafBlocks: {
 	Section() {
 		return new SectionParser();
 	},
-	SceneNumber() {
-		return new SceneNumberParser()
-	}
+	// SceneNumber() {
+	// 	return new SceneNumberParser()
+	// }
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -765,7 +766,7 @@ const DefaultLeafBlocks: {
 
 const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	(_, line) => isSection(line) >= 0,
-	(p, line) => isSceneNumber(line, p) >=0,
+	// (p, line) => isSceneNumber(line, p) >=0,
 	// (_, line) => isFencedCode(line) >= 0,
 	(_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
@@ -1740,19 +1741,6 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 	// 	if(next !== 91) return -1
 	// 	let after = cx.slice(pos, pos+1)
 	// },
-	SceneNumber(cx, next, start) {
-		let ploos = 1
-		// if(next !== "#".charCodeAt(0)) return -1;
-		let pos = start + 1
-		while(cx.char(pos) === 35) {
-			ploos++
-			pos++
-		}
-		console.debug("type.sceenyweeny", String.fromCharCode(next), ploos, pos)
-		if(ploos < 2) return -1
-		cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
-		return Type.SceneNumber
-	},
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;
 		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1

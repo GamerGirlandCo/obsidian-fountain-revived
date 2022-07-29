@@ -38,7 +38,7 @@
     /* border-bottom: 1px solid black; */
 	text-align: center;
 	font-weight: 600 !important;
-	font-size: 2em;
+	font-size: 1.75em;
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-footer {
@@ -47,14 +47,14 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-transition {
     font-style: italic;
-	font-size: 0.85em;
+	font-size: 1.1em;
 	color: var(--blue-highlighter)
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
 	color: var(--text-accent);
     font-weight: bold;
-	font-size: 1.2em;
+	font-size: 0.85em;
 	margin-top: 2em;
 }
 
@@ -99,10 +99,6 @@
 }
 .screenplay-marker.character-ext, .screenplay-parenthetical {
 	    padding-left: 10% !important;
-}
-
-[data-type="fountain"] > .view-content .cm-editor .screenplay-parenthetical:first-of-type {
-
 }
 
 
