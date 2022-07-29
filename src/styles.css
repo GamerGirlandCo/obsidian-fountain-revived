@@ -97,7 +97,7 @@
 	font-weight: bold !important;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-parenthetical {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-marker.parenthetical:first-of-type {
     padding-left: 10%;
 }
 

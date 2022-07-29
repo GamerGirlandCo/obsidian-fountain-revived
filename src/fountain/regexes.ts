@@ -1,5 +1,5 @@
 export const regex = {
-    title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:).*\n\n/gism,
+    title_page: /^((?:title|credit|author[s]?|source|notes|draft date|date|contact|copyright)\:).*\n/gis,
 
     scene_heading: /^((?:\*{0,3}_?)?(?:(?:int|ext|est|i\/e)[. ]).+)|^(?:\.(?!\.+))(.+)/i,
     scene_number: /( *#(.+)# *)/,

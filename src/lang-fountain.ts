@@ -32,7 +32,6 @@ class CompositeBlock {
 	}
 
 	private hashProp: [NodeProp<any>, any][];
-
 	constructor(
 		readonly type: number,
 		readonly value: number,
@@ -86,6 +85,7 @@ export enum Type {
 	SceneHeading,
 	Transition,
 	Dialogue,
+	Character,
 	Parenthetical,
 	Action,
 	Centered,
@@ -388,15 +388,22 @@ const DefaultBlockParsers: {
 } = {
 	LinkReference: undefined,
 	TitlePage(cx, line) {
+		console.debug("titlepage", line, cx.prevNode, Type.TitlePage)
 		let blip = cx.stack[0].children as Tree[]
 		let blop = blip[blip.length - 1] as Tree
-		console.debug("titlepage", line, cx, blip, blop)
-		if(blop?.children[blop?.children.length - 1]?.type.name !== "TitlePage" || !line.text.match(regex.title_page) ) return false;
-		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.TitlePage, from)
-		return true
+		if(!line.text.match(regex.title_page) ) {
+			return false
+		} 
+		if(cx.block.type === Type.TitlePage) {
+			let from = cx.lineStart + line.pos;
+			cx.addNode(Type.TitlePage, from)
+			cx.nextLine()
+			return true
+			
+		}
+		return false
 	},
+	
 	Transition(cx, line) {
 		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
 		let from = cx.lineStart + line.pos;
@@ -444,6 +451,12 @@ const DefaultBlockParsers: {
 		cx.nextLine()
 		cx.addNode(Type.Synopsis, from)
 		return true
+	},
+	Character(cx, line) {
+		if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
+		let from = cx.lineStart + line.pos;
+		cx.addNode(Type.Character, from)
+		cx.nextLine()
 	},
 	/* Character(cx, line) */
 	// BlockNote(cx, line) {
@@ -735,6 +748,7 @@ export class BlockContext implements PartialParse {
 	rangeI = 0;
 	/// @internal
 	absoluteLineEnd: number;
+	prevNode: CompositeBlock = null
 
 	/// @internal
 	constructor(
@@ -1011,6 +1025,7 @@ export class BlockContext implements PartialParse {
 
 	/// @internal
 	finishContext() {
+		this.prevNode = this.stack[this.stack.length - 2 < 0 ? 0 : this.stack.length - 2]
 		let cx = this.stack.pop()!;
 		let top = this.stack[this.stack.length - 1];
 		top.addChild(cx.toTree(this.parser.nodeSet), cx.from - top.from);
@@ -1622,6 +1637,7 @@ export interface DelimiterType {
 
 
 
+
 const EmphasisUnderline: DelimiterType = {
 	resolve: "Underline",
 	mark: "UnderlineMark",
@@ -1733,7 +1749,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
 		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
 		let abool = (next === ast && prev == ast) && upnext !== 42
-		console.log("emp", abool, prev, next, upnext, cx.char(pos+2))
+		// console.log("emp", abool, prev, next, upnext, cx.char(pos+2))
 		return cx.append(
 			new InlineDelimiter(
 				(abool) ? EmphasisBold : EmphasisItalic,
@@ -1854,9 +1870,9 @@ export class InlineContext {
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
+				console.log("part-y", this.parts)
 			for (; j >= from; j--) {
 				let part = this.parts[j] as InlineDelimiter;
-				// console.log("part-y", part)
 				if (
 					!(
 						part instanceof InlineDelimiter &&
@@ -1993,8 +2009,8 @@ function injectMarks(
 // These are blocks that can span blank lines, and should thus only be
 // reused if their next sibling is also being reused.
 const NotLast = [
-	// Type.Dialogue,
-	// Type.TitlePage,
+	Type.Dialogue,
+	Type.TitlePage,
 	// Type.Action,
 	Type.BlockNote,
 	Type.BoneYard
@@ -2053,6 +2069,7 @@ class FragmentCursor {
 		return tree && tree.prop(NodeProp.contextHash) == hash;
 	}
 
+
 	takeNodes(cx: BlockContext) {
 		let cur = this.cursor!,
 			off = this.fragment!.offset,
@@ -2090,6 +2107,7 @@ class FragmentCursor {
 			cx.block.children.pop();
 			cx.block.positions.pop();
 		}
+
 		return end - start;
 	}
 }

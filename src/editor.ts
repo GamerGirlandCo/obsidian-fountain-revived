@@ -150,6 +150,7 @@ function inlineRender(view: EditorView) {
 				// 		
 				// 	}
 				// }
+				
 				let cssClass: string = '';
 				switch (name) {
 					case "SceneNumber":
