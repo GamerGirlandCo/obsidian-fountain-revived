@@ -60,7 +60,7 @@ esbuild.build({
 			execSync("cp -f main.js C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
 			execSync("cp -f manifest.json C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
 			execSync("cp -f src/styles.css C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
-			execSync("pwsh.exe ./lezerbuild.ps1")
+			// execSync("pwsh.exe ./lezerbuild.ps1")
 		},
 	},
 	target: 'es2016',
