@@ -440,12 +440,15 @@ const DefaultBlockParsers: {
 	// 	}
 	// 	return false
 	// },
-	Dialogue: undefined,
 	LineBreak(cx, line) {
-		// console.log(cx.)
-		if(line.text.length < 2) return true
+		// console.log(line.text)
+		if(line.text.length <= 1) {
+			cx.addNode(Type.LineBreak, cx.lineStart)
+			return true
+		} 
 		return false
 	},
+	Dialogue: undefined,
 	// Action: undefined,
 	// Dialogue: undefined,
 	// /* Character(cx, line) */
@@ -492,7 +495,7 @@ class DialogueParser implements LeafBlockParser {
 			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
 			: CurrentBlock.Begin
 		this.context = cx
-		console.log("diaparse", leaf.content)
+		// console.log("diaparse", leaf.content)
 		this.advance(leaf.content);
 	}
 	changeType(arg: CurrentBlock) {
@@ -544,24 +547,23 @@ class DialogueParser implements LeafBlockParser {
 
 	advance(content: string) {
 		// if(this.context.prevNode[0] === Type.SceneHeading) return -1
-		if(content.match(regex.scene_heading)) {
-			return -1
-		}
+		// if(this.context.prevNode[0] === Type.Action) {
+		// 	return -1
+		// }
 		for(;;) {
 			// console.log("curr", this.current)
 			if(this.current == CurrentBlock.Action) {
 				// this.current = CurrentBlock.Dialogue
-				this.context.addNode(Type.Dialogue, this.start)
+				// this.context.addNode(Type.Dialogue, this.start)
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
 				console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
 				if(parseParenthetical(content, this.pos, this.start)) {
 					// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, content.length + this.start))
-					this.changeType(CurrentBlock.Dialogue)
+					// this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Parenthetical, this.start)
 				} else if(parseCharacter(content, this.pos, this.start), content) {
-					this.changeType(CurrentBlock.Dialogue)
-					
+					// this.changeType(CurrentBlock.Character)
 				} else {
 					this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Dialogue, this.context.lineStart)
@@ -570,34 +572,31 @@ class DialogueParser implements LeafBlockParser {
 			} else if(this.current == CurrentBlock.Character) {
 				console.log("curr = character", content)
 				if(!this.nextPart(parseCharacter(content, this.pos, this.start), content)) {
-					this.context.addNode(Type.Dialogue, this.start)
-					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
+					this.changeType(CurrentBlock.Dialogue)
+					this.context.addNode(Type.Character, this.start)
 					return 1
 				}
-				// if()
 				this.context.addNode(Type.Character, this.start)
-				// this.context.nextLine()
-				this.changeType(CurrentBlock.Dialogue)
-				// this.pos++
+				// this.changeType(CurrentBlock.Dialogue)
 				return 1
 				// this.pos++
 			} else if(this.current == CurrentBlock.Parenthetical) {
 				console.log("curr = paran", content)
 				if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) {
 					this.context.addNode(Type.Dialogue, this.start)
-					this.changeType(CurrentBlock.Dialogue)
-
+					// this.changeType(CurrentBlock.Dialogue)
 					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
 					return 1
 				}
 				// if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) return -1
 				this.context.addNode(Type.Parenthetical, this.start)
-				this.changeType(CurrentBlock.Dialogue)
+				// this.changeType(CurrentBlock.Dialogue)
 				// this.context.nextLine()
 				return 1
 			} else {
 				
 				// this.current = CurrentBlock.Dialogue
+				// this.changeType(CurrentBlock.Begin)
 				this.context.addNode(Type.Dialogue, this.start)
 				return 1
 			}
@@ -1805,17 +1804,17 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		);
 	},
 
-	LineBreak(cx, next, start) {
-		if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
-			return cx.append(elt(Type.LineBreak, start, start + 1));
-		if (next == 32) {
-			let pos = start + 1;
-			while (cx.char(pos) == 32) pos++;
-			if (cx.char(pos) == 10 && pos >= start + 2)
-				return cx.append(elt(Type.LineBreak, start, pos + 1));
-		}
-		return -1;
-	},
+	// LineBreak(cx, next, start) {
+	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
+	// 		return cx.append(elt(Type.LineBreak, start, start + 1));
+	// 	if (next == 32) {
+	// 		let pos = start + 1;
+	// 		while (cx.char(pos) == 32) pos++;
+	// 		if (cx.char(pos) == 10 && pos >= start + 2)
+	// 			return cx.append(elt(Type.LineBreak, start, pos + 1));
+	// 	}
+	// 	return -1;
+	// },
 	// SceneNumber(cx, next, start) {
 	// 	let actualstart = start;
 	// 	let pos = start + 1;
