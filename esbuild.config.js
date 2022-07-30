@@ -58,7 +58,7 @@ esbuild.build({
 			execSync("pwsh.exe ./post-compile.ps1")
 		},
 	},
-	target: 'es2016',
+	target: 'es2018',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,

@@ -86,7 +86,7 @@
 /* Dialogue */
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-character {
-    text-align: center;
+    padding-left: 30%;
     color: var(--yellow) !important;
     font-weight: 600 !important;
     font-size: 18px !important;
@@ -110,7 +110,7 @@
 .screenplay-marker.bold {
 	font-weight: bold !important;
 }
-.screenplay-marker.character-ext, .screenplay-parenthetical {
+.screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-dialogue.screenplay-parenthetical.cm-line {
 	    padding-left: 10% !important;
 }
 

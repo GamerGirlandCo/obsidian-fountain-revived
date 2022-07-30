@@ -101,10 +101,11 @@ function inlineRender(view: EditorView) {
 	let iiii = 1;
 	const all = view.state.doc.toString()
 	visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
-			const text = view.state.doc.sliceString(from, to);
-			const tree = parser.parse(all);
+			const text = view.state.doc.sliceString(0, to + 500, "\n");
+			const tree = parser.parse(text);
 			let cursor = tree.cursor();
 			iiii++
 			do {
@@ -182,9 +183,6 @@ function inlineRender(view: EditorView) {
 					case "Speech":
 						cssClass = "dialogue"
 						break;
-					case "Action":
-						cssClass = 'action';
-						break;
 					case "Centered":
 						cssClass = "centered"
 						break;
@@ -193,6 +191,12 @@ function inlineRender(view: EditorView) {
 						break;
 					case "Parenthetical":
 						cssClass ="parenthetical"
+						break;
+					case "Action":
+						cssClass="action"
+						break;
+					case "LineBreak":
+						cssClass = "line-break"
 						break;
 					default:
 						break;
@@ -214,9 +218,9 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-					// cssClass === "scene-heading" && console.log("notinline", cssClass)
+					// console.log("cls", cssClass)
 						// console.log()
-						if(name !=="TitlePageField") {
+						if(name !=="TitlePageField" && name !== "PlainText") {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,

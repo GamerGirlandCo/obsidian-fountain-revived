@@ -1,4 +1,4 @@
-import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport } from "@codemirror/language";
+import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent } from "@codemirror/language";
 import {
 	Input,
 	NodeProp,
@@ -125,7 +125,8 @@ export enum Type {
 	ItalicMark,
 	UnderlineMark,
 	SectionMark,
-	EmphasisMark
+	EmphasisMark,
+	PlainText
 }
 
 export class LeafBlock {
@@ -244,18 +245,6 @@ const DefaultSkipMarkup: {
 	[Type.Screenplay]() {
 		return true;
 	},
-	// [Type.SceneNumber](bl, cx, line) {
-	// 	console.debug("type.scenenumber")
-	// 	if(line.next !== 35) return false;
-	// 	line.markers.push(
-	// 			elt(Type.SceneNumberMarker, cx.lineStart + line.pos, cx.lineStart + line.pos + 1)
-	// 		)
-	// 	line.moveBase(
-	// 		line.pos + (space(line.text.charCodeAt(line.pos + 1)) ? 2 : 1)
-	// 		)
-	// 		bl.end = cx.lineStart + line.text.length;
-	// 		return true
-	// }
 };
 
 export function space(ch: number) {
@@ -265,18 +254,6 @@ export function space(ch: number) {
 function skipSpace(line: string, i = 0) {
 	while (i < line.length && space(line.charCodeAt(i))) i++;
 	return i;
-}
-
-function isFencedCode(line: Line) {
-	if (line.next != 96 && line.next != 126 /* '`~' */) return -1;
-	let pos = line.pos + 1;
-	while (pos < line.text.length && line.text.charCodeAt(pos) == line.next)
-		pos++;
-	if (pos < line.pos + 3) return -1;
-	if (line.next == 96)
-		for (let i = pos; i < line.text.length; i++)
-			if (line.text.charCodeAt(i) == 96) return -1;
-	return pos;
 }
 
 function isBlockquote(line: Line) {
@@ -394,29 +371,8 @@ const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
 	LinkReference: undefined,
-	// TitlePage(cx, line) {
-	// 	// console.debug("titlepage", line.text, line.text.match(regex.title_page), cx.prevNode[0] === Type.TitlePage, Type.TitlePage)
-	// 	if(!line.text.toLowerCase().match(regex.title_page)) {
-	// 		return false
-	// 	}
-	// 	let from = cx.lineStart + line.pos;
-	// 	cx.nextLine()
-	// 	cx.addNode(Type.TitlePage, from)
-	// 	return true		
-	// },
 	TitlePage: undefined,
-	
 	SceneHeading: undefined,
-	/* (cx, line) {
-		if(!line.text.match(regex.scene_heading)) {
-			return false
-		}
-		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.SceneHeading, from)
-		return true
-	}, */
-	
 	Transition(cx, line) {
 		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
 		let from = cx.lineStart + line.pos;
@@ -456,44 +412,42 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
-	Character(cx, line) {
-		if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
-		let from = cx.lineStart + line.pos;
-		cx.addNode(Type.Character, from)
-		cx.nextLine()
-	},
-	Parenthetical(cx, line) {
-		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
-		let from = cx.lineStart + line.pos
-		// cx.p
-		cx.addNode(Type.Parenthetical, from)
-		cx.nextLine()
-		return true
-	},
+	// Character(cx, line) {
+	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
+	// 	let from = cx.lineStart + line.pos;
+	// 	// cx.addElement(elt(Type.Character, from, cx.lineStart + line.text.length, [
+			
+	// 	// ]))
+	// 	cx.addNode(Type.Character, from)
+	// 	cx.nextLine()
+	// 	return true
+	// },
+	// Parenthetical(cx, line) {
+	// 	if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
+	// 	let from = cx.lineStart + line.pos
+	// 	// cx.p
+	// 	cx.addNode(Type.Parenthetical, from)
+	// 	cx.nextLine()
+	// 	return true
+	// },
 	// Dialogue(cx, line) {
 	// 	let from = cx.lineStart + line.pos;
 	// 	// console.log("diaaaaa", cx.prevNode)
-	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
+	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical || cx.prevNode[0] === Type.Dialogue) {
 	// 		cx.addNode(Type.Dialogue, from)
 	// 		cx.nextLine()
 	// 		return true
 	// 	}
 	// 	return false
 	// },
+	Dialogue: undefined,
 	LineBreak(cx, line) {
 		// console.log(cx.)
 		if(line.text.length < 2) return true
 		return false
 	},
-	Action: undefined,
-	Dialogue: undefined,
-	//  Action(cx, line) {
-	//  	// if(cx.prevNode[0] === Type.TitlePage) return false
-	//  	let from = cx.lineStart + line.pos
-	//  	cx.addNode(Type.Action, from)
-	//  	cx.nextLine()
-	//  	return true
-	//  },
+	// Action: undefined,
+	// Dialogue: undefined,
 	// /* Character(cx, line) */
 	//  BlockNote(cx, line) {
 		
@@ -501,112 +455,159 @@ const DefaultBlockParsers: {
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 };
 
-// This implements a state machine that incrementally parses link references. At each
-// next line, it looks ahead to see if the line continues the reference or not. If it
-// doesn't and a valid link is available ending before that line, it finishes that.
-// Similarly, on `finish` (when the leaf is terminated by external circumstances), it
-// creates a link reference if there's a valid reference up to the current point.
-// class LinkReferenceParser implements LeafBlockParser {
-// 	stage = RefStage.Start;
-// 	elts: Element[] = [];
-// 	pos = 0;
-// 	start: number;
+const enum CurrentBlock {
+	Action = -1,
+	Begin,
+	Character,
+	Parenthetical,
+	Dialogue,
+}
 
-// 	constructor(leaf: LeafBlock) {
-// 		this.start = leaf.start;
-// 		this.advance(leaf.content);
-// 	}
+function parseCharacter(text: string, start: number, offset: number): null | false | Element {
+	if(text.match(regex.character)) {
+		console.log("parsing character", text)
+		return elt(Type.Character, start + offset, text.length + offset)
+	}
+	return null
+}
 
-// 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-// 		if (this.stage == RefStage.Failed) return false;
-// 		let content = leaf.content + "\n" + line.scrub();
-// 		let finish = this.advance(content);
-// 		if (finish > -1 && finish < content.length)
-// 			return this.complete(cx, leaf, finish);
-// 		return false;
-// 	}
+function parseParenthetical(text: string, start: number, offset: number): null | false | Element {
+	if(text.match(regex.parenthetical)) {
+		console.log("parsing parenthetical", text)
+		return elt(Type.Parenthetical, start + offset, text.length + offset)
+	}
+	return null
+}
 
-// 	finish(cx: BlockContext, leaf: LeafBlock) {
-// 		if (
-// 			(this.stage == RefStage.Link || this.stage == RefStage.Title) &&
-// 			skipSpace(leaf.content, this.pos) == leaf.content.length
-// 		)
-// 			return this.complete(cx, leaf, leaf.content.length);
-// 		return false;
-// 	}
+class DialogueParser implements LeafBlockParser {
+	elts: Element[] = [];
+	pos = 0;
+	start: number;
+	previous: CurrentBlock[] = [];
+	current : CurrentBlock;
+	context: BlockContext;
+	constructor(leaf: LeafBlock, cx: BlockContext) {
+		this.start = leaf.start;
+		this.current = leaf.content.match(regex.character) ? CurrentBlock.Character :
+			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
+			: CurrentBlock.Begin
+		this.context = cx
+		console.log("diaparse", leaf.content)
+		this.advance(leaf.content);
+	}
+	changeType(arg: CurrentBlock) {
+		if(this.previous.length>= 3) {
+			this.previous.shift()
+		} 
+		this.previous.push(arg)
+		this.current = arg
+	}
+	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
+		console.log("scrubby", line.scrub())
+		if(this.current == CurrentBlock.Action) return false
+		// let finish = this.advance(line.scrub())
+		return this.complete(cx, leaf, line.scrub().length + leaf.content.length + 1)
+		// return false;
+	}
 
-// 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-// 		cx.addLeafElement(
-// 			leaf,
-// 			elt(Type.LinkReference, this.start, this.start + len, this.elts)
-// 		);
-// 		return true;
-// 	}
+	finish(cx: BlockContext, leaf: LeafBlock) {
+		if((this.current == CurrentBlock.Dialogue || this.current == CurrentBlock.Parenthetical)
+		&& skipSpace(leaf.content, this.pos) == leaf.content.length) {
+			return this.complete(cx, leaf, leaf.content.length)
+		}
+		// if (
+		// 	(this.stage == RefStage.Link || this.stage == RefStage.Title) &&
+		// 	skipSpace(leaf.content, this.pos) == leaf.content.length
+		// )
+		// 	return this.complete(cx, leaf, leaf.content.length);
 
-// 	nextStage(elt: Element | null | false) {
-// 		if (elt) {
-// 			this.pos = elt.to - this.start;
-// 			this.elts.push(elt);
-// 			this.stage++;
-// 			return true;
-// 		}
-// 		if (elt === false) this.stage = RefStage.Failed;
-// 		return false;
-// 	}
+		return false;
+	}
+	nextPart(elt: Element | null | false, dbgtxt?: string) {
+		console.debug("nextpart", dbgtxt, elt, this.current)
+		if (elt) {
+			this.pos = elt.to - this.start;
+			this.elts.push(elt);
+			// this.current++;
+			return true;
+		}
+		if (elt === false) this.current = CurrentBlock.Action;
+		return false;
+	}
+	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
+		console.log("completion", leaf.content, this.current)
+		// cx.addLeafElement(leaf,
+		// 	elt(Type.Dialogue, this.start, this.start + len, this.elts)
+		// )
+		return true;
+	}
 
-// 	advance(content: string) {
-// 		for (;;) {
-// 			if (this.stage == RefStage.Failed) {
-// 				return -1;
-// 			} else if (this.stage == RefStage.Start) {
-// 				if (
-// 					!this.nextStage(parseLinkLabel(content, this.pos, this.start, true))
-// 				)
-// 					return -1;
-// 				if (content.charCodeAt(this.pos) != 58 /* ':' */)
-// 					return (this.stage = RefStage.Failed);
-// 				this.elts.push(
-// 					elt(Type.LinkMark, this.pos + this.start, this.pos + this.start + 1)
-// 				);
-// 				this.pos++;
-// 			} else if (this.stage == RefStage.Label) {
-// 				if (
-// 					!this.nextStage(
-// 						parseURL(content, skipSpace(content, this.pos), this.start)
-// 					)
-// 				)
-// 					return -1;
-// 			} else if (this.stage == RefStage.Link) {
-// 				let skip = skipSpace(content, this.pos),
-// 					end = 0;
-// 				if (skip > this.pos) {
-// 					let title = parseLinkTitle(content, skip, this.start);
-// 					if (title) {
-// 						let titleEnd = lineEnd(content, title.to - this.start);
-// 						if (titleEnd > 0) {
-// 							this.nextStage(title);
-// 							end = titleEnd;
-// 						}
-// 					}
-// 				}
-// 				if (!end) end = lineEnd(content, this.pos);
-// 				return end > 0 && end < content.length ? end : -1;
-// 			} else {
-// 				// RefStage.Title
-// 				return lineEnd(content, this.pos);
-// 			}
-// 		}
-// 	}
-// }
+	advance(content: string) {
+		// if(this.context.prevNode[0] === Type.SceneHeading) return -1
+		if(content.match(regex.scene_heading)) {
+			return -1
+		}
+		for(;;) {
+			// console.log("curr", this.current)
+			if(this.current == CurrentBlock.Action) {
+				// this.current = CurrentBlock.Dialogue
+				this.context.addNode(Type.Dialogue, this.start)
+				return -1
+			} else if(this.current == CurrentBlock.Begin) {
+				console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
+				if(parseParenthetical(content, this.pos, this.start)) {
+					// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, content.length + this.start))
+					this.changeType(CurrentBlock.Dialogue)
+					this.context.addNode(Type.Parenthetical, this.start)
+				} else if(parseCharacter(content, this.pos, this.start), content) {
+					this.changeType(CurrentBlock.Dialogue)
+					
+				} else {
+					this.changeType(CurrentBlock.Dialogue)
+					this.context.addNode(Type.Dialogue, this.context.lineStart)
+				}
+				return 1
+			} else if(this.current == CurrentBlock.Character) {
+				console.log("curr = character", content)
+				if(!this.nextPart(parseCharacter(content, this.pos, this.start), content)) {
+					this.context.addNode(Type.Dialogue, this.start)
+					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
+					return 1
+				}
+				// if()
+				this.context.addNode(Type.Character, this.start)
+				// this.context.nextLine()
+				this.changeType(CurrentBlock.Dialogue)
+				// this.pos++
+				return 1
+				// this.pos++
+			} else if(this.current == CurrentBlock.Parenthetical) {
+				console.log("curr = paran", content)
+				if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) {
+					this.context.addNode(Type.Dialogue, this.start)
+					this.changeType(CurrentBlock.Dialogue)
 
-const enum RefStage {
-	Failed = -1,
-	Start,
-	Inside,
-	End
+					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
+					return 1
+				}
+				// if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) return -1
+				this.context.addNode(Type.Parenthetical, this.start)
+				this.changeType(CurrentBlock.Dialogue)
+				// this.context.nextLine()
+				return 1
+			} else {
+				
+				// this.current = CurrentBlock.Dialogue
+				this.context.addNode(Type.Dialogue, this.start)
+				return 1
+			}
+				
+		}
+	}
 }
 
 function lineEnd(text: string, pos: number) {
+	console.log("lineend", ...arguments)
 	for (; pos < text.length; pos++) {
 		let next = text.charCodeAt(pos);
 		if (next == 10) break;
@@ -771,7 +772,7 @@ class TitlePageParser implements LeafBlockParser {
 				elt(Type.TitlePageField, leaf.start, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
 			);
 		} else if(this.myelements.length) {
-			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length))
+			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start)))
 		} /* else if(leaf.content.indexOf("\n") !== -1) {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
@@ -810,7 +811,7 @@ class SceneHeadingParser implements LeafBlockParser {
 		// console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
 		// console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
 		let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
-		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || leaf.content.length)) - 1, sn ? [sn] : [])
+		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || leaf.content.length)), sn ? [sn] : [])
 		// cx.addLeafElement(leaf, sh)
 		cx.addLeafElement(leaf, sh)
 		return true
@@ -834,6 +835,9 @@ const DefaultLeafBlocks: {
 	TitlePage(cx, bl) {
 		return new TitlePageParser(bl, cx)
 	},
+	Dialogue(cx, bl) {
+		return new DialogueParser(bl, cx)
+	}
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -900,7 +904,7 @@ export class BlockContext implements PartialParse {
 	}
 
 	setPrevCurr(block: Type | Tree) {
-		this.prevNode.pop()
+		if(this.prevNode.length >= 2) this.prevNode.pop()
 		// this.prevNode.unshift(t.type.id)
 		if(block instanceof Tree) block = block.type.id;
 		this.prevNode.unshift(block)
@@ -1197,6 +1201,7 @@ export class BlockContext implements PartialParse {
 
 	/// Create an [`Element`](#Element) object to represent some syntax
 	/// node.
+
 	elt(
 		type: string,
 		from: number,
@@ -1800,17 +1805,17 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		);
 	},
 
-	// LineBreak(cx, next, start) {
-	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
-	// 		return cx.append(elt(Type.LineBreak, start, start + 2));
-	// 	if (next == 32) {
-	// 		let pos = start + 1;
-	// 		while (cx.char(pos) == 32) pos++;
-	// 		if (cx.char(pos) == 10 && pos >= start + 2)
-	// 			return cx.append(elt(Type.LineBreak, start, pos + 1));
-	// 	}
-	// 	return -1;
-	// },
+	LineBreak(cx, next, start) {
+		if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
+			return cx.append(elt(Type.LineBreak, start, start + 1));
+		if (next == 32) {
+			let pos = start + 1;
+			while (cx.char(pos) == 32) pos++;
+			if (cx.char(pos) == 10 && pos >= start + 2)
+				return cx.append(elt(Type.LineBreak, start, pos + 1));
+		}
+		return -1;
+	},
 	// SceneNumber(cx, next, start) {
 	// 	let actualstart = start;
 	// 	let pos = start + 1;
@@ -1859,14 +1864,14 @@ export class InlineContext {
 	/// Get a substring of this inline section. Again uses
 	/// document-relative positions.
 	slice(from: number, to: number) {
-		console.debug("slicing:from", from, from - this.offset)
-		console.debug("slicing:to", to, to - this.offset)
+		// console.debug("slicing:from", from, from - this.offset)
+		// console.debug("slicing:to", to, to - this.offset)
 		return this.text.slice(from - this.offset, to - this.offset);
 	}
 
 	/// @internal
 	append(elt: Element | InlineDelimiter) {
-		console.debug("appendion", elt)
+		// console.debug("appendion", elt)
 		this.parts.push(elt);
 		return elt.to;
 	}
@@ -1915,7 +1920,7 @@ export class InlineContext {
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
-				console.log("part-y", this.parts)
+				// console.log("part-y", this.parts)
 			for (; j >= from; j--) {
 				let part = this.parts[j] as InlineDelimiter;
 				if (
