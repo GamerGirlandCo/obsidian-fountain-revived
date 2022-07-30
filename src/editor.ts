@@ -17,7 +17,6 @@ import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
 import {parser} from "./lang-fountain"
 import {visualize} from "@colin_t/lezer-tree-visualizer";
-import { SceneHeading, SceneNumber } from './fountain/parser.terms';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -198,26 +197,28 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
-				if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
+				if(name === "SceneHeading") {
+					console.log("notinline", start)
+						// console.log()
+						widgets.push(
+							Decoration.line({
+								class: `screenplay-scene-heading`,
+								// attributes: { 'data-contents': 'string' },
+							}).range(whichline.to + 1),
+						);
+				} else if( name === "SceneNumber" || name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
 					const content = view.state.doc.sliceString(start, end);
 					widgets.push(Decoration.mark({
-						class: `screenplay-marker ${name.toLowerCase()}`,
+						class: name === "SceneNumber" ? `screenplay-scene-number` : `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
 						block: false
 					}).range(start, end))
-				} else if( name === "SceneHeading" || name=== "SceneNumber" ) {
-					widgets.push(Decoration.mark({
-						class: name === "SceneHeading" ? `screenplay-scene-heading` : "screenplay-scene-number",
-						inclusive: false,
-						block: false
-					}).range(start, end))
-				}
-				// console.log(cssClass)
-				 else if(start !== end) {
-						// console.log("notinline", cssClass)
+				} else if(start !== end) {
+					cssClass === "scene-heading" && console.log("notinline", cssClass)
+						// console.log()
 						widgets.push(
 							Decoration.line({
-								class: cssClass !== "" && `screenplay-${cssClass}`,
+								class: `screenplay-${cssClass}`,
 								// attributes: { 'data-contents': 'string' },
 							}).range(whichline.from),
 						);
@@ -230,6 +231,13 @@ function inlineRender(view: EditorView) {
 						
 					// } else {
 					// }
+				}
+								if(name=== "SceneNumber" ) {
+					widgets.push(Decoration.mark({
+						class: "screenplay-scene-number",
+						inclusive: false,
+						block: false
+					}).range(start, end))
 				}
 			} while (cursor.next());
 		}

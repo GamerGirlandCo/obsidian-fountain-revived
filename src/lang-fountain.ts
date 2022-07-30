@@ -757,15 +757,15 @@ class TitlePageParser implements LeafBlockParser {
 
 class SceneHeadingParser implements LeafBlockParser {
 	constructor(readonly leafy: LeafBlock, coomtext: BlockContext) {
-		console.log("thisleafy", this.leafy)
+		// console.log("thisleafy", this.leafy)
 		this.nextLine(coomtext, new Line(), this.leafy)
 	}
 	nextLine(cx: BlockContext, _: Line, leaf: LeafBlock) {
 		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : 0
 		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : 0
-		console.log("shp", leaf.content, leaf.content.slice(startup, myend + 1))
-		console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
-		console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
+		// console.log("shp", leaf.content, leaf.content.slice(startup, myend + 1))
+		// console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
+		// console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
 		let sn = elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1)
 		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + startup) - 1, [sn])
 		// cx.addLeafElement(leaf, sh)
@@ -782,7 +782,7 @@ const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
 	SceneHeading(cx, bl) {
-		console.log("in there", bl)
+		// console.log("in there", bl)
 		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
 	},
 	Section() {
