@@ -767,7 +767,7 @@ class SceneHeadingParser implements LeafBlockParser {
 		console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
 		console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
 		let sn = elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1)
-		let sh = elt(Type.SceneHeading, cx.lineStart -2, (cx.lineStart + startup) - 1, [sn])
+		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + startup) - 1, [sn])
 		// cx.addLeafElement(leaf, sh)
 		cx.addLeafElement(leaf, sh)
 		return true
