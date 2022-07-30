@@ -35,7 +35,6 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-header {
     margin-bottom: 1em;
-    /* border-bottom: 1px solid black; */
 	text-align: center;
 	font-weight: 600 !important;
 	font-size: 1.75em;
@@ -47,14 +46,14 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-transition {
     font-style: italic;
-	font-size: 1.1em;
-	color: var(--blue-highlighter)
+	font-size: 0.85em;
+	color: var(--cerulean)
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
 	color: var(--text-accent);
     font-weight: bold;
-	font-size: 0.85em;
+	font-size: 1.25em;
 	margin-top: 2em;
 	margin-bottom: 1.5em;
 }

@@ -468,7 +468,7 @@ const enum CurrentBlock {
 
 function parseCharacter(text: string, start: number, offset: number): null | false | Element {
 	if(text.match(regex.character)) {
-		console.log("parsing character", text)
+		// console.log("parsing character", text)
 		return elt(Type.Character, start + offset, text.length + offset)
 	}
 	return null
@@ -476,7 +476,7 @@ function parseCharacter(text: string, start: number, offset: number): null | fal
 
 function parseParenthetical(text: string, start: number, offset: number): null | false | Element {
 	if(text.match(regex.parenthetical)) {
-		console.log("parsing parenthetical", text)
+		// console.log("parsing parenthetical", text)
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
 	}
 	return null
@@ -489,8 +489,10 @@ class DialogueParser implements LeafBlockParser {
 	previous: CurrentBlock[] = [];
 	current : CurrentBlock;
 	context: BlockContext;
+	leaf2: LeafBlock
 	constructor(leaf: LeafBlock, cx: BlockContext) {
 		this.start = leaf.start;
+		this.leaf2 = leaf
 		this.current = leaf.content.match(regex.character) ? CurrentBlock.Character :
 			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
 			: CurrentBlock.Begin
@@ -506,11 +508,8 @@ class DialogueParser implements LeafBlockParser {
 		this.current = arg
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		console.log("scrubby", line.scrub())
 		if(this.current == CurrentBlock.Action) return false
-		// let finish = this.advance(line.scrub())
 		return this.complete(cx, leaf, line.scrub().length + leaf.content.length + 1)
-		// return false;
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
@@ -518,16 +517,10 @@ class DialogueParser implements LeafBlockParser {
 		&& skipSpace(leaf.content, this.pos) == leaf.content.length) {
 			return this.complete(cx, leaf, leaf.content.length)
 		}
-		// if (
-		// 	(this.stage == RefStage.Link || this.stage == RefStage.Title) &&
-		// 	skipSpace(leaf.content, this.pos) == leaf.content.length
-		// )
-		// 	return this.complete(cx, leaf, leaf.content.length);
-
 		return false;
 	}
 	nextPart(elt: Element | null | false, dbgtxt?: string) {
-		console.debug("nextpart", dbgtxt, elt, this.current)
+		// console.debug("nextpart", dbgtxt, elt, this.current)
 		if (elt) {
 			this.pos = elt.to - this.start;
 			this.elts.push(elt);
@@ -538,29 +531,27 @@ class DialogueParser implements LeafBlockParser {
 		return false;
 	}
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-		console.log("completion", leaf.content, this.current)
-		// cx.addLeafElement(leaf,
-		// 	elt(Type.Dialogue, this.start, this.start + len, this.elts)
-		// )
 		return true;
 	}
 
 	advance(content: string) {
-		// if(this.context.prevNode[0] === Type.SceneHeading) return -1
-		// if(this.context.prevNode[0] === Type.Action) {
-		// 	return -1
-		// }
 		for(;;) {
 			// console.log("curr", this.current)
 			if(this.current == CurrentBlock.Action) {
-				// this.current = CurrentBlock.Dialogue
-				// this.context.addNode(Type.Dialogue, this.start)
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
-				console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
-				if(this.context.prevNode[0] === Type.Action||this.context.prevNode[0] === Type.SceneHeading) {
+				// console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
+				if(this.context.prevNode[0] === Type.Action||this.context.prevNode[0] === Type.SceneHeading || this.context.prevNode[0] === Type.TitlePage) {
 					if(parseCharacter(content, this.pos, this.start)) {
-						this.context.addNode(Type.Dialogue, this.context.lineStart)
+						// this.context.addNode(Type.Dialogue, this.context.lineStart)
+						let blip = this.context.parser.parseInline(content, this.start)
+						blip.length > 0 && console.log("ilp", blip, content)
+
+						this.context.addNode(
+							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+							this.context.lineStart
+						)
+						
 						this.changeType(CurrentBlock.Character)
 						return 1
 					} else {
@@ -571,45 +562,57 @@ class DialogueParser implements LeafBlockParser {
 					// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, content.length + this.start))
 					// this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Parenthetical, this.start)
-				} else/*   else  */{
+				} else {
 					if(parseCharacter(content, this.pos, this.start)) {
-						this.context.addNode(Type.Dialogue, this.context.lineStart)
 						this.changeType(CurrentBlock.Character)
 					} else {
 						this.changeType(CurrentBlock.Dialogue)
-						this.context.addNode(Type.Dialogue, this.context.lineStart)
 					}
+					// this.context.addNode(Type.Dialogue, this.context.lineStart)
+					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+					let blip = this.context.parser.parseInline(content, this.start)
+					blip.length > 0 && console.log("ilp", blip, content)
+						this.context.addNode(
+							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+							this.context.lineStart
+						)
 				}
 				return 1
 			} else if(this.current == CurrentBlock.Character) {
-				console.log("curr = character", content)
+				// console.log("curr = character", content)
 				if(!this.nextPart(parseCharacter(content, this.pos, this.start))) {
-					this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Character, this.start)
+					this.changeType(CurrentBlock.Dialogue)
 					return 1
 				}
 				this.context.addNode(Type.Character, this.start)
-				// this.changeType(CurrentBlock.Dialogue)
 				return 1
-				// this.pos++
 			} else if(this.current == CurrentBlock.Parenthetical) {
-				console.log("curr = paran", content)
+				// console.log("curr = paran", content)
 				if(!this.nextPart(parseParenthetical(content, this.pos, this.start))) {
-					this.context.addNode(Type.Dialogue, this.start)
+					// this.context.addNode(Type.Dialogue, this.start)
+					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+					let blip = this.context.parser.parseInline(content, this.start)
+						this.context.addNode(
+							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+							this.context.lineStart
+						)
+						blip.length > 0 && console.log("ilp", blip, content)
 					this.changeType(CurrentBlock.Begin)
-					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
 					return 1
 				}
-				// if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) return -1
 				this.context.addNode(Type.Parenthetical, this.start)
 				this.changeType(CurrentBlock.Begin)
-				// this.context.nextLine()
 				return 1
 			} else {
-				
-				// this.current = CurrentBlock.Dialogue
-				// this.changeType(CurrentBlock.Begin)
-				this.context.addNode(Type.Dialogue, this.start)
+				// this.context.addNode(Type.Dialogue, this.start)
+				// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+				let blip = this.context.parser.parseInline(content, this.start)
+				console.log("ilp", blip)
+						this.context.addNode(
+							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+							this.context.lineStart
+						)
 				return 1
 			}
 				
@@ -843,9 +846,9 @@ const DefaultLeafBlocks: {
 	Section() {
 		return new SectionParser();
 	},
-	TitlePage(cx, bl) {
-		return new TitlePageParser(bl, cx)
-	},
+	// TitlePage(cx, bl) {
+	// 	return new TitlePageParser(bl, cx)
+	// },
 	Dialogue(cx, bl) {
 		return new DialogueParser(bl, cx)
 	}
@@ -1201,6 +1204,7 @@ export class BlockContext implements PartialParse {
 			leaf.marks
 		);
 		let whatisit = this.prevNode[0] || 0
+		console.debug("ilp", leaf.content, this.parser.parseInline(leaf.content, leaf.start))
 		let booleanValue = whatisit > 4 ? Type.Action : Type.TitlePage
 		this.addNode(
 			this.buffer
@@ -1464,10 +1468,11 @@ export class FountainParser extends Parser {
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
 			for (let token of this.inlineParsers) {
-				// console.log("tokyn", token.name)
 				if (token) {
 					let result = token(cx, next, pos);
+					console.log("ilpppp", text, offset)
 					if (result >= 0) {
+						console.log("tokyn", result, token.name, cx.resolveMarkers(offset))
 						pos = result;
 						continue outer;
 					}
@@ -1700,7 +1705,7 @@ class InlineDelimiter {
 	) {}
 }
 
-let Punctuation = /[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*_{|}~\xA1\u2010-\u2027]*/;
+let Punctuation = /[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*\._{|}~\xA1\u2010-\u2027]*/;
 try {
 	Punctuation = new RegExp(
 		"[\\p{Pc}|\\p{Pd}|\\p{Pe}|\\p{Pf}|\\p{Pi}|\\p{Po}|\\p{Ps}]",
@@ -1724,42 +1729,6 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		}
 		return -1
 	},
-	// SceneNumber(cx, next, start) {
-	// 	if(!cx.text.match(regex.scene_number)) {
-	// 		return -1
-	// 	}
-	// 	console.log("cakeeee", cx.text)
-	// 	let pos = start + 1
-	// 	let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
-	// 	let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
-	// 	console.log("cakewalk", start, pos, startup, myend)
-	// 	let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
-	// 	console.log("cake", cake)
-	// 	let elemm = elt(Type.SceneNumber, (start + startup) -1, start + myend + 1)
-	// 	console.log("eylemnum",elemm)
-	// 	return cx.addElement(elemm)
-	// },
-	// SceneHeading(cx, next, start) {
-	// 	// console.log("cakeeee", cx.text)
-	// 	if(!cx.text.match(regex.scene_heading)) {
-	// 		return -1
-	// 	}
-	// 	let pos = start + 1
-	// 	let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
-	// 	let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
-	// 	console.log("cakewalk", start, pos, startup, myend)
-	// 	let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
-	// 	console.log("cake", cake)
-	// 	// return -1
-		
-	// 	// if(startup !== -1) {
-	// 	let elemm = elt(Type.SceneHeading, pos -2, (start + startup) - 2)
-	// 	return cx.append(elemm)
-	// 	// let from = cx.lineStart + line.pos;
-	// 	// cx.nextLine()
-	// 	// cx.addNode(Type.SceneHeading, from)
-	// 	// return true
-	// },
 	
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;
@@ -1780,11 +1749,11 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		sAfter = /\s|^$/.test(after);
 		let pBefore = Punctuation.test(before),
 			pAfter = Punctuation.test(after);
-		let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore);
-		let rightFlanking = !sBefore && (pBefore || sAfter || pAfter);
-		let canOpen = leftFlanking && ((next == 95) || !rightFlanking || pBefore);
-		let canClose = rightFlanking && ((next == 95) || !leftFlanking || pAfter);
-		return cx.append(new InlineDelimiter(EmphasisUnderline, start, pos, (canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)))
+		let leftFlanking = !sAfter && (sBefore);
+		let rightFlanking = !sBefore && (sAfter);
+		let canOpen = leftFlanking && ((next == 95) || !rightFlanking);
+		let canClose = rightFlanking && ((next == 95) || !leftFlanking);
+		return cx.append(new InlineDelimiter(EmphasisUnderline, start, pos, (canOpen ? Mark.Open : Mark.Close) | (canClose ? Mark.Close : Mark.Open)))
 		
 	},
 	Emphasis(cx, next, start) {
@@ -1800,10 +1769,10 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 			pAfter = Punctuation.test(after);
 		let sBefore = /\s|^$/.test(before),
 			sAfter = /\s|^$/.test(after);
-		let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore);
-		let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter);
-		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
-		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
+		let leftFlanking = !sAfter && (sBefore);
+		let rightFlanking = !sBefore && (sAfter);
+		let canOpen = leftFlanking && (next == 42 || !rightFlanking);
+		let canClose = rightFlanking && (next == 42 || !leftFlanking);
 		let abool = (next === ast && prev == ast) && upnext !== 42
 		// console.log("emp", abool, prev, next, upnext, cx.char(pos+2))
 		return cx.append(
@@ -1931,7 +1900,7 @@ export class InlineContext {
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
-				// console.log("part-y", this.parts)
+				console.log("part-y", this.parts)
 			for (; j >= from; j--) {
 				let part = this.parts[j] as InlineDelimiter;
 				if (
@@ -1959,7 +1928,7 @@ export class InlineContext {
 				let size = Math.min(2, open.to - open.from, closeSize);
 				start = open.to - size;
 				end = close.from + size;
-				// console.log("emp size", size)
+				console.log("emp size", size, open, close)
 				type = size == 1 ? "Italic" : "Bold";
 			}
 			if (open.type.mark)

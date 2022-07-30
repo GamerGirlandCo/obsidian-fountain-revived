@@ -4,7 +4,6 @@ import {
 
 } from "obsidian";
 import {EditorView , ViewPlugin} from "@codemirror/view"
-import fountain from "./fountain/lang"
 
 import { Fountain } from "fountain-js";
 import {FountainView} from "./fountain-view";
