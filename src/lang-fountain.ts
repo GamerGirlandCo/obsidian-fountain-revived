@@ -558,20 +558,32 @@ class DialogueParser implements LeafBlockParser {
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
 				console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
+				if(this.context.prevNode[0] === Type.Action||this.context.prevNode[0] === Type.SceneHeading) {
+					if(parseCharacter(content, this.pos, this.start)) {
+						this.context.addNode(Type.Dialogue, this.context.lineStart)
+						this.changeType(CurrentBlock.Character)
+						return 1
+					} else {
+						return -1
+					}
+				}
 				if(parseParenthetical(content, this.pos, this.start)) {
 					// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, content.length + this.start))
 					// this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Parenthetical, this.start)
-				} else if(parseCharacter(content, this.pos, this.start), content) {
-					// this.changeType(CurrentBlock.Character)
-				} else {
-					this.changeType(CurrentBlock.Dialogue)
-					this.context.addNode(Type.Dialogue, this.context.lineStart)
+				} else/*   else  */{
+					if(parseCharacter(content, this.pos, this.start)) {
+						this.context.addNode(Type.Dialogue, this.context.lineStart)
+						this.changeType(CurrentBlock.Character)
+					} else {
+						this.changeType(CurrentBlock.Dialogue)
+						this.context.addNode(Type.Dialogue, this.context.lineStart)
+					}
 				}
 				return 1
 			} else if(this.current == CurrentBlock.Character) {
 				console.log("curr = character", content)
-				if(!this.nextPart(parseCharacter(content, this.pos, this.start), content)) {
+				if(!this.nextPart(parseCharacter(content, this.pos, this.start))) {
 					this.changeType(CurrentBlock.Dialogue)
 					this.context.addNode(Type.Character, this.start)
 					return 1
@@ -582,15 +594,15 @@ class DialogueParser implements LeafBlockParser {
 				// this.pos++
 			} else if(this.current == CurrentBlock.Parenthetical) {
 				console.log("curr = paran", content)
-				if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) {
+				if(!this.nextPart(parseParenthetical(content, this.pos, this.start))) {
 					this.context.addNode(Type.Dialogue, this.start)
-					// this.changeType(CurrentBlock.Dialogue)
+					this.changeType(CurrentBlock.Begin)
 					// this.elts.push(elt(Type.Action, this.pos + this.start, content.length + this.start, this.context.parser.parseInline(content, this.start)))
 					return 1
 				}
 				// if(!this.nextPart(parseParenthetical(content, this.pos, this.start), content)) return -1
 				this.context.addNode(Type.Parenthetical, this.start)
-				// this.changeType(CurrentBlock.Dialogue)
+				this.changeType(CurrentBlock.Begin)
 				// this.context.nextLine()
 				return 1
 			} else {
