@@ -55,12 +55,7 @@ esbuild.build({
 		onRebuild(error, result) {
 			if (error) console.error('watch build failed:', error)
 			else console.log('watch build succeeded:', result)
-			
-			// console.log("fuckyou")
-			execSync("cp -f main.js C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
-			execSync("cp -f manifest.json C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
-			execSync("cp -f src/styles.css C:\\Users\\Corinthe\\projs\\obsidian-dev\\test-vault\\.obsidian\\plugins\\obsidian-fountain-revived")
-			execSync("pwsh.exe ./lezerbuild.ps1")
+			execSync("pwsh.exe ./post-compile.ps1")
 		},
 	},
 	target: 'es2016',
