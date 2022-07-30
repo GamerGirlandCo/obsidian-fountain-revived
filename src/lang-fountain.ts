@@ -771,16 +771,6 @@ class SceneHeadingParser implements LeafBlockParser {
 		// cx.addLeafElement(leaf, sh)
 		cx.addLeafElement(leaf, sh)
 		return true
-		// if(line.text.match(regex.scene_heading)) {
-		// const sh = elt(line.b)
-					/* 		let pos = start + 1
-		console.log("cakewalk", start, pos, startup, myend)
-		let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
-		console.log("cake", cake)
-		let elemm = elt(Type.SceneNumber, (start + startup) -1, start + myend + 1)
-		console.log("eylemnum",elemm)
-		return cx.addElement(elemm) */
-			return true;
 	}
 
 	finish() {

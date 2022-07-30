@@ -57,6 +57,10 @@
 	font-size: 0.85em;
 	margin-top: 2em;
 }
+.screenplay-scene-number {
+	opacity: 0.8;
+	font-size: small;
+}
 
 /* [data-type="fountain"] > .view-content .cm-editor>br {
     clear: both;
