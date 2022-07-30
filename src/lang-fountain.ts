@@ -241,9 +241,9 @@ export class Line {
 const DefaultSkipMarkup: {
 	[type: number]: (bl: CompositeBlock, cx: BlockContext, line: Line) => boolean;
 } = {
-	// [Type.Screenplay]() {
-	// 	return true;
-	// },
+	[Type.Screenplay]() {
+		return true;
+	},
 	// [Type.SceneNumber](bl, cx, line) {
 	// 	console.debug("type.scenenumber")
 	// 	if(line.next !== 35) return false;
@@ -402,9 +402,9 @@ const DefaultBlockParsers: {
 	// 	let from = cx.lineStart + line.pos;
 	// 	cx.nextLine()
 	// 	cx.addNode(Type.TitlePage, from)
-	// 	return true
-		
+	// 	return true		
 	// },
+	TitlePage: undefined,
 	
 	SceneHeading: undefined,
 	/* (cx, line) {
@@ -480,20 +480,23 @@ const DefaultBlockParsers: {
 	// 	return false
 	// },
 	LineBreak(cx, line) {
+		// console.log(cx.)
 		if(line.text.length < 2) return true
 		return false
 	},
-	// Action(cx, line) {
-	// 	if(cx.prevNode[0] === 3) return false
-	// 	let from = cx.lineStart + line.pos
-	// 	cx.addNode(Type.Action, from)
-	// 	cx.nextLine()
-	// 	return true
-	// },
-	/* Character(cx, line) */
-	// BlockNote(cx, line) {
+	Action: undefined,
+	Dialogue: undefined
+	//  Action(cx, line) {
+	//  	// if(cx.prevNode[0] === Type.TitlePage) return false
+	//  	let from = cx.lineStart + line.pos
+	//  	cx.addNode(Type.Action, from)
+	//  	cx.nextLine()
+	//  	return true
+	//  },
+	// /* Character(cx, line) */
+	//  BlockNote(cx, line) {
 		
-	// },
+	//  },
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 };
 
@@ -602,6 +605,54 @@ const enum RefStage {
 	End
 }
 
+function lineEnd(text: string, pos: number) {
+	for (; pos < text.length; pos++) {
+		let next = text.charCodeAt(pos);
+		if (next == 10) break;
+		if (!space(next)) return -1;
+	}
+	return pos;
+}
+
+// Dialogue(cx, line) {
+	// 	let from = cx.lineStart + line.pos;
+	// 	// console.log("diaaaaa", cx.prevNode)
+	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
+	// 		cx.addNode(Type.Dialogue, from)
+	// 		cx.nextLine()
+	// 		return true
+	// 	}
+	// 	return false
+	// },
+
+class SectionParser implements LeafBlockParser {
+	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
+		let underline = line.depth < cx.stack.length ? -1 : isSetextUnderline(line);
+		let next = line.next;
+		if (underline < 0) return false;
+		let underlineMark = elt(
+			Type.SectionMark,
+			cx.lineStart + line.pos,
+			cx.lineStart + underline
+		);
+		cx.nextLine();
+		cx.addLeafElement(
+			leaf,
+			elt(
+				next == 61 ? Type.Action : Type.Parenthetical,
+				leaf.start,
+				cx.prevLineEnd(),
+				[...cx.parser.parseInline(leaf.content, leaf.start), underlineMark]
+			)
+		);
+		return true;
+	}
+
+	finish() {
+		return false;
+	}
+}
+
 // This implements a state machine that incrementally parses link references. At each
 // next line, it looks ahead to see if the line continues the reference or not. If it
 // doesn't and a valid link is available ending before that line, it finishes that.
@@ -701,53 +752,43 @@ class NoteBlockParser implements LeafBlockParser {
 	// }
 }
 
-function lineEnd(text: string, pos: number) {
-	for (; pos < text.length; pos++) {
-		let next = text.charCodeAt(pos);
-		if (next == 10) break;
-		if (!space(next)) return -1;
-	}
-	return pos;
-}
-
-class SectionParser implements LeafBlockParser {
-	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		let underline = line.depth < cx.stack.length ? -1 : isSetextUnderline(line);
-		let next = line.next;
-		if (underline < 0) return false;
-		let underlineMark = elt(
-			Type.SectionMark,
-			cx.lineStart + line.pos,
-			cx.lineStart + underline
-		);
-		cx.nextLine();
-		cx.addLeafElement(
-			leaf,
-			elt(
-				next == 61 ? Type.Action : Type.Parenthetical,
-				leaf.start,
-				cx.prevLineEnd(),
-				[...cx.parser.parseInline(leaf.content, leaf.start), underlineMark]
-			)
-		);
-		return true;
-	}
-
-	finish() {
-		return false;
-	}
-}
-
 class TitlePageParser implements LeafBlockParser {
+	myelements: Element[] = []
+	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
+		// console.log("thisleafy", this.leafy)
+		this.nextLine(bcx, new Line(), this.leafy)
+	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		// console.log("tpwawa", cx, leaf)
-		let bo = ":".charCodeAt(0)
-		if(line.text.match(regex.title_page)) {
-			cx.addElement(elt(Type.TitlePage, line.pos, line.text.length -1))
-		} else if(cx.stack[cx.stack.length - 1]?.type === Type.TitlePage) {
-			cx.addElement(elt(Type.TitlePage, line.pos, line.text.length -1))
+		// console.log("tpwawa", cx, leaf.content)
+		let cat = []
+		let zeroed = cx.stack[0]
+		let children = zeroed.children as Tree[];
+		let lastOF = children[children.length - 1]?.type.name
+		// console.log("p", cx.stack, lastOF)
+		if(leaf.content.match(regex.title_page)) {
+			this.myelements.push(
+				elt(Type.TitlePageField, leaf.start, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
+			);
+		} else if(this.myelements.length) {
+			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length))
+		} else if(leaf.content.indexOf("\n") !== -1) {
+			this.myelements.push(
+				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
+			)
+		} else if(lastOF === "TitlePage")  {
+			this.myelements.push(
+				elt(Type.TitlePageField, leaf.start, leaf.content.length,
+					cx.parser.parseInline(leaf.content, leaf.start)
+				)
+			)
+		} else {
+			return false
 		}
+		// console.log("tpwawa", this.myelements, leaf.content, line.text)
+		
+		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length, this.myelements))
 		return true;
+
 	}
 
 	finish() {
@@ -756,9 +797,9 @@ class TitlePageParser implements LeafBlockParser {
 }
 
 class SceneHeadingParser implements LeafBlockParser {
-	constructor(readonly leafy: LeafBlock, coomtext: BlockContext) {
+	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
 		// console.log("thisleafy", this.leafy)
-		this.nextLine(coomtext, new Line(), this.leafy)
+		this.nextLine(bcx, new Line(), this.leafy)
 	}
 	nextLine(cx: BlockContext, _: Line, leaf: LeafBlock) {
 		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : null
@@ -789,7 +830,7 @@ const DefaultLeafBlocks: {
 		return new SectionParser();
 	},
 	TitlePage(cx, bl) {
-		return new TitlePageParser()
+		return new TitlePageParser(bl, cx)
 	},
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
@@ -1708,7 +1749,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		while(cx.char(pos) === 41 || cx.char(pos) === 40) pos++
 		let after = cx.slice(pos, pos+1);
 		return cx.append(
-				new InlineDelimiter(CharacterExtension,start, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
+				new InlineDelimiter(CharacterExtension,start - 1, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
 			)
 	},
 	Underline (cx, next, start) {
@@ -2015,7 +2056,7 @@ const NotLast = [
 	// Type.TitlePage,
 	// Type.SceneHeading,
 	// Type.Synopsis,
-	// Type.Action,
+	Type.Action,
 	Type.BlockNote,
 	Type.BoneYard
 ];

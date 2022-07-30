@@ -100,9 +100,9 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
 	const all = view.state.doc.toString()
+	visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	try {
 		for (const { from, to } of view.visibleRanges) {
-			visualize(parser.parse(all).cursor(), view.state.doc.toString())
 			const text = view.state.doc.sliceString(from, to);
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
@@ -113,7 +113,7 @@ function inlineRender(view: EditorView) {
 				const name = cursor.name;
 				const texties = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
-				if (name === 'Screenplay' || name === "⚠") continue;
+				if (name === 'Screenplay' || name === "TitlePageField") continue;
 				console.log("tree", name, texties)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
@@ -198,7 +198,7 @@ function inlineRender(view: EditorView) {
 						break;
 				}
 				if(name === "SceneHeading") {
-					console.log("notinline", start)
+					// console.log("notinline", start)
 						// console.log()
 						widgets.push(
 							Decoration.line({
@@ -214,14 +214,16 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-					cssClass === "scene-heading" && console.log("notinline", cssClass)
+					// cssClass === "scene-heading" && console.log("notinline", cssClass)
 						// console.log()
-						widgets.push(
-							Decoration.line({
-								class: `screenplay-${cssClass}`,
-								// attributes: { 'data-contents': 'string' },
-							}).range(whichline.from),
-						);
+						if(name !=="TitlePageField") {
+							widgets.push(
+								Decoration.line({
+									class: `screenplay-${cssClass}`,
+									// attributes: { 'data-contents': 'string' },
+								}).range(whichline.from),
+							);
+						}
 					// if((cssClass === "scene-number" || cssClass === "underline" || cssClass === "bold" || cssClass === "italic")) {
 					// 	// console.log("inline", cssClass)
 					// 	Decoration.mark({
@@ -232,7 +234,7 @@ function inlineRender(view: EditorView) {
 					// } else {
 					// }
 				}
-								if(name=== "SceneNumber" ) {
+				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",
 						inclusive: false,
