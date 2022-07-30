@@ -465,6 +465,7 @@ const DefaultBlockParsers: {
 	Parenthetical(cx, line) {
 		if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
 		let from = cx.lineStart + line.pos
+		// cx.p
 		cx.addNode(Type.Parenthetical, from)
 		cx.nextLine()
 		return true
@@ -485,7 +486,7 @@ const DefaultBlockParsers: {
 		return false
 	},
 	Action: undefined,
-	Dialogue: undefined
+	Dialogue: undefined,
 	//  Action(cx, line) {
 	//  	// if(cx.prevNode[0] === Type.TitlePage) return false
 	//  	let from = cx.lineStart + line.pos
@@ -771,11 +772,11 @@ class TitlePageParser implements LeafBlockParser {
 			);
 		} else if(this.myelements.length) {
 			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length))
-		} else if(leaf.content.indexOf("\n") !== -1) {
+		} /* else if(leaf.content.indexOf("\n") !== -1) {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
 			)
-		} else if(lastOF === "TitlePage")  {
+		} */ else if(lastOF === "TitlePage")  {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.start, leaf.content.length,
 					cx.parser.parseInline(leaf.content, leaf.start)
@@ -784,6 +785,7 @@ class TitlePageParser implements LeafBlockParser {
 		} else {
 			return false
 		}
+
 		// console.log("tpwawa", this.myelements, leaf.content, line.text)
 		
 		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length, this.myelements))

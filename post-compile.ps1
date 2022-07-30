@@ -1,4 +1,4 @@
-$output="$env:USERPROFILE\obsidian-dev\obsidian-kanban\test-vault"
+$output="$env:USERPROFILE\projs\obsidian-dev\test-vault"
 $pdir="$output\.obsidian\plugins\obsidian-fountain-revived\"
 Copy-Item main.js $pdir
 Copy-Item .\manifest.json $pdir
