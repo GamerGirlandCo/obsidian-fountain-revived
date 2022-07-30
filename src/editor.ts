@@ -17,7 +17,7 @@ import { exts } from './fountain-view';
 import {Fountain} from "./fountain/lang"
 import {parser} from "./lang-fountain"
 import {visualize} from "@colin_t/lezer-tree-visualizer";
-import { SceneNumber } from './fountain/parser.terms';
+import { SceneHeading, SceneNumber } from './fountain/parser.terms';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -115,7 +115,7 @@ function inlineRender(view: EditorView) {
 				const texties = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' || name === "⚠") continue;
-				// console.log("tree", name, texties)
+				console.log("tree", name, texties)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -198,16 +198,16 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
-				if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold" || name=== "SceneNumber") {
+				if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
 					const content = view.state.doc.sliceString(start, end);
 					widgets.push(Decoration.mark({
 						class: `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
 						block: false
 					}).range(start, end))
-				} else if( name === "SceneHeading") {
+				} else if( name === "SceneHeading" || name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
-						class: `screenplay-scene-heading`,
+						class: name === "SceneHeading" ? `screenplay-scene-heading` : "screenplay-scene-number",
 						inclusive: false,
 						block: false
 					}).range(start, end))

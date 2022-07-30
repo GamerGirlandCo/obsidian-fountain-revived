@@ -406,6 +406,17 @@ const DefaultBlockParsers: {
 		
 	// },
 	
+	SceneHeading: undefined,
+	/* (cx, line) {
+		if(!line.text.match(regex.scene_heading)) {
+			return false
+		}
+		let from = cx.lineStart + line.pos;
+		cx.nextLine()
+		cx.addNode(Type.SceneHeading, from)
+		return true
+	}, */
+	
 	Transition(cx, line) {
 		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
 		let from = cx.lineStart + line.pos;
@@ -421,16 +432,6 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Centered, from)
 		return true
 	},
-	
-	// SceneHeading(cx, line) {
-	// 	if(!line.text.match(regex.scene_heading)) {
-	// 		return false
-	// 	}
-	// 	let from = cx.lineStart + line.pos;
-	// 	cx.nextLine()
-	// 	cx.addNode(Type.SceneHeading, from)
-	// 	return true
-	// },
 	PageBreak(cx, line) {
 		if(isPageBreak(line, cx, false) < 0) return false;
 		let from = cx.lineStart + line.pos;
@@ -739,7 +740,7 @@ class SectionParser implements LeafBlockParser {
 
 class TitlePageParser implements LeafBlockParser {
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		console.log("tpwawa", cx, leaf)
+		// console.log("tpwawa", cx, leaf)
 		let bo = ":".charCodeAt(0)
 		if(line.text.match(regex.title_page)) {
 			cx.addElement(elt(Type.TitlePage, line.pos, line.text.length -1))
@@ -754,16 +755,52 @@ class TitlePageParser implements LeafBlockParser {
 	}
 }
 
+class SceneHeadingParser implements LeafBlockParser {
+	constructor(readonly leafy: LeafBlock, coomtext: BlockContext) {
+		console.log("thisleafy", this.leafy)
+		this.nextLine(coomtext, new Line(), this.leafy)
+	}
+	nextLine(cx: BlockContext, _: Line, leaf: LeafBlock) {
+		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : 0
+		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : 0
+		console.log("shp", leaf.content, leaf.content.slice(startup, myend + 1))
+		console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
+		console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
+		let sn = elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1)
+		let sh = elt(Type.SceneHeading, cx.lineStart -2, (cx.lineStart + startup) - 1, [sn])
+		// cx.addLeafElement(leaf, sh)
+		cx.addLeafElement(leaf, sh)
+		return true
+		// if(line.text.match(regex.scene_heading)) {
+		// const sh = elt(line.b)
+					/* 		let pos = start + 1
+		console.log("cakewalk", start, pos, startup, myend)
+		let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
+		console.log("cake", cake)
+		let elemm = elt(Type.SceneNumber, (start + startup) -1, start + myend + 1)
+		console.log("eylemnum",elemm)
+		return cx.addElement(elemm) */
+			return true;
+	}
+
+	finish() {
+		return false;
+	}
+}
+
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
+	SceneHeading(cx, bl) {
+		console.log("in there", bl)
+		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
+	},
 	Section() {
 		return new SectionParser();
 	},
 	TitlePage(cx, bl) {
-		console.log("in here", cx, bl)
 		return new TitlePageParser()
-	}
+	},
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -1638,53 +1675,43 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		}
 		return -1
 	},
-	SceneHeading(cx, next, start) {
-		// console.log("cakeeee", cx.text)
-		if(!cx.text.match(regex.scene_heading)) {
-			return -1
-		}
-		let pos = start + 1
-		let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
-		let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
-		console.log("cakewalk", start, pos, startup, myend)
-		let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
-		console.log("cake", cake)
-		// return -1
-		
-		// if(startup !== -1) {
-		if(cake.length > 2) {
-			let elemm = elt(Type.SceneHeading, pos - 2, start + cx.text.length, [elt(Type.SceneNumber, startup + cx.offset, myend +1)])
-			console.log("eylem",elemm)
-			return cx.addElement(elemm)
-			// cx.addElement(elt(Type.SceneNumber, startup + cx.offset, myend +1))
-			// cx.addElement()
-			// return cx.addElement(elt(Type.SceneHeading, pos, cx.text.length + 1,
-			// 	[elt(Type.SceneNumber, startup, myend +1)])
-			
-			// )
-		} else {
-			let elemm = elt(Type.SceneHeading, pos, start + cx.text.length)
-			console.log("cxelem", elemm)
-			return cx.addElement(elemm)
-		}
-		// let from = cx.lineStart + line.pos;
-		// cx.nextLine()
-		// cx.addNode(Type.SceneHeading, from)
-		// return true
-	},
 	// SceneNumber(cx, next, start) {
-	// 	let startmeup = cx.text.indexOf("#")
-	// 	let myend = cx.text.lastIndexOf("#") + 1 
-	// 	console.debug(startmeup, myend)
-	// 	if(startmeup !== -1 && myend > 0 && myend > startmeup + 1) {
-	// 		console.debug("type.sceenyweeny", String.fromCharCode(next), cx.text)
-	// 		console.log(cx.text.slice(startmeup, myend))
-	// 		return cx.addElement(elt(Type.SceneNumber, startmeup, myend))
-		
+	// 	if(!cx.text.match(regex.scene_number)) {
+	// 		return -1
 	// 	}
-	// 	// cx.append(new InlineDelimiter(SceneNumberThingy, start, start + ploos, ploos > 1 ? Mark.Close : Mark.Open))
-	// 	return -1
+	// 	console.log("cakeeee", cx.text)
+	// 	let pos = start + 1
+	// 	let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
+	// 	let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
+	// 	console.log("cakewalk", start, pos, startup, myend)
+	// 	let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
+	// 	console.log("cake", cake)
+	// 	let elemm = elt(Type.SceneNumber, (start + startup) -1, start + myend + 1)
+	// 	console.log("eylemnum",elemm)
+	// 	return cx.addElement(elemm)
 	// },
+	// SceneHeading(cx, next, start) {
+	// 	// console.log("cakeeee", cx.text)
+	// 	if(!cx.text.match(regex.scene_heading)) {
+	// 		return -1
+	// 	}
+	// 	let pos = start + 1
+	// 	let startup = cx.text.indexOf("#") !== -1 ? cx.text.indexOf("#") : 0
+	// 	let myend = cx.text.lastIndexOf("#") !== -1 ? cx.text.lastIndexOf("#") : 0
+	// 	console.log("cakewalk", start, pos, startup, myend)
+	// 	let cake = cx.slice(cx.offset + startup, cx.offset + (myend + 1) )
+	// 	console.log("cake", cake)
+	// 	// return -1
+		
+	// 	// if(startup !== -1) {
+	// 	let elemm = elt(Type.SceneHeading, pos -2, (start + startup) - 2)
+	// 	return cx.append(elemm)
+	// 	// let from = cx.lineStart + line.pos;
+	// 	// cx.nextLine()
+	// 	// cx.addNode(Type.SceneHeading, from)
+	// 	// return true
+	// },
+	
 	CharacterExt(cx, next, start) {
 		let pos = start + 1;
 		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1
