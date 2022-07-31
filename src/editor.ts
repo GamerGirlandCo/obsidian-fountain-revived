@@ -14,7 +14,6 @@ import {
 	EditableFileView,
 } from 'obsidian';
 import { exts } from './fountain-view';
-import {Fountain} from "./fountain/lang"
 import {parser} from "./lang-fountain"
 import {visualize} from "@colin_t/lezer-tree-visualizer";
 
@@ -32,69 +31,6 @@ function selectionAndRangeOverlap(
 	return false;
 }
 
-class InlineWidget extends WidgetType {
-	private customClass
-	constructor(
-		readonly name: string,
-		readonly text: string,
-		private view: EditorView,
-		private marker: boolean = false,
-		customClass: string,
-
-	) {
-		super();
-		this.customClass = customClass
-	}
-
-	// Widgets only get updated when the text changes/the element gets focus and loses it
-	// to prevent redraws when the editor updates.
-	eq(other: InlineWidget): boolean {
-		if (other.text === this.text) {
-			return true;
-		}
-		return false;
-	}
-
-	toDOM(view: EditorView): HTMLElement {
-		let bool = this.text === "(" || this.text === ")" || this.text === "#"
-		if (!this.marker) {
-			return createSpan({ cls: ['screenplay-marker', ...this.customClass.split(" ")] });
-		} else {
-			return createSpan({
-				cls: ['screenplay-marker', ...this.customClass.split(" ")],
-				text: bool ? "" : this.text
-			});
-		}
-	}
-	/* Make the markers only editable when shift is pressed (or navigated inside with the keyboard
-	 * or the mouse is placed at the end, but that is always possible regardless of this method).
-	 * If the widgets should always be expandable, make this always return false.
-     * TODO: Shouldn't be too important because the replacements are empty anyway and cannot be clicked. I just
-     * reused this from my implementation for dataview. This needs some some attention.
-	 */
-	ignoreEvent(event: MouseEvent | Event): boolean {
-		// instanceof check does not work in pop-out windows, so check it like this
-		if (event.type === 'mousedown') {
-			const currentPos = this.view.posAtCoords({
-				x: (event as MouseEvent).x,
-				y: (event as MouseEvent).y,
-			});
-			if ((event as MouseEvent).shiftKey) {
-				// Set the cursor after the element so that it doesn't select starting from the last cursor position.
-				if (currentPos) {
-                    //@ts-ignore
-					const { editor } = this.view.state
-                        //@ts-ignore
-						.field(editorEditorField)
-						.state.field(editorViewField);
-					editor.setCursor(editor.offsetToPos(currentPos));
-				}
-				return false;
-			}
-		}
-		return true;
-	}
-}
 
 function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
@@ -112,10 +48,10 @@ function inlineRender(view: EditorView) {
 				const start = cursor.from;
 				const end = cursor.to;
 				const name = cursor.name;
-				const texties = view.state.doc.sliceString(start, end)
+				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' || name === "TitlePageField") continue;
-				// console.log("tree", name, texties)
+				// console.log("tree", name, text2)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -153,17 +89,17 @@ function inlineRender(view: EditorView) {
 
 				let cssClass: string = '';
 				switch (name) {
-					case "SceneNumber":
-						cssClass = "scene-number";
-						break;
-					case "Character": 
-						cssClass = "character";
-						break;
 					case 'TitlePage':
 						cssClass = 'header';
 						break;
 					case "SceneHeading":
 						cssClass = "scene-heading"
+						break;
+					case "SceneNumber":
+						cssClass = "scene-number";
+						break;
+					case "Character": 
+						cssClass = "character";
 						break;
 					case 'Transition':
 						cssClass = 'transition';
@@ -202,12 +138,9 @@ function inlineRender(view: EditorView) {
 						break;
 				}
 				if(name === "SceneHeading") {
-					// console.log("notinline", start)
-						// console.log()
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-scene-heading`,
-								// attributes: { 'data-contents': 'string' },
 							}).range(whichline.to + 1),
 						);
 				} else if( name === "SceneNumber" || name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
@@ -218,13 +151,10 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-					// console.log("cls", cssClass)
-						// console.log()
 						if(name !=="TitlePageField" && name !== "PlainText") {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,
-									// attributes: { 'data-contents': 'string' },
 								}).range(whichline.from),
 							);
 						}
@@ -248,7 +178,6 @@ function inlineRender(view: EditorView) {
 			} while (cursor.next());
 		}
 	} finally {
-		// console.log(widgets)
 		return Decoration.set(widgets, true);
 	
 	}
@@ -281,9 +210,6 @@ export function inlinePlugin(): ViewPlugin<any> {
 			}
 
 			update(update: ViewUpdate) {
-				// only activate in LP and not source mode
-				//@ts-ignore
-				// console.log("updy")
 				if (
 					update.docChanged ||
 					update.viewportChanged ||
