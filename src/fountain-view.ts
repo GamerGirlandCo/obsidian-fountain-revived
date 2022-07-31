@@ -10,13 +10,12 @@ import {
 	import {writeFileSync} from "node:fs"
 import { Language, syntaxTree, tokenClassNodeProp } from "@codemirror/language";
 
-import {EditorState, Text, Range, StateEffect, StateEffectType, StateField} from "@codemirror/state";
+import {EditorState, Text, Range, StateEffect, StateEffectType, StateField, Extension} from "@codemirror/state";
 
 import CodeMirror from "codemirror";
 import {EditorView, Decoration, DecorationSet, ViewUpdate} from "@codemirror/view";
 import { Fountain } from "fountain-js";
 import { basicSetup } from "./extensions";
-import fountain from "./fountain/lang"
 import { inlinePlugin } from "./editor";
 import { FountainParser, parser, ftn } from "./lang-fountain";
 
@@ -30,21 +29,37 @@ const theme = EditorView.theme({
 	}
 })
 
-export const exts = [theme, inlinePlugin(), ftn, ...basicSetup]
+export const exts = [
+	theme, 
+	inlinePlugin(), 
+	ftn, 
+	...basicSetup
+]
 
 // ...
 export class FountainView extends TextFileView {
 	document: string;
 	cm: EditorView;
+	extensions: Extension[]
 	// state: EditorState
 	// mev: MarkdownEditView
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
+		this.extensions = exts.concat(
+			EditorView.updateListener.of((update) => {
+			if (!update.docChanged) return
+			let string = update.view.state.doc.toString()
+			const countParent = document.querySelector("div.status-bar-item.plugin-word-count");
+			const words = countParent.children[0]
+			const characters = countParent.children[1]
+			words.innerHTML = `${string.split(/\r|\n|\s/g).length} words`
+			characters.innerHTML = `${string.split("").length} characters`
+		}))
 		// super.onLoadFile(this.file)
 		this.cm = new EditorView({
 			state: EditorState.create({
 				doc: "",
-				extensions: exts
+				extensions: this.extensions
 			}),
 			parent: this.containerEl.getElementsByClassName("view-content")[0],
 		})
@@ -64,7 +79,7 @@ export class FountainView extends TextFileView {
 		
 		let state = EditorState.create({
 			doc: this.document,
-			extensions: exts
+			extensions: this.extensions
 		})
 		this.cm.setState(state)
 		this.containerEl.setAttr("data-type", "fountain")
@@ -73,8 +88,9 @@ export class FountainView extends TextFileView {
 		// console.log("constructor", this.file)
 		this.app.workspace.updateOptions()
 		this.app.workspace.on('editor-change', () => {
-			console.log("sav")
+			// console.log("sav")
 			this.setViewData(this.cm.state.doc.toString(), false)
+			// status-bar-item.plugin-word-count
 			// await this.app.vault.adapter.write(normalizePath(filee.path), this.cm.state.doc.toString())
 			this.requestSave();
 		});
@@ -89,7 +105,7 @@ export class FountainView extends TextFileView {
 		this.document = data;
 		this.cm.setState(EditorState.create({
 			doc: this.document,
-			extensions: exts
+			extensions: this.extensions
 			
 		}))
 	}
