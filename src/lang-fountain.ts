@@ -541,14 +541,14 @@ class DialogueParser implements LeafBlockParser {
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
 				// console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
-				if(this.context.prevNode[0] === Type.Action||this.context.prevNode[0] === Type.SceneHeading || this.context.prevNode[0] === Type.TitlePage) {
+				if(this.context.prevNode[0] !== Type.Character && this.context.prevNode[0] !== Type.Parenthetical && this.context.prevNode[0] !== Type.Dialogue) {
 					if(parseCharacter(content, this.pos, this.start)) {
 						// this.context.addNode(Type.Dialogue, this.context.lineStart)
 						let blip = this.context.parser.parseInline(content, this.start)
 						blip.length > 0 && console.log("ilp", blip, content)
 
 						this.context.addNode(
-							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+							elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
 							this.context.lineStart
 						)
 						
@@ -572,10 +572,10 @@ class DialogueParser implements LeafBlockParser {
 					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
 					let blip = this.context.parser.parseInline(content, this.start)
 					blip.length > 0 && console.log("ilp", blip, content)
-						this.context.addNode(
-							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
-							this.context.lineStart
-						)
+					this.context.addNode(
+						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
+						this.context.lineStart
+					)
 				}
 				return 1
 			} else if(this.current == CurrentBlock.Character) {
@@ -593,11 +593,11 @@ class DialogueParser implements LeafBlockParser {
 					// this.context.addNode(Type.Dialogue, this.start)
 					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
 					let blip = this.context.parser.parseInline(content, this.start)
-						this.context.addNode(
-							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
-							this.context.lineStart
-						)
-						blip.length > 0 && console.log("ilp", blip, content)
+					this.context.addNode(
+						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
+						this.context.lineStart
+					)
+					blip.length > 0 && console.log("ilp", blip, content)
 					this.changeType(CurrentBlock.Begin)
 					return 1
 				}
@@ -1376,23 +1376,6 @@ export interface LeafBlockParser {
 	finish(cx: BlockContext, leaf: LeafBlock): boolean;
 }
 
-export interface MarkdownConfig {
-	/// Node props to add to the parser's node set.
-	props?: readonly NodePropSource[];
-	/// Define new [node types](#NodeSpec) for use in parser extensions.
-	defineNodes?: readonly (string | NodeSpec)[];
-	/// Define additional [block parsing](#BlockParser) logic.
-	parseBlock?: readonly BlockParser[];
-	/// Define new [inline parsing](#InlineParser) logic.
-	parseInline?: readonly InlineParser[];
-	/// Remove the named parsers from the configuration.
-	remove?: readonly string[];
-	/// Add a parse wrapper (such as a [mixed-language
-	/// parser](#common.parseMixed)) to this parser.
-	wrap?: ParseWrapper;
-}
-
-export type MarkdownExtension = MarkdownConfig | readonly MarkdownExtension[];
 
 export class FountainParser extends Parser {
 	/// @internal
@@ -1465,14 +1448,15 @@ export class FountainParser extends Parser {
 	/// the inline content.
 	parseInline(text: string, offset: number) {
 		let cx = new InlineContext(this, text, offset);
+		// console.log("pinline", text, offset)
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
 			for (let token of this.inlineParsers) {
 				if (token) {
 					let result = token(cx, next, pos);
-					console.log("ilpppp", text, offset)
+					// console.log("ilpppp", text, offset)
 					if (result >= 0) {
-						console.log("tokyn", result, token.name, cx.resolveMarkers(offset))
+						// console.log("tokyn", result, token.name, cx.resolveMarkers(offset))
 						pos = result;
 						continue outer;
 					}
@@ -1480,55 +1464,12 @@ export class FountainParser extends Parser {
 				pos++;
 			}
 		}
-		return cx.resolveMarkers(0);
+		cx.resolveMarkers(0, text).length && console.debug("resolvem", cx.resolveMarkers(0), cx.resolveMarkers(offset))
+		return cx.resolveMarkers(0, text);
 	}
 }
 
-function nonEmpty<T>(a: undefined | readonly T[]): a is readonly T[] {
-	return a != null && a.length > 0;
-}
 
-function resolveConfig(spec: MarkdownExtension): MarkdownConfig | null {
-	if (!Array.isArray(spec)) return spec as MarkdownConfig;
-	if (spec.length == 0) return null;
-	let conf = resolveConfig(spec[0]);
-	if (spec.length == 1) return conf;
-	let rest = resolveConfig(spec.slice(1));
-	if (!rest || !conf) return conf || rest;
-	let conc: <T>(
-		a: readonly T[] | undefined,
-		b: readonly T[] | undefined
-	) => readonly T[] = (a, b) => (a || none).concat(b || none);
-	let wrapA = conf.wrap,
-		wrapB = rest.wrap;
-	return {
-		props: conc(conf.props, rest.props),
-		defineNodes: conc(conf.defineNodes, rest.defineNodes),
-		parseBlock: conc(conf.parseBlock, rest.parseBlock),
-		parseInline: conc(conf.parseInline, rest.parseInline),
-		remove: conc(conf.remove, rest.remove),
-		wrap: !wrapA
-			? wrapB
-			: !wrapB
-			? wrapA
-			: (inner, input, fragments, ranges) =>
-					wrapA!(
-						wrapB!(inner, input, fragments, ranges),
-						input,
-						fragments,
-						ranges
-					),
-	};
-}
-
-function findName(names: readonly string[], name: string) {
-	let found = names.indexOf(name);
-	if (found < 0)
-		throw new RangeError(
-			`Position specified relative to unknown parser ${name}`
-		);
-	return found;
-}
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
@@ -1692,17 +1633,15 @@ const CharacterExtension: DelimiterType = {
 	resolve: "CharacterExt",
 	mark: "CharacterExt"
 }
-const SceneNumberThingy: DelimiterType = {
-	resolve: "SceneNumberMarker",
-	mark: "SceneNumberMarker"
-}
 class InlineDelimiter {
 	constructor(
 		readonly type: DelimiterType,
 		readonly from: number,
 		readonly to: number,
 		public side: Mark
-	) {}
+	) {
+		console.log("inlinedelim", ...arguments)
+	}
 }
 
 let Punctuation = /[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*\._{|}~\xA1\u2010-\u2027]*/;
@@ -1714,77 +1653,30 @@ try {
 } catch (_) {}
 
 const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: number) => number;} = {
-	// Note(cx, next, start) {
-	// 	let pos = start + 1
-	// 	if(next !== 91) return -1
-	// 	let after = cx.slice(pos, pos+1)
-	// },
-	TitlePage(cx, next, start) {
-		// console.log("tpwawa", cx, start)
-		let bo = ":".charCodeAt(0)
-		if(cx.text.match(regex.title_page)) {
-			// return cx.addElement(elt(Type.TitlePage, cx.offset, cx.end - 2))
-		} else if(cx.parts[cx.parts.length - 1]?.type === Type.TitlePage) {
-			// return cx.addElement(elt(Type.TitlePage, cx.offset, cx.end - 2))
-		}
-		return -1
-	},
-	
-	CharacterExt(cx, next, start) {
-		let pos = start + 1;
-		if (next !== "(".charCodeAt(0) && next !== ")".charCodeAt(0)) return -1
-		while(cx.char(pos) === 41 || cx.char(pos) === 40) pos++
-		let after = cx.slice(pos, pos+1);
-		return cx.append(
-				new InlineDelimiter(CharacterExtension,start - 1, pos, next== "(".charCodeAt(0)? Mark.Open : Mark.Close)
-			)
-	},
-	Underline (cx, next, start) {
-		if(next !== 95) return -1
-		let pos = start + 1;
-		while(cx.char(pos) === 95) pos++
-		let before = cx.slice(start - 1, start),
-		after = cx.slice(pos, pos + 1);
-		let sBefore = /\s|^$/.test(before),
-		sAfter = /\s|^$/.test(after);
-		let pBefore = Punctuation.test(before),
-			pAfter = Punctuation.test(after);
-		let leftFlanking = !sAfter && (sBefore);
-		let rightFlanking = !sBefore && (sAfter);
-		let canOpen = leftFlanking && ((next == 95) || !rightFlanking);
-		let canClose = rightFlanking && ((next == 95) || !leftFlanking);
-		return cx.append(new InlineDelimiter(EmphasisUnderline, start, pos, (canOpen ? Mark.Open : Mark.Close) | (canClose ? Mark.Close : Mark.Open)))
-		
-	},
 	Emphasis(cx, next, start) {
-		let ast = "*".charCodeAt(0)
-		if (next != 42 /* <asterisk> */) return -1;
+		if (next != 95 && next != 42) return -1;
 		let pos = start + 1;
-		while (cx.char(pos) == ast) pos++;
+		while (cx.char(pos) == next) pos++;
 		let before = cx.slice(start - 1, start),
 			after = cx.slice(pos, pos + 1);
-		let prev = cx.char(pos - 1),
-			upnext = cx.char(pos + 1)
 		let pBefore = Punctuation.test(before),
 			pAfter = Punctuation.test(after);
 		let sBefore = /\s|^$/.test(before),
 			sAfter = /\s|^$/.test(after);
-		let leftFlanking = !sAfter && (sBefore);
-		let rightFlanking = !sBefore && (sAfter);
-		let canOpen = leftFlanking && (next == 42 || !rightFlanking);
-		let canClose = rightFlanking && (next == 42 || !leftFlanking);
-		let abool = (next === ast && prev == ast) && upnext !== 42
-		// console.log("emp", abool, prev, next, upnext, cx.char(pos+2))
+		let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore);
+		let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter);
+		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
+		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
+		let hasBold = next == 42 && after == "*"
 		return cx.append(
 			new InlineDelimiter(
-				(abool) ? EmphasisBold : EmphasisItalic,
+				next == 95 ? EmphasisUnderline : hasBold ? EmphasisBold : EmphasisItalic,
 				start,
 				pos,
 				(canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)
 			)
 		);
 	},
-
 	// LineBreak(cx, next, start) {
 	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
 	// 		return cx.append(elt(Type.LineBreak, start, start + 1));
@@ -1897,12 +1789,13 @@ export class InlineContext {
 
 			let emp = close.type == EmphasisItalic || close.type === EmphasisBold;
 			let un = close.type == EmphasisUnderline
+			console.log("emp size", emp)
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
-				console.log("part-y", this.parts)
 			for (; j >= from; j--) {
 				let part = this.parts[j] as InlineDelimiter;
+				console.log("part-y", part)
 				if (
 					!(
 						part instanceof InlineDelimiter &&
@@ -1928,7 +1821,6 @@ export class InlineContext {
 				let size = Math.min(2, open.to - open.from, closeSize);
 				start = open.to - size;
 				end = close.from + size;
-				console.log("emp size", size, open, close)
 				type = size == 1 ? "Italic" : "Bold";
 			}
 			if (open.type.mark)
