@@ -466,6 +466,7 @@ const enum CurrentBlock {
 	Dialogue,
 }
 
+
 function parseCharacter(text: string, start: number, offset: number): null | false | Element {
 	if(text.match(regex.character)) {
 		// console.log("parsing character", text)
@@ -478,6 +479,28 @@ function parseParenthetical(text: string, start: number, offset: number): null |
 	if(text.match(regex.parenthetical)) {
 		// console.log("parsing parenthetical", text)
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
+	}
+	return null
+}
+
+function parseNoteElement(text: string, start: number, offset: number): null | false | Element {
+	let opening = /\[\]/
+	let closing = /\]\]/
+	if(text.match(regex.note)) {
+		return elt(Type.Note, start + offset, text.length + offset)
+	} else if(text.match(opening)) {
+		let tio = text.indexOf("[")
+		let lio = text.lastIndexOf("[")
+		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
+			return elt(Type.OpenNote, tio + offset, offset + lio)
+		}
+	} else if(text.match(closing)) {
+		let tio = text.indexOf("]")
+		let lio = text.lastIndexOf("]")
+		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
+			return elt(Type.CloseNote, tio + offset, lio + offset)
+		}
+		// return elt
 	}
 	return null
 }
@@ -669,6 +692,13 @@ class SectionParser implements LeafBlockParser {
 	}
 }
 
+const enum NoteStage {
+	None = -1,
+	Begin,
+	Inside,
+	End
+}
+
 // This implements a state machine that incrementally parses link references. At each
 // next line, it looks ahead to see if the line continues the reference or not. If it
 // doesn't and a valid link is available ending before that line, it finishes that.
@@ -676,96 +706,97 @@ class SectionParser implements LeafBlockParser {
 // creates a link reference if there's a valid reference up to the current point.
 // @ts-ignore
 class NoteBlockParser implements LeafBlockParser {
-	// stage = RefStage.Start;
-	// elts: Element[] = [];
-	// pos = 0;
-	// start: number;
+	stage = NoteStage.Begin;
+	elts: Element[] = [];
+	pos = 0;
+	start: number;
 
-	// constructor(leaf: LeafBlock) {
-	// 	this.start = leaf.start;
-	// 	this.advance(leaf.content);
-	// }
+	constructor(leaf: LeafBlock) {
+		this.start = leaf.start;
+		// this.advance(leaf.content);
+	}
 
-	// nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-	// 	if (this.stage == RefStage.Failed) return false;
-	// 	let content = leaf.content + "\n" + line.scrub();
-	// 	let finish = this.advance(content);
-	// 	if (finish > -1 && finish < content.length)
-	// 		return this.complete(cx, leaf, finish);
-	// 	return false;
-	// }
+	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
+		if (this.stage == NoteStage.None) return false;
+		let content = leaf.content + "\n" + line.scrub();
+		// let finish = this.advance(content);
+		// if (finish > -1 && finish < content.length)
+			// return this.complete(cx, leaf, finish);
+		return false;
+	}
 
-	// finish(cx: BlockContext, leaf: LeafBlock) {
-	// 	if (
-	// 		(this.stage == RefStage.Start || this.stage == RefStage.Inside) &&
-	// 		skipSpace(leaf.content, this.pos) == leaf.content.length
-	// 	)
-	// 		return this.complete(cx, leaf, leaf.content.length);
-	// 	return false;
-	// }
+	finish(cx: BlockContext, leaf: LeafBlock) {
+		if (
+			(this.stage == NoteStage.Begin || this.stage == NoteStage.Inside) &&
+			skipSpace(leaf.content, this.pos) == leaf.content.length
+		)
+			// return this.complete(cx, leaf, leaf.content.length);
+		return false;
+	}
 
-	// complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-	// 	cx.addLeafElement(
-	// 		leaf,
-	// 		elt(Type.CloseNote, this.start, this.start + len, this.elts)
-	// 	);
-	// 	return true;
-	// }
+	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
+		cx.addLeafElement(
+			leaf,
+			elt(Type.CloseNote, this.start, this.start + len, this.elts)
+		);
+		return true;
+	}
 
-	// nextStage(elt: Element | null | false) {
-	// 	if (elt) {
-	// 		this.pos = elt.to - this.start;
-	// 		this.elts.push(elt);
-	// 		this.stage++;
-	// 		return true;
-	// 	}
-	// 	if (elt === false) this.stage = RefStage.Failed;
-	// 	return false;
-	// }
+	nextStage(elt: Element | null | false) {
+		if (elt) {
+			this.pos = elt.to - this.start;
+			this.elts.push(elt);
+			this.stage++;
+			return true;
+		}
+		if (elt === false) this.stage = NoteStage.None;
+		return false;
+	}
 
-	// advance(content: string) {
-	// 	for (;;) {
-	// 		if (this.stage == RefStage.Failed) {
-	// 			return -1;
-	// 		} else if (this.stage == RefStage.Start) {
-	// 			if (
-	// 				!this.nextStage(parseLinkLabel(content, this.pos, this.start, true))
-	// 			)
-	// 				return -1;
-	// 			if (content.charCodeAt(this.pos) != 58 /* ':' */)
-	// 				return (this.stage = RefStage.Failed);
-	// 			this.elts.push(
-	// 				elt(Type.LinkMark, this.pos + this.start, this.pos + this.start + 1)
-	// 			);
-	// 			this.pos++;
-	// 		} else if (this.stage == RefStage.Label) {
-	// 			if (
-	// 				!this.nextStage(
-	// 					parseURL(content, skipSpace(content, this.pos), this.start)
-	// 				)
-	// 			)
-	// 				return -1;
-	// 		} else if (this.stage == RefStage.Link) {
-	// 			let skip = skipSpace(content, this.pos),
-	// 				end = 0;
-	// 			if (skip > this.pos) {
-	// 				let title = parseLinkTitle(content, skip, this.start);
-	// 				if (title) {
-	// 					let titleEnd = lineEnd(content, title.to - this.start);
-	// 					if (titleEnd > 0) {
-	// 						this.nextStage(title);
-	// 						end = titleEnd;
-	// 					}
-	// 				}
-	// 			}
-	// 			if (!end) end = lineEnd(content, this.pos);
-	// 			return end > 0 && end < content.length ? end : -1;
-	// 		} else {
-	// 			// RefStage.Title
-	// 			return lineEnd(content, this.pos);
-	// 		}
-	// 	}
-	// }
+	advance(content: string) {
+		for (;;) {
+			if (this.stage == NoteStage.None) {
+				return -1;
+			} else if (this.stage == NoteStage.Begin) {
+				if (
+					!this.nextStage(parseNoteElement(content, this.pos, this.start))
+				)
+					return -1;
+				if (content.charCodeAt(this.pos) != "[".charCodeAt(0))
+					return (this.stage = NoteStage.None);
+				this.elts.push(
+					elt(Type.OpenNote, this.pos + this.start, this.pos + this.start + 1)
+				);
+				this.pos++;
+			} else if (this.stage == NoteStage.Inside) {
+				if (
+					!this.nextStage(
+						parseNoteElement(content, skipSpace(content, this.pos), this.start)
+					)
+				)
+					return -1;
+			} else if (this.stage == NoteStage.End) {
+				let skip = skipSpace(content, this.pos),
+					end = 0;
+				if (skip > this.pos) {
+					// let title = parseLinkTitle(content, skip, this.start);
+					// if (title) {
+					// 	let titleEnd = lineEnd(content, title.to - this.start);
+					// 	if (titleEnd > 0) {
+					// 		this.nextStage(title);
+					// 		end = titleEnd;
+					// 	}
+					// }
+					return -1
+				}
+				if (!end) end = lineEnd(content, this.pos);
+				return end > 0 && end < content.length ? end : -1;
+			} else {
+				// RefStage.Title
+				return lineEnd(content, this.pos);
+			}
+		}
+	}
 }
 
 class TitlePageParser implements LeafBlockParser {
@@ -846,11 +877,14 @@ const DefaultLeafBlocks: {
 	Section() {
 		return new SectionParser();
 	},
-	// TitlePage(cx, bl) {
-	// 	return new TitlePageParser(bl, cx)
-	// },
+	TitlePage(cx, bl) {
+		return new TitlePageParser(bl, cx)
+	},
 	Dialogue(cx, bl) {
 		return new DialogueParser(bl, cx)
+	},
+	Note(_, bl) {
+		return new NoteBlockParser(bl)
 	}
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null

@@ -97,7 +97,7 @@
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue {
     text-align: left;
-    margin-left: 20%;
+    margin-left: 10%;
 }
 
 .screenplay-marker.underline {
@@ -110,7 +110,7 @@
 	font-weight: bold !important;
 }
 .screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-dialogue.screenplay-parenthetical.cm-line {
-	    padding-left: 10% !important;
+	    padding-left: 20% !important;
 }
 
 
