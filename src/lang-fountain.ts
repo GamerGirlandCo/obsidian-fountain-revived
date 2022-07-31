@@ -396,7 +396,6 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Lyrics(cx, line) {
-		// console.log("lyr", line.text, cx, line)
 		let variable = !line.text.startsWith("~") && line.text.length > 1
 		if(variable) return false;
 		let from = cx.lineStart + line.pos
@@ -405,7 +404,6 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Synopsis(cx, line) {
-		// console.debug("synopsis", line.text)
 		if(!line.text.startsWith("=")) return false
 		let from = cx.lineStart + line.pos;
 		cx.nextLine()
@@ -440,8 +438,9 @@ const DefaultBlockParsers: {
 	// 	}
 	// 	return false
 	// },
+	//  BlockNote(cx, line) {
+	//  },
 	LineBreak(cx, line) {
-		// console.log(line.text)
 		if(line.text.length <= 1) {
 			cx.addNode(Type.LineBreak, cx.lineStart)
 			return true
@@ -449,12 +448,6 @@ const DefaultBlockParsers: {
 		return false
 	},
 	Dialogue: undefined,
-	// Action: undefined,
-	// Dialogue: undefined,
-	// /* Character(cx, line) */
-	//  BlockNote(cx, line) {
-		
-	//  },
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 };
 
@@ -469,7 +462,6 @@ const enum CurrentBlock {
 
 function parseCharacter(text: string, start: number, offset: number): null | false | Element {
 	if(text.match(regex.character)) {
-		// console.log("parsing character", text)
 		return elt(Type.Character, start + offset, text.length + offset)
 	}
 	return null
@@ -477,7 +469,6 @@ function parseCharacter(text: string, start: number, offset: number): null | fal
 
 function parseParenthetical(text: string, start: number, offset: number): null | false | Element {
 	if(text.match(regex.parenthetical)) {
-		// console.log("parsing parenthetical", text)
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
 	}
 	return null
@@ -520,7 +511,6 @@ class DialogueParser implements LeafBlockParser {
 			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
 			: CurrentBlock.Begin
 		this.context = cx
-		// console.log("diaparse", leaf.content)
 		this.advance(leaf.content);
 	}
 	changeType(arg: CurrentBlock) {
@@ -543,11 +533,9 @@ class DialogueParser implements LeafBlockParser {
 		return false;
 	}
 	nextPart(elt: Element | null | false, dbgtxt?: string) {
-		// console.debug("nextpart", dbgtxt, elt, this.current)
 		if (elt) {
 			this.pos = elt.to - this.start;
 			this.elts.push(elt);
-			// this.current++;
 			return true;
 		}
 		if (elt === false) this.current = CurrentBlock.Action;
@@ -559,16 +547,12 @@ class DialogueParser implements LeafBlockParser {
 
 	advance(content: string) {
 		for(;;) {
-			// console.log("curr", this.current)
 			if(this.current == CurrentBlock.Action) {
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
-				// console.log("begin block", content, Type[this.context.prevNode[0]], this.previous)
 				if(this.context.prevNode[0] !== Type.Character && this.context.prevNode[0] !== Type.Parenthetical && this.context.prevNode[0] !== Type.Dialogue) {
 					if(parseCharacter(content, this.pos, this.start)) {
-						// this.context.addNode(Type.Dialogue, this.context.lineStart)
 						let blip = this.context.parser.parseInline(content, this.start)
-						blip.length > 0 && console.log("ilp", blip, content)
 
 						this.context.addNode(
 							elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
@@ -594,7 +578,6 @@ class DialogueParser implements LeafBlockParser {
 					// this.context.addNode(Type.Dialogue, this.context.lineStart)
 					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
 					let blip = this.context.parser.parseInline(content, this.start)
-					blip.length > 0 && console.log("ilp", blip, content)
 					this.context.addNode(
 						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
 						this.context.lineStart
@@ -602,7 +585,6 @@ class DialogueParser implements LeafBlockParser {
 				}
 				return 1
 			} else if(this.current == CurrentBlock.Character) {
-				// console.log("curr = character", content)
 				if(!this.nextPart(parseCharacter(content, this.pos, this.start))) {
 					this.context.addNode(Type.Character, this.start)
 					this.changeType(CurrentBlock.Dialogue)
@@ -611,7 +593,6 @@ class DialogueParser implements LeafBlockParser {
 				this.context.addNode(Type.Character, this.start)
 				return 1
 			} else if(this.current == CurrentBlock.Parenthetical) {
-				// console.log("curr = paran", content)
 				if(!this.nextPart(parseParenthetical(content, this.pos, this.start))) {
 					// this.context.addNode(Type.Dialogue, this.start)
 					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
@@ -620,7 +601,6 @@ class DialogueParser implements LeafBlockParser {
 						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
 						this.context.lineStart
 					)
-					blip.length > 0 && console.log("ilp", blip, content)
 					this.changeType(CurrentBlock.Begin)
 					return 1
 				}
@@ -631,11 +611,10 @@ class DialogueParser implements LeafBlockParser {
 				// this.context.addNode(Type.Dialogue, this.start)
 				// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
 				let blip = this.context.parser.parseInline(content, this.start)
-				console.log("ilp", blip)
-						this.context.addNode(
-							elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
-							this.context.lineStart
-						)
+				this.context.addNode(
+					elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+					this.context.lineStart
+				)
 				return 1
 			}
 				
@@ -644,7 +623,6 @@ class DialogueParser implements LeafBlockParser {
 }
 
 function lineEnd(text: string, pos: number) {
-	console.log("lineend", ...arguments)
 	for (; pos < text.length; pos++) {
 		let next = text.charCodeAt(pos);
 		if (next == 10) break;
@@ -652,17 +630,6 @@ function lineEnd(text: string, pos: number) {
 	}
 	return pos;
 }
-
-// Dialogue(cx, line) {
-	// 	let from = cx.lineStart + line.pos;
-	// 	// console.log("diaaaaa", cx.prevNode)
-	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical) {
-	// 		cx.addNode(Type.Dialogue, from)
-	// 		cx.nextLine()
-	// 		return true
-	// 	}
-	// 	return false
-	// },
 
 class SectionParser implements LeafBlockParser {
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
@@ -802,16 +769,13 @@ class NoteBlockParser implements LeafBlockParser {
 class TitlePageParser implements LeafBlockParser {
 	myelements: Element[] = []
 	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
-		// console.log("thisleafy", this.leafy)
 		this.nextLine(bcx, new Line(), this.leafy)
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		// console.log("tpwawa", cx, leaf.content)
 		let cat = []
 		let zeroed = cx.stack[0]
 		let children = zeroed.children as Tree[];
 		let lastOF = children[children.length - 1]?.type.name
-		// console.log("p", cx.stack, lastOF)
 		if(leaf.content.match(regex.title_page)) {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.start, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
@@ -832,7 +796,6 @@ class TitlePageParser implements LeafBlockParser {
 			return false
 		}
 
-		// console.log("tpwawa", this.myelements, leaf.content, line.text)
 		
 		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length, this.myelements))
 		return true;
@@ -846,18 +809,13 @@ class TitlePageParser implements LeafBlockParser {
 
 class SceneHeadingParser implements LeafBlockParser {
 	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
-		// console.log("thisleafy", this.leafy)
 		this.nextLine(bcx, new Line(), this.leafy)
 	}
 	nextLine(cx: BlockContext, _: Line, leaf: LeafBlock) {
 		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : null
 		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : null
-		// console.log("shp", leaf.content, leaf.content.slice(startup, myend + 1))
-		// console.log("shpx", cx.lineStart, startup, myend, cx.lineStart + startup, cx.lineStart + myend)
-		// console.log("shp2", leaf.content.slice(cx.lineStart + startup, cx.lineStart + myend + 1))
 		let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
 		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || leaf.content.length)), sn ? [sn] : [])
-		// cx.addLeafElement(leaf, sh)
 		cx.addLeafElement(leaf, sh)
 		return true
 	}
@@ -871,7 +829,6 @@ const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
 	SceneHeading(cx, bl) {
-		// console.log("in there", bl)
 		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
 	},
 	Section() {
@@ -1237,9 +1194,6 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
-		let whatisit = this.prevNode[0] || 0
-		console.debug("ilp", leaf.content, this.parser.parseInline(leaf.content, leaf.start))
-		let booleanValue = whatisit > 4 ? Type.Action : Type.TitlePage
 		this.addNode(
 			this.buffer
 				.writeElements(inline, -leaf.start)
@@ -1482,15 +1436,12 @@ export class FountainParser extends Parser {
 	/// the inline content.
 	parseInline(text: string, offset: number) {
 		let cx = new InlineContext(this, text, offset);
-		// console.log("pinline", text, offset)
 		outer: for (let pos = offset; pos < cx.end; ) {
 			let next = cx.char(pos);
 			for (let token of this.inlineParsers) {
 				if (token) {
 					let result = token(cx, next, pos);
-					// console.log("ilpppp", text, offset)
 					if (result >= 0) {
-						// console.log("tokyn", result, token.name, cx.resolveMarkers(offset))
 						pos = result;
 						continue outer;
 					}
@@ -1498,8 +1449,7 @@ export class FountainParser extends Parser {
 				pos++;
 			}
 		}
-		cx.resolveMarkers(0, text).length && console.debug("resolvem", cx.resolveMarkers(0), cx.resolveMarkers(offset))
-		return cx.resolveMarkers(0, text);
+		return cx.resolveMarkers(0);
 	}
 }
 
@@ -1673,9 +1623,7 @@ class InlineDelimiter {
 		readonly from: number,
 		readonly to: number,
 		public side: Mark
-	) {
-		console.log("inlinedelim", ...arguments)
-	}
+	) {}
 }
 
 let Punctuation = /[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*\._{|}~\xA1\u2010-\u2027]*/;
@@ -1770,14 +1718,11 @@ export class InlineContext {
 	/// Get a substring of this inline section. Again uses
 	/// document-relative positions.
 	slice(from: number, to: number) {
-		// console.debug("slicing:from", from, from - this.offset)
-		// console.debug("slicing:to", to, to - this.offset)
 		return this.text.slice(from - this.offset, to - this.offset);
 	}
 
 	/// @internal
 	append(elt: Element | InlineDelimiter) {
-		// console.debug("appendion", elt)
 		this.parts.push(elt);
 		return elt.to;
 	}
@@ -1823,13 +1768,11 @@ export class InlineContext {
 
 			let emp = close.type == EmphasisItalic || close.type === EmphasisBold;
 			let un = close.type == EmphasisUnderline
-			console.log("emp size", emp)
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
 			for (; j >= from; j--) {
 				let part = this.parts[j] as InlineDelimiter;
-				console.log("part-y", part)
 				if (
 					!(
 						part instanceof InlineDelimiter &&
