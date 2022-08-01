@@ -1679,7 +1679,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 			)
 		);
 	},
-	Note(cx, next, start) {
+	/* Note(cx, next, start) {
 		if(next != 91 && next !== 93) return -1
 		if(!cx.text.match(regex.note_inline)) return -1
 		let pos = start + 1
@@ -1687,7 +1687,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let to = pos + cx.text.lastIndexOf("]")
 		while (cx.char(pos) == next) pos++
 		return cx.append(elt(Type.Note, from, to))
-	}
+	} */
 	// LineBreak(cx, next, start) {
 	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
 	// 		return cx.append(elt(Type.LineBreak, start, start + 1));
