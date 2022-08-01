@@ -431,7 +431,7 @@ const DefaultBlockParsers: {
 	// },
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
-	Note: undefined,
+	BlockNote: undefined,
 	// LinkReference: undefined,
 	TitlePage: undefined,
 	SceneHeading: undefined,
@@ -466,14 +466,14 @@ function parseNoteElement(text: string, start: number, offset: number): null | f
 	// console.log("parseeeeeeeing note", text)
 	if(text.match(regex.note)|| text.match(regex.note_inline)) {
 		// console.debug("parsing note: general", text)
-		return elt(Type.Note, start + offset, text.length + offset)
+		return elt(Type.BlockNote, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[")
 		let lio = text.lastIndexOf("[")
 		// console.debug("parsing note: open", text)
 		// console.debug("first->last", tio, lio)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.Note, tio + offset, text.length + offset)
+			return elt(Type.BlockNote, tio + offset, text.length + offset)
 		}
 	} else if(text.match(closing)) {
 		let tio = text.indexOf("]")
@@ -481,7 +481,7 @@ function parseNoteElement(text: string, start: number, offset: number): null | f
 		// console.debug("parsing note: close", text)
 		// console.debug("first->last", tio, lio)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.Note, tio + offset, text.length + offset)
+			return elt(Type.BlockNote, tio + offset, text.length + offset)
 		}
 		// return elt
 	}
@@ -656,6 +656,7 @@ const enum NoteStage {
 	Begin,
 	Inside,
 	End
+
 }
 
 // This implements a state machine that incrementally parses link references. At each
@@ -674,7 +675,7 @@ class NoteBlockParser implements LeafBlockParser {
 	constructor(leaf: LeafBlock, readonly context: BlockContext) {
 		this.start = leaf.start;
 		this.change(NoteStage.Begin)
-		this.change((leaf.content.match(regex.note) || leaf.content.match(regex.note_inline)) ?
+		this.change((leaf.content.match(regex.note)) ?
 		NoteStage.Inside : leaf.content.match(regex.opening_note) ? NoteStage.Begin :
 		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Begin)
 		// console.debug("contents", leaf.content, this.stage)
@@ -733,7 +734,7 @@ class NoteBlockParser implements LeafBlockParser {
 				console.debug("peony", pNE, this.previous, content)
 				if ((this.previous[0] == NoteStage.Begin) ) {
 						
-					// this.context.addElement(elt(Type.Note, this.pos + this.start, this.start + content.length))
+					// this.context.addElement(elt(Type.BlockNote, this.pos + this.start, this.start + content.length))
 					console.debug("begin stage", blip, content, this.stage)
 					if(content.match(regex.note)) {
 						this.change(NoteStage.End)
@@ -747,18 +748,18 @@ class NoteBlockParser implements LeafBlockParser {
 				}
 				return -1
 				/* this.context.addNode(
-					elt(Type.Note, this.pos + this.start, this.pos + this.start + 1)
+					elt(Type.BlockNote, this.pos + this.start, this.pos + this.start + 1)
 					.toTree(this.context.parser.nodeSet),
 					this.context.lineStart
 				); */
 			} else if (this.stage == NoteStage.Inside) {
-				if (!parseNoteElement(content, this.pos, this.start)) return -1;
+				if (!pNE) return -1;
 				/* this.context.addNode(
-					elt(Type.Note, this.pos + this.start, this.start + content.length).toTree(this.context.parser.nodeSet),
+					elt(Type.BlockNote, this.pos + this.start, this.start + content.length).toTree(this.context.parser.nodeSet),
 					this.context.lineStart
 				)
-				this.context.addNode(Type.Note, this.pos+this.start, content.length + this.start) */
-				this.context.addElement(elt(Type.Note, this.pos + this.start, this.start + content.length))
+				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
+				this.context.addElement(pNE)
 				console.debug("inside stage", blip, content, this.stage)
 				this.change(NoteStage.End)
 				return 1
@@ -767,7 +768,7 @@ class NoteBlockParser implements LeafBlockParser {
 				console.debug("end stage", blip, content, this.stage)
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
-				this.context.addElement(parseNoteElement(content, this.pos, this.start), this.context.lineStart)
+				this.context.addElement(pNE)
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
@@ -839,9 +840,9 @@ class SceneHeadingParser implements LeafBlockParser {
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
-	Note(cx, bl) {
+	BlockNote(cx, bl) {
 		// return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
-		// || bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note) ? 
+		// || bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.BlockNote) ? 
 		return new NoteBlockParser(bl, cx) 
 		// : null
 	},
@@ -864,6 +865,7 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	// (_, line) => isFencedCode(line) >= 0,
 	(_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
+	(p, line) => !!parseNoteElement(line.text, 0, p.lineStart)
 	// (p, line) => isLyric(line, p) >= 0
 
 ];
@@ -1677,6 +1679,15 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 			)
 		);
 	},
+	Note(cx, next, start) {
+		if(next != 91 && next !== 93) return -1
+		if(!cx.text.match(regex.note_inline)) return -1
+		let pos = start + 1
+		let from = pos + cx.text.indexOf("[");
+		let to = pos + cx.text.lastIndexOf("]")
+		while (cx.char(pos) == next) pos++
+		return cx.append(elt(Type.Note, from, to))
+	}
 	// LineBreak(cx, next, start) {
 	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
 	// 		return cx.append(elt(Type.LineBreak, start, start + 1));
@@ -1931,7 +1942,7 @@ const NotLast = [
 	// Type.SceneHeading,
 	// Type.Synopsis,
 	Type.Action,
-	// Type.Note,
+	// Type.BlockNote,
 	Type.BoneYard
 ];
 

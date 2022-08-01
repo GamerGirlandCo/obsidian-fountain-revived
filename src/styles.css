@@ -100,6 +100,11 @@
     margin-left: 10%;
 }
 
+.screenplay-note {
+	font-size: 10px !important;
+	color: var(--text-title-h5)
+}
+
 .screenplay-marker.underline {
     text-decoration: underline;
 }
