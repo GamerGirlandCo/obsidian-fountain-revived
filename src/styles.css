@@ -73,9 +73,9 @@
     clear: both;
 } */
 
-[data-type="fountain"] > .view-content .cm-editor>.screenplay-action {
+/* [data-type="fountain"] > .view-content .cm-editor>.screenplay-action {
     margin-top: 1em;
-}
+} */
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-lyric {
 	font-style: italic;

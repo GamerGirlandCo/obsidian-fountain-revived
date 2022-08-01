@@ -1,4 +1,4 @@
-import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent } from "@codemirror/language";
+import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent, foldNodeProp } from "@codemirror/language";
 import {
 	Input,
 	NodeProp,
@@ -18,6 +18,7 @@ import {
 import { regex } from "./fountain/regexes";
 
 import { Tag, styleTags, tags as t } from "@lezer/highlight";
+import { Facet } from "@codemirror/state";
 
 class CompositeBlock {
 	static create(
@@ -374,7 +375,7 @@ const DefaultBlockParsers: {
 		if(!line.text.trim().startsWith("~")) return false
 		cx.addNode(Type.Lyrics, cx.lineStart)
 		cx.nextLine()
-		console.debug("lyr", line.text)
+		// console.debug("lyr", line.text)
 		// line.moveBase(line.pos)
 		return true
 		// let variable = line.text.match(/^~/m) && line.text.length > 2
@@ -731,11 +732,11 @@ class NoteBlockParser implements LeafBlockParser {
 				console.debug("none")
 				return -1;
 			} else if (this.stage == NoteStage.Begin) {
-				console.debug("peony", pNE, this.previous, content)
+				// console.debug("peony", pNE, this.previous, content)
 				if ((this.previous[0] == NoteStage.Begin) ) {
 						
 					// this.context.addElement(elt(Type.BlockNote, this.pos + this.start, this.start + content.length))
-					console.debug("begin stage", blip, content, this.stage)
+					// console.debug("begin stage", blip, content, this.stage)
 					if(content.match(regex.note)) {
 						this.change(NoteStage.End)
 					} else {
@@ -743,7 +744,7 @@ class NoteBlockParser implements LeafBlockParser {
 					}
 					return 1
 				} else if(!pNE) {
-					console.debug("sad!")
+					// console.debug("sad!")
 					return -1;
 				}
 				return -1
@@ -760,19 +761,19 @@ class NoteBlockParser implements LeafBlockParser {
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
 				this.context.addElement(pNE)
-				console.debug("inside stage", blip, content, this.stage)
+				// console.debug("inside stage", blip, content, this.stage)
 				this.change(NoteStage.End)
 				return 1
 			} else if (this.stage == NoteStage.End) {
 				if (!parseNoteElement(content, this.pos, this.start)) return -1;
-				console.debug("end stage", blip, content, this.stage)
+				// console.debug("end stage", blip, content, this.stage)
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
 				this.context.addElement(pNE)
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
-				console.debug("else:", blip, content, this.stage)
+				// console.debug("else:", blip, content, this.stage)
 			}
 		}
 	}
@@ -1213,7 +1214,7 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
-		console.debug("finishing leaf", inline)
+		// console.debug("finishing leaf", inline)
 		this.addNode(
 			this.buffer
 				.writeElements(inline, -leaf.start)
@@ -1477,20 +1478,30 @@ export class FountainParser extends Parser {
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
+	console.debug("nodetype", name)
+	let properties = [];
+	if(name === "SceneHeading") {
+		properties.push(foldNodeProp.add((type) => {
+			if(type.name !== "SceneHeading") return undefined
+			return (node, state) => {
+				console.debug("we are in a prop")
+				console.debug("prop:state", state)
+				console.debug("prop:node", node)
+				let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
+				console.debug("prop:ns", ns)
+				return {from: state.doc.lineAt(node.from).to, to: ns}
+			}
+		}))
+	}
+	console.debug("node:deffine", i)
 	nodeTypes[i] = NodeType.define({
 		id: i,
 		name,
 		props:
-			i >= Type.Escape
+			i <= Type.Escape ? [] :
+			i >= Type.PlainText
 				? []
-				: [
-						[
-							NodeProp.group,
-							i in DefaultSkipMarkup
-								? ["Block", "BlockContext"]
-								: ["Block", "LeafBlock"],
-						],
-				  ],
+				: properties,
 	});
 }
 
@@ -2058,7 +2069,8 @@ export const parser = new FountainParser(
 	[]
 );
 const data = defineLanguageFacet({block: {open: "<!--", close: "-->"}})
+const fold = defineLanguageFacet(Facet.define())
 
-export function mkLang(parser: FountainParser) { return new Language(data, parser)}
+export function mkLang(parser: FountainParser) { console.debug("node:types", nodeTypes); return new Language(data, parser)}
 
 export const ftn = new LanguageSupport(mkLang(parser), [])
