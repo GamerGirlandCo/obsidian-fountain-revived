@@ -19,7 +19,10 @@ export const regex = {
     synopsis: /^(?:\=(?!\=+) *)(.*)/,
 
     note: /^(?:\[{2}(?!\[+))(.+)(?:\]{2}(?!\[+))$/,
-    note_inline: /(?:\[{2}(?!\[+))([\s\S]+?)(?:\]{2}(?!\[+))/g,
+    note_inline: /(?:\[{2}(?!\[+))(.+?)(?:\]{2}(?!\[+))/gs,
+	closing_note: /\]\]$/gm,
+	opening_note: /^\[\[/gm,
+
     boneyard: /(^\/\*|^\*\/)$/g,
 
     page_break: /^\={3,}$/,

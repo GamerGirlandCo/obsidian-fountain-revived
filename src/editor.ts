@@ -125,6 +125,9 @@ function inlineRender(view: EditorView) {
 					case "Note":
 						cssClass = "note"
 						break;
+					case "BlockNote":
+						cssClass = "note";
+						break;
 					case "Parenthetical":
 						cssClass ="parenthetical"
 						break;
@@ -151,7 +154,7 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-						if(name !=="TitlePageField" && name !== "PlainText") {
+						if((name !=="TitlePageField" && name !== "PlainText") || cssClass !== "") {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,
@@ -216,8 +219,8 @@ export function inlinePlugin(): ViewPlugin<any> {
 					update.selectionSet
 				) {
 					// this.render(update.view);
+					this.render(update.view)
 				}
-				this.render(update.view)
 			}
 		},
 		{ decorations: (v) => v.decorations }

@@ -245,6 +245,15 @@ const DefaultSkipMarkup: {
 	[Type.Screenplay]() {
 		return true;
 	},
+	// [Type.Action](bl, cx, line) {
+	// 	bl.addChild(
+	// 		elt(
+	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length, 
+	// 			cx.parser.parseInline(line.text, cx.lineStart
+	// 	)).toTree(cx.parser.nodeSet), cx.lineStart
+	// 	)
+	// 	return true
+	// }
 };
 
 export function space(ch: number) {
@@ -339,9 +348,6 @@ type BlockResult = boolean | null;
 const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
-	LinkReference: undefined,
-	TitlePage: undefined,
-	SceneHeading: undefined,
 	Transition(cx, line) {
 		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
 		let from = cx.lineStart + line.pos;
@@ -366,8 +372,9 @@ const DefaultBlockParsers: {
 	},
 	Lyrics(cx, line) {
 		if(!line.text.trim().startsWith("~")) return false
-		cx.addNode(Type.Lyrics, cx.lineStart + line.pos, line.text.length + 1)
+		cx.addNode(Type.Lyrics, cx.lineStart)
 		cx.nextLine()
+		console.debug("lyr", line.text)
 		// line.moveBase(line.pos)
 		return true
 		// let variable = line.text.match(/^~/m) && line.text.length > 2
@@ -424,6 +431,10 @@ const DefaultBlockParsers: {
 	// },
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
+	Note: undefined,
+	// LinkReference: undefined,
+	TitlePage: undefined,
+	SceneHeading: undefined,
 };
 
 const enum CurrentBlock {
@@ -452,23 +463,25 @@ function parseParenthetical(text: string, start: number, offset: number): null |
 function parseNoteElement(text: string, start: number, offset: number): null | false | Element {
 	let opening = /\[\[/gm
 	let closing = /\]\]/gm
-	console.log("parseeeeeeeing note", text)
-	if(text.match(regex.note || regex.note_inline)) {
-		console.log("parsing note", text)
+	// console.log("parseeeeeeeing note", text)
+	if(text.match(regex.note)|| text.match(regex.note_inline)) {
+		// console.debug("parsing note: general", text)
 		return elt(Type.Note, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[")
 		let lio = text.lastIndexOf("[")
-		console.log("parsing note", text)
+		// console.debug("parsing note: open", text)
+		// console.debug("first->last", tio, lio)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.OpenNote, tio + offset, offset + lio)
+			return elt(Type.Note, tio + offset, text.length + offset)
 		}
 	} else if(text.match(closing)) {
 		let tio = text.indexOf("]")
 		let lio = text.lastIndexOf("]")
-		console.log("parsing note", text)
+		// console.debug("parsing note: close", text)
+		// console.debug("first->last", tio, lio)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.CloseNote, tio + offset, lio + offset)
+			return elt(Type.Note, tio + offset, text.length + offset)
 		}
 		// return elt
 	}
@@ -653,22 +666,34 @@ const enum NoteStage {
 // @ts-ignore
 class NoteBlockParser implements LeafBlockParser {
 	stage = NoteStage.Begin;
+	previous: NoteStage[] = []
 	elts: Element[] = [];
 	pos = 0;
 	start: number;
 
-	constructor(leaf: LeafBlock) {
+	constructor(leaf: LeafBlock, readonly context: BlockContext) {
 		this.start = leaf.start;
-		// this.advance(leaf.content);
+		this.change(NoteStage.Begin)
+		this.change((leaf.content.match(regex.note) || leaf.content.match(regex.note_inline)) ?
+		NoteStage.Inside : leaf.content.match(regex.opening_note) ? NoteStage.Begin :
+		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Begin)
+		// console.debug("contents", leaf.content, this.stage)
+		this.advance(leaf.content);
 	}
-
+	change(to: NoteStage) {
+		if(this.previous.length >=3) {
+			this.previous.pop()
+			this.previous.pop()
+		}
+		// this.previous.unshift(this.stage)
+		this.previous.unshift(to)
+		this.stage = to;
+	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
 		if (this.stage == NoteStage.None) return false;
 		let content = leaf.content + "\n" + line.scrub();
-		// let finish = this.advance(content);
-		// if (finish > -1 && finish < content.length)
-			// return this.complete(cx, leaf, finish);
-		return false;
+		let finish = this.advance(content);
+		return this.complete(cx, leaf, finish);
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
@@ -676,23 +701,20 @@ class NoteBlockParser implements LeafBlockParser {
 			(this.stage == NoteStage.Begin || this.stage == NoteStage.Inside) &&
 			skipSpace(leaf.content, this.pos) == leaf.content.length
 		)
-			// return this.complete(cx, leaf, leaf.content.length);
+			return this.complete(cx, leaf, leaf.content.length);
 		return false;
 	}
 
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-		cx.addLeafElement(
-			leaf,
-			elt(Type.CloseNote, this.start, this.start + len, this.elts)
-		);
+		console.debug("compleetion", this.elts)
 		return true;
 	}
 
 	nextStage(elt: Element | null | false) {
 		if (elt) {
 			this.pos = elt.to - this.start;
-			this.elts.push(elt);
-			this.stage++;
+			// this.elts.push(elt);
+			// this.stage++;
 			return true;
 		}
 		if (elt === false) this.stage = NoteStage.None;
@@ -700,46 +722,56 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 
 	advance(content: string) {
+		let blip = parseNoteElement(content, this.pos, this.start)
 		for (;;) {
+			let pNE = parseNoteElement(content, this.pos, this.start)
+			// console.log("stage->", this.stage, "content->", content)
 			if (this.stage == NoteStage.None) {
+				console.debug("none")
 				return -1;
 			} else if (this.stage == NoteStage.Begin) {
-				if (
-					!this.nextStage(parseNoteElement(content, this.pos, this.start))
-				)
+				console.debug("peony", pNE, this.previous, content)
+				if ((this.previous[0] == NoteStage.Begin) ) {
+						
+					// this.context.addElement(elt(Type.Note, this.pos + this.start, this.start + content.length))
+					console.debug("begin stage", blip, content, this.stage)
+					if(content.match(regex.note)) {
+						this.change(NoteStage.End)
+					} else {
+						this.change(NoteStage.Inside)
+					}
+					return 1
+				} else if(!pNE) {
+					console.debug("sad!")
 					return -1;
-				if (content.charCodeAt(this.pos) != "[".charCodeAt(0))
-					return (this.stage = NoteStage.None);
-				this.elts.push(
-					elt(Type.OpenNote, this.pos + this.start, this.pos + this.start + 1)
-				);
-				this.pos++;
-			} else if (this.stage == NoteStage.Inside) {
-				if (
-					!this.nextStage(
-						parseNoteElement(content, skipSpace(content, this.pos), this.start)
-					)
-				)
-					return -1;
-			} else if (this.stage == NoteStage.End) {
-				let skip = skipSpace(content, this.pos),
-					end = 0;
-				if (skip > this.pos) {
-					// let title = parseLinkTitle(content, skip, this.start);
-					// if (title) {
-					// 	let titleEnd = lineEnd(content, title.to - this.start);
-					// 	if (titleEnd > 0) {
-					// 		this.nextStage(title);
-					// 		end = titleEnd;
-					// 	}
-					// }
-					return -1
 				}
-				if (!end) end = lineEnd(content, this.pos);
-				return end > 0 && end < content.length ? end : -1;
+				return -1
+				/* this.context.addNode(
+					elt(Type.Note, this.pos + this.start, this.pos + this.start + 1)
+					.toTree(this.context.parser.nodeSet),
+					this.context.lineStart
+				); */
+			} else if (this.stage == NoteStage.Inside) {
+				if (!parseNoteElement(content, this.pos, this.start)) return -1;
+				/* this.context.addNode(
+					elt(Type.Note, this.pos + this.start, this.start + content.length).toTree(this.context.parser.nodeSet),
+					this.context.lineStart
+				)
+				this.context.addNode(Type.Note, this.pos+this.start, content.length + this.start) */
+				this.context.addElement(elt(Type.Note, this.pos + this.start, this.start + content.length))
+				console.debug("inside stage", blip, content, this.stage)
+				this.change(NoteStage.End)
+				return 1
+			} else if (this.stage == NoteStage.End) {
+				if (!parseNoteElement(content, this.pos, this.start)) return -1;
+				console.debug("end stage", blip, content, this.stage)
+				// @ts-ignore
+				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
+				this.context.addElement(parseNoteElement(content, this.pos, this.start), this.context.lineStart)
+				this.change(NoteStage.Begin)
+				return 1
 			} else {
-				// RefStage.Title
-				return lineEnd(content, this.pos);
+				console.debug("else:", blip, content, this.stage)
 			}
 		}
 	}
@@ -807,11 +839,14 @@ class SceneHeadingParser implements LeafBlockParser {
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
+	Note(cx, bl) {
+		// return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
+		// || bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note) ? 
+		return new NoteBlockParser(bl, cx) 
+		// : null
+	},
 	SceneHeading(cx, bl) {
 		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
-	},
-	Section() {
-		return new SectionParser();
 	},
 	TitlePage(cx, bl) {
 		return new TitlePageParser(bl, cx)
@@ -819,9 +854,6 @@ const DefaultLeafBlocks: {
 	Dialogue(cx, bl) {
 		return new DialogueParser(bl, cx)
 	},
-	Note(_, bl) {
-		return new NoteBlockParser(bl)
-	}
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
 	// }
@@ -860,6 +892,7 @@ export class BlockContext implements PartialParse {
 	/// @internal
 	absoluteLineEnd: number;
 	prevNode: Type[] = []
+	prevEl: Type[] = []
 
 	/// @internal
 	constructor(
@@ -1128,6 +1161,10 @@ export class BlockContext implements PartialParse {
 			elt.toTree(this.parser.nodeSet),
 			elt.from - this.block.from
 		);
+		if(this.prevEl.length > 2) {
+			this.prevEl.pop()
+		}
+		this.prevEl.unshift(elt.type)
 	}
 
 	/// Add a block element from a [leaf parser](#LeafBlockParser). This
@@ -1174,6 +1211,7 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
+		console.debug("finishing leaf", inline)
 		this.addNode(
 			this.buffer
 				.writeElements(inline, -leaf.start)
@@ -1893,7 +1931,7 @@ const NotLast = [
 	// Type.SceneHeading,
 	// Type.Synopsis,
 	Type.Action,
-	Type.BlockNote,
+	// Type.Note,
 	Type.BoneYard
 ];
 
