@@ -284,44 +284,17 @@ function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 	return count < 3 ? -1 : 1;
 }
 
-function inList(cx: BlockContext, type: Type) {
-	for (let i = cx.stack.length - 1; i >= 0; i--)
-		if (cx.stack[i].type == type) return true;
-	return false;
+function isLyric(line: Line, cx: BlockContext) {
+	console.log("parsing lyric", line.text, line.next, cx)
+	if(line.next != 126 /* '~' */) return -1
+	let count = 1;
+	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
+		let ch = line.text.charCodeAt(pos);
+		if (ch == line.next) count++;
+	}
+	console.log("count", count, line)
+	return count ===1 ? 1 :-1
 }
-
-function isLyric(line: Line, cx: BlockContext, breaking: boolean) {
-	return (line.next == 126) && line.pos === 0 /* '~' */ /* &&
-		(!breaking ||
-			line.skipSpace(line.pos) < line.text.length) */
-		? 1
-		: -1;
-}
-
-
-// function isOrderedList(line: Line, cx: BlockContext, breaking: boolean) {
-// 	let pos = line.pos,
-// 		next = line.next;
-// 	for (;;) {
-// 		if (next >= 48 && next <= 57 /* '0-9' */) pos++;
-// 		else break;
-// 		if (pos == line.text.length) return -1;
-// 		next = line.text.charCodeAt(pos);
-// 	}
-// 	if (
-// 		pos == line.pos ||
-// 		pos > line.pos + 9 ||
-// 		(next != 46 && next != 41) /* '.)' */ ||
-// 		(pos < line.text.length - 1 && !space(line.text.charCodeAt(pos + 1))) ||
-// 		(breaking &&
-// 			!inList(cx, Type.OrderedList) &&
-// 			(line.skipSpace(pos + 1) == line.text.length ||
-// 				pos > line.pos + 1 ||
-// 				line.next != 49) /* '1' */)
-// 	)
-// 		return -1;
-// 	return pos + 1 - line.pos;
-// }
 
 function isSection(line: Line) {
 	if (line.next != 35 /* '#' */) return -1;
@@ -346,10 +319,6 @@ function isSetextUnderline(line: Line) {
 	return pos == line.text.length ? end : -1;
 }
 
-function isANote(line: Line) {
-	let nextup = line.pos + 1;
-	// if()
-}
 
 // Return type for block parsing functions. Can be either:
 //
@@ -396,12 +365,18 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Lyrics(cx, line) {
-		let variable = !line.text.startsWith("~") && line.text.length > 1
-		if(variable) return false;
-		let from = cx.lineStart + line.pos
+		if(!line.text.trim().startsWith("~")) return false
+		cx.addNode(Type.Lyrics, cx.lineStart + line.pos, line.text.length + 1)
 		cx.nextLine()
-		cx.addNode(Type.Lyrics, from)
+		// line.moveBase(line.pos)
 		return true
+		// let variable = line.text.match(/^~/m) && line.text.length > 2
+		// if(!variable) return false;
+		// // cx.startContext(Type.Lyrics, line.pos)
+		// cx.addNode(Type.Lyrics, cx.lineStart + line.pos, line.text.length + 1)
+		// line.moveBase(line.pos)
+		// return true
+		// return false
 	},
 	Synopsis(cx, line) {
 		if(!line.text.startsWith("=")) return false
@@ -440,13 +415,13 @@ const DefaultBlockParsers: {
 	// },
 	//  BlockNote(cx, line) {
 	//  },
-	LineBreak(cx, line) {
-		if(line.text.length <= 1) {
-			cx.addNode(Type.LineBreak, cx.lineStart)
-			return true
-		} 
-		return false
-	},
+	// LineBreak(cx, line) {
+	// 	if(line.text.length <= 1) {
+	// 		cx.addNode(Type.LineBreak, cx.lineStart)
+	// 		return true
+	// 	} 
+	// 	return false
+	// },
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 };
@@ -475,19 +450,23 @@ function parseParenthetical(text: string, start: number, offset: number): null |
 }
 
 function parseNoteElement(text: string, start: number, offset: number): null | false | Element {
-	let opening = /\[\]/
-	let closing = /\]\]/
-	if(text.match(regex.note)) {
+	let opening = /\[\[/gm
+	let closing = /\]\]/gm
+	console.log("parseeeeeeeing note", text)
+	if(text.match(regex.note || regex.note_inline)) {
+		console.log("parsing note", text)
 		return elt(Type.Note, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[")
 		let lio = text.lastIndexOf("[")
+		console.log("parsing note", text)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
 			return elt(Type.OpenNote, tio + offset, offset + lio)
 		}
 	} else if(text.match(closing)) {
 		let tio = text.indexOf("]")
 		let lio = text.lastIndexOf("]")
+		console.log("parsing note", text)
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
 			return elt(Type.CloseNote, tio + offset, lio + offset)
 		}
@@ -778,10 +757,10 @@ class TitlePageParser implements LeafBlockParser {
 		let lastOF = children[children.length - 1]?.type.name
 		if(leaf.content.match(regex.title_page)) {
 			this.myelements.push(
-				elt(Type.TitlePageField, leaf.start, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
+				elt(Type.TitlePageField, leaf.start, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start))
 			);
 		} else if(this.myelements.length) {
-			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start)))
+			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start)))
 		} /* else if(leaf.content.indexOf("\n") !== -1) {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
@@ -797,7 +776,7 @@ class TitlePageParser implements LeafBlockParser {
 		}
 
 		
-		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length, this.myelements))
+		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length + 1, this.myelements))
 		return true;
 
 	}
@@ -853,7 +832,8 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	// (_, line) => isFencedCode(line) >= 0,
 	(_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
-	(p, line) => isLyric(line, p, false) >= 0
+	// (p, line) => isLyric(line, p) >= 0
+
 ];
 
 const scanLineResult = { text: "", end: 0 };
