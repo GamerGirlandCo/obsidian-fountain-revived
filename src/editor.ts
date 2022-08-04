@@ -208,7 +208,7 @@ export function inlinePlugin(): ViewPlugin<any> {
 				this.decorations = inlineRender(view) ?? Decoration.none;
 			}
 			build(view: EditorView) {
-					
+				
 			}
 
 			update(update: ViewUpdate) {

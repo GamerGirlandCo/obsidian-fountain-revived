@@ -44,7 +44,7 @@
 [data-type="fountain"] > .view-content .cm-editor .screenplay-transition:not(.screenplay-note) {
     font-style: italic;
 	/* font-size: 0.85em; */
-	color: var(--cerulean, var(--purple))
+	color: var(--cerulean, var(--purple, var(--text-sub-accent)))
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
