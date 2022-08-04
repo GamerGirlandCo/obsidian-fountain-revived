@@ -36,7 +36,7 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
 	const all = view.state.doc.toString()
-	// visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
@@ -86,7 +86,6 @@ function inlineRender(view: EditorView) {
 				// 		
 				// 	}
 				// }
-
 				let cssClass: string = '';
 				switch (name) {
 					case 'TitlePage':
@@ -144,7 +143,7 @@ function inlineRender(view: EditorView) {
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-scene-heading`,
-							}).range(whichline.to + 1),
+							}).range(whichline.from + 1),
 						);
 				} else if( name === "SceneNumber" || name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
 					const content = view.state.doc.sliceString(start, end);
@@ -154,7 +153,7 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-						if((name !=="TitlePageField" && name !== "PlainText") || cssClass !== "") {
+						if((name !=="TitlePage" && name !== "PlainText") || cssClass !== "") {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,
@@ -172,7 +171,6 @@ function inlineRender(view: EditorView) {
 					// } else {
 					// }
 				}
-				
 				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",
@@ -184,7 +182,6 @@ function inlineRender(view: EditorView) {
 		}
 	} finally {
 		return Decoration.set(widgets, true);
-	
 	}
 }
 

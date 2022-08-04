@@ -18,7 +18,7 @@ import {
 import { regex } from "./fountain/regexes";
 
 import { Tag, styleTags, tags as t } from "@lezer/highlight";
-import { Facet } from "@codemirror/state";
+import { Extension, Facet } from "@codemirror/state";
 
 class CompositeBlock {
 	static create(
@@ -375,16 +375,20 @@ const DefaultBlockParsers: {
 		if(!line.text.trim().startsWith("~")) return false
 		cx.addNode(Type.Lyrics, cx.lineStart)
 		cx.nextLine()
-		
-		// line.moveBase(line.pos)
 		return true
-		// let variable = line.text.match(/^~/m) && line.text.length > 2
-		// if(!variable) return false;
-		// // cx.startContext(Type.Lyrics, line.pos)
-		// cx.addNode(Type.Lyrics, cx.lineStart + line.pos, line.text.length + 1)
-		// line.moveBase(line.pos)
-		// return true
-		// return false
+	},
+	Section(cx, line) {
+		let size = isSection(line);
+		if(size < 0) return false;
+		if(size === 1) {
+			cx.addNode(Type.Act, cx.lineStart)
+		} else if(size === 2) {
+			cx.addNode(Type.Sequence, cx.lineStart)
+		} else if(size === 3) {
+			cx.addNode(Type.Scene, cx.lineStart)
+		}
+		cx.nextLine()
+		return true
 	},
 	Synopsis(cx, line) {
 		if(!line.text.startsWith("=")) return false
@@ -393,7 +397,7 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
-	
+
 	// Character(cx, line) {
 	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 	// 	let from = cx.lineStart + line.pos;
@@ -421,16 +425,7 @@ const DefaultBlockParsers: {
 	// 		return true
 	// 	}
 	// 	return false
-	// },
-	//  BlockNote(cx, line) {
-	//  },
-	// LineBreak(cx, line) {
-	// 	if(line.text.length <= 1) {
-	// 		cx.addNode(Type.LineBreak, cx.lineStart)
-	// 		return true
-	// 	} 
-	// 	return false
-	// },
+	// }
 	Action(cx, line) {
 		let objOfEverythingExcept = {...regex}
 		delete objOfEverythingExcept.action;
@@ -804,17 +799,17 @@ class TitlePageParser implements LeafBlockParser {
 		let lastOF = children[children.length - 1]?.type.name
 		if(leaf.content.match(regex.title_page)) {
 			this.myelements.push(
-				elt(Type.TitlePageField, leaf.start, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start))
+				elt(Type.TitlePage, leaf.start, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start))
 			);
 		} else if(this.myelements.length) {
-			this.myelements.push(elt(Type.TitlePageField, cx.lineStart, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start)))
+			this.myelements.push(elt(Type.TitlePage, cx.lineStart, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start)))
 		} /* else if(leaf.content.indexOf("\n") !== -1) {
 			this.myelements.push(
 				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
 			)
 		} */ else if(lastOF === "TitlePage")  {
 			this.myelements.push(
-				elt(Type.TitlePageField, leaf.start, leaf.content.length,
+				elt(Type.TitlePage, leaf.start, leaf.content.length,
 					cx.parser.parseInline(leaf.content, leaf.start)
 				)
 			)
@@ -1520,6 +1515,40 @@ for (let i = 1, name; (name = Type[i]); i++) {
 	});
 }
 
+function extender(): NodePropSource[] {
+	let properties:NodePropSource[] = [
+		languageDataProp.add({data: data})
+	];
+	function logger(node, state, nextsibling?) {
+			console.debug("we are in a prop")
+			console.debug("prop:state", state)
+			console.debug("prop:node", node)
+			nextsibling && console.debug("prop:ns", nextsibling)
+	}
+	/* properties.push(foldNodeProp.add(type => {
+		console.log("prop:type", type.name)
+		if(type.id === Type.Screenplay || type.id === Type.TitlePageField) return null
+		return function (node, state) {
+			let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
+			logger(node, state, ns)
+			return {from: state.doc.lineAt(node.from).to, to: ns}
+		}
+	})) */
+	properties.push(foldNodeProp.add(type => {
+		// console.log("prop:type", type.name)
+		// if(type.is("Screenplay")) return undefined
+		if(type.is("SceneHeading")) 
+		return function (node, state) {
+			logger(node, state)
+			let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
+			return {from: state.doc.lineAt(node.from).to, to: ns}
+		}
+		// return (node, state) => undefined
+	}))
+	// console.log("props", properties)
+	return properties;
+}
+
 const none: readonly any[] = [];
 
 class Buffer {
@@ -2048,7 +2077,7 @@ class FragmentCursor {
 
 
 export const parser = new FountainParser(
-	new NodeSet(nodeTypes).extend(),
+	new NodeSet(nodeTypes).extend(...extender()),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultBlockParsers[n]),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultLeafBlocks[n]),
 	Object.keys(DefaultBlockParsers),
@@ -2063,4 +2092,10 @@ const fold = defineLanguageFacet(Facet.define())
 
 export function mkLang(parser: FountainParser) { console.debug("node:types", nodeTypes); return new Language(data, parser)}
 
-export const ftn = new LanguageSupport(mkLang(parser), [])
+export function ftn(exts?: Extension[]) { 
+	const lang =  new Language(data, parser)
+	const ls = new LanguageSupport(lang)
+	// console.log("derrr", extender())
+	// console.log("lag", parser.nodeSet);  
+	return ls
+}

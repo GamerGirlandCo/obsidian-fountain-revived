@@ -25,14 +25,15 @@ const theme = EditorView.theme({
 		"font-family": "'Courier Final Draft', 'Courier Screenplay', Courier !important"
 	},
 	".cm-foldGutter": {
-		backgroundColor: "var(--interactive-accent)"
+		backgroundColor: "var(--interactive-accent)",
+		opacity: "0.5"
 	}
 })
 
 export const exts = [
 	theme, 
 	inlinePlugin(), 
-	ftn, 
+	ftn(), 
 	...basicSetup
 ]
 

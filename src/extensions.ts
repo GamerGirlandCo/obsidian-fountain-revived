@@ -22,7 +22,6 @@ import {
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
 
-import fountain from "./fountain/lang"
 import { lintKeymap } from "@codemirror/lint";
 
 export const basicSetup: Extension[] = [
