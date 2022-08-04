@@ -295,14 +295,14 @@ function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 }
 
 function isLyric(line: Line, cx: BlockContext) {
-	console.log("parsing lyric", line.text, line.next, cx)
+	
 	if(line.next != 126 /* '~' */) return -1
 	let count = 1;
 	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
 		let ch = line.text.charCodeAt(pos);
 		if (ch == line.next) count++;
 	}
-	console.log("count", count, line)
+	
 	return count ===1 ? 1 :-1
 }
 
@@ -375,7 +375,7 @@ const DefaultBlockParsers: {
 		if(!line.text.trim().startsWith("~")) return false
 		cx.addNode(Type.Lyrics, cx.lineStart)
 		cx.nextLine()
-		// console.debug("lyr", line.text)
+		
 		// line.moveBase(line.pos)
 		return true
 		// let variable = line.text.match(/^~/m) && line.text.length > 2
@@ -413,7 +413,7 @@ const DefaultBlockParsers: {
 	// },
 	// Dialogue(cx, line) {
 	// 	let from = cx.lineStart + line.pos;
-	// 	// console.log("diaaaaa", cx.prevNode)
+	// 	
 	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical || cx.prevNode[0] === Type.Dialogue) {
 	// 		cx.addNode(Type.Dialogue, from)
 	// 		cx.nextLine()
@@ -430,6 +430,18 @@ const DefaultBlockParsers: {
 	// 	} 
 	// 	return false
 	// },
+	Action(cx, line) {
+		let objOfEverythingExcept = {...regex}
+		delete objOfEverythingExcept.action;
+		let arr = Object.values(objOfEverythingExcept)
+		if(arr.every(a => line.text.match(a) === null)) {
+
+			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
+			cx.nextLine()
+			return false
+		}
+		return false
+	},
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 	BlockNote: undefined,
@@ -464,23 +476,23 @@ function parseParenthetical(text: string, start: number, offset: number): null |
 function parseNoteElement(text: string, start: number, offset: number): null | false | Element {
 	let opening = /\[\[/gm
 	let closing = /\]\]/gm
-	// console.log("parseeeeeeeing note", text)
+	
 	if(text.match(regex.note)|| text.match(regex.note_inline)) {
-		// console.debug("parsing note: general", text)
+		
 		return elt(Type.BlockNote, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[")
 		let lio = text.lastIndexOf("[")
-		// console.debug("parsing note: open", text)
-		// console.debug("first->last", tio, lio)
+		
+		
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
 			return elt(Type.BlockNote, tio + offset, text.length + offset)
 		}
 	} else if(text.match(closing)) {
 		let tio = text.indexOf("]")
 		let lio = text.lastIndexOf("]")
-		// console.debug("parsing note: close", text)
-		// console.debug("first->last", tio, lio)
+		
+		
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
 			return elt(Type.BlockNote, tio + offset, text.length + offset)
 		}
@@ -679,7 +691,7 @@ class NoteBlockParser implements LeafBlockParser {
 		this.change((leaf.content.match(regex.note)) ?
 		NoteStage.Inside : leaf.content.match(regex.opening_note) ? NoteStage.Begin :
 		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Begin)
-		// console.debug("contents", leaf.content, this.stage)
+		
 		this.advance(leaf.content);
 	}
 	change(to: NoteStage) {
@@ -708,7 +720,7 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-		console.debug("compleetion", this.elts)
+		// console.debug("compleetion", this.elts)
 		return true;
 	}
 
@@ -727,16 +739,16 @@ class NoteBlockParser implements LeafBlockParser {
 		let blip = parseNoteElement(content, this.pos, this.start)
 		for (;;) {
 			let pNE = parseNoteElement(content, this.pos, this.start)
-			// console.log("stage->", this.stage, "content->", content)
+			
 			if (this.stage == NoteStage.None) {
-				console.debug("none")
+				// console.debug("none")
 				return -1;
 			} else if (this.stage == NoteStage.Begin) {
-				// console.debug("peony", pNE, this.previous, content)
+				
 				if ((this.previous[0] == NoteStage.Begin) ) {
 						
 					// this.context.addElement(elt(Type.BlockNote, this.pos + this.start, this.start + content.length))
-					// console.debug("begin stage", blip, content, this.stage)
+					
 					if(content.match(regex.note)) {
 						this.change(NoteStage.End)
 					} else {
@@ -744,7 +756,7 @@ class NoteBlockParser implements LeafBlockParser {
 					}
 					return 1
 				} else if(!pNE) {
-					// console.debug("sad!")
+					
 					return -1;
 				}
 				return -1
@@ -761,19 +773,19 @@ class NoteBlockParser implements LeafBlockParser {
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
 				this.context.addElement(pNE)
-				// console.debug("inside stage", blip, content, this.stage)
+				
 				this.change(NoteStage.End)
 				return 1
 			} else if (this.stage == NoteStage.End) {
 				if (!parseNoteElement(content, this.pos, this.start)) return -1;
-				// console.debug("end stage", blip, content, this.stage)
+				
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
 				this.context.addElement(pNE)
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
-				// console.debug("else:", blip, content, this.stage)
+				
 			}
 		}
 	}
@@ -1214,11 +1226,11 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
-		// console.debug("finishing leaf", inline)
+		
 		this.addNode(
 			this.buffer
 				.writeElements(inline, -leaf.start)
-				.finish(Type.Action, leaf.content.length),
+				.finish(Type[Type[this.prevNode[0]]], leaf.content.length),
 			leaf.start
 		);
 	}
@@ -1475,6 +1487,11 @@ export class FountainParser extends Parser {
 }
 
 
+function propLogger(node, state) {
+	console.debug("we are in a prop")
+	console.debug("prop:state", state)
+	console.debug("prop:node", node)
+}
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
@@ -1484,16 +1501,13 @@ for (let i = 1, name; (name = Type[i]); i++) {
 		properties.push(foldNodeProp.add((type) => {
 			if(type.name !== "SceneHeading") return undefined
 			return (node, state) => {
-				console.debug("we are in a prop")
-				console.debug("prop:state", state)
-				console.debug("prop:node", node)
 				let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
-				console.debug("prop:ns", ns)
+				propLogger(node, state)
 				return {from: state.doc.lineAt(node.from).to, to: ns}
 			}
 		}))
 	}
-	console.debug("node:deffine", i)
+	// console.debug("node:deffine", i)
 	nodeTypes[i] = NodeType.define({
 		id: i,
 		name,
@@ -1699,30 +1713,6 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		while (cx.char(pos) == next) pos++
 		return cx.append(elt(Type.Note, from, to))
 	} */
-	// LineBreak(cx, next, start) {
-	// 	if (next == 92 /* '\\' */ && cx.char(start + 1) == 10 /* '\n' */)
-	// 		return cx.append(elt(Type.LineBreak, start, start + 1));
-	// 	if (next == 32) {
-	// 		let pos = start + 1;
-	// 		while (cx.char(pos) == 32) pos++;
-	// 		if (cx.char(pos) == 10 && pos >= start + 2)
-	// 			return cx.append(elt(Type.LineBreak, start, pos + 1));
-	// 	}
-	// 	return -1;
-	// },
-	// SceneNumber(cx, next, start) {
-	// 	let actualstart = start;
-	// 	let pos = start + 1;
-	// 	console.log("scenenumber", pos, actualstart)
-	// 	let blabbermouth = cx.slice(actualstart, cx.end)
-	// 	if(String.fromCharCode(pos) !== "#") return -1
-	// 	console.log("liars!", blabbermouth)
-	// 	while(cx.char(pos) === "#".charCodeAt(0)) pos++
-	// 	return cx.append(
-	// 		new InlineDelimiter(SceneNumberThingy,start, pos, (pos > actualstart && cx.char(pos) === "#".charCodeAt(0)) ? Mark.Close : Mark.Open)
-	// 		)
-	// }
-
 };
 
 // These return `null` when falling off the end of the input, `false`
