@@ -2043,12 +2043,10 @@ class FragmentCursor {
 	}
 }
 
-const markdownHighlighting = styleTags({
-	Action: t.content,
-});
+
 
 export const parser = new FountainParser(
-	new NodeSet(nodeTypes).extend(markdownHighlighting),
+	new NodeSet(nodeTypes),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultBlockParsers[n]),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultLeafBlocks[n]),
 	Object.keys(DefaultBlockParsers),

@@ -158,6 +158,7 @@ function inlineRender(view: EditorView) {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,
+									block: true,
 								}).range(whichline.from),
 							);
 						}

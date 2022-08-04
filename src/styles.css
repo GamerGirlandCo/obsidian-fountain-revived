@@ -43,7 +43,8 @@
     margin-top: 1em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-transition {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-transition
+:not(.screenplay-note) {
     font-style: italic;
 	font-size: 0.85em;
 	color: var(--cerulean)
