@@ -34,10 +34,9 @@
 
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-header {
-    margin-bottom: 1em;
 	text-align: center;
 	font-weight: 600 !important;
-	font-size: 1.75em;
+	font-size: 1.25em;
 }
 
 [data-type="fountain"] > .view-content .cm-editor .screenplay-footer {
