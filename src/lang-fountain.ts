@@ -393,6 +393,7 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
+	
 	// Character(cx, line) {
 	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 	// 	let from = cx.lineStart + line.pos;
@@ -1935,6 +1936,7 @@ function injectMarks(
 	return elts;
 }
 
+
 // These are blocks that can span blank lines, and should thus only be
 // reused if their next sibling is also being reused.
 const NotLast = [
@@ -2046,7 +2048,7 @@ class FragmentCursor {
 
 
 export const parser = new FountainParser(
-	new NodeSet(nodeTypes),
+	new NodeSet(nodeTypes).extend(),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultBlockParsers[n]),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultLeafBlocks[n]),
 	Object.keys(DefaultBlockParsers),

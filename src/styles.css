@@ -43,8 +43,7 @@
     margin-top: 1em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-transition
-:not(.screenplay-note) {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-transition:not(.screenplay-note) {
     font-style: italic;
 	font-size: 0.85em;
 	color: var(--cerulean)
@@ -69,15 +68,7 @@
 	font-style: italic;
 }
 
-/* [data-type="fountain"] > .view-content .cm-editor>br {
-    clear: both;
-} */
-
-/* [data-type="fountain"] > .view-content .cm-editor>.screenplay-action {
-    margin-top: 1em;
-} */
-
-[data-type="fountain"] > .view-content .cm-editor .screenplay-lyric {
+[data-type="fountain"] > .view-content .cm-editor .screenplay-lyric:not(.screenplay-note) {
 	font-style: italic;
 	opacity: 0.6;
 }
@@ -115,7 +106,7 @@
 	font-weight: bold !important;
 }
 .screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-dialogue.screenplay-parenthetical.cm-line {
-	    padding-left: 20% !important;
+	 padding-left: 20% !important;
 }
 
 

@@ -172,6 +172,7 @@ function inlineRender(view: EditorView) {
 					// } else {
 					// }
 				}
+				
 				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",
