@@ -522,7 +522,9 @@ class DialogueParser implements LeafBlockParser {
 		this.current = arg
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
+		console.log("calling dialparse nextline")
 		if(this.current == CurrentBlock.Action) return false
+		this.advance(line.text)
 		return this.complete(cx, leaf, line.scrub().length + leaf.content.length + 1)
 	}
 
@@ -551,7 +553,7 @@ class DialogueParser implements LeafBlockParser {
 			if(this.current == CurrentBlock.Action) {
 				return -1
 			} else if(this.current == CurrentBlock.Begin) {
-				if(this.context.prevNode[0] !== Type.Character && this.context.prevNode[0] !== Type.Parenthetical && this.context.prevNode[0] !== Type.Dialogue) {
+				if(this.context.prevNode[0] !== Type.Character && this.context.prevNode[0] !== Type.Parenthetical) {
 					if(parseCharacter(content, this.pos, this.start)) {
 						let blip = this.context.parser.parseInline(content, this.start)
 
@@ -586,7 +588,7 @@ class DialogueParser implements LeafBlockParser {
 				}
 				return 1
 			} else if(this.current == CurrentBlock.Character) {
-				if(!this.nextPart(parseCharacter(content, this.pos, this.start))) {
+				if(this.nextPart(parseCharacter(content, this.pos, this.start))) {
 					this.context.addNode(Type.Character, this.start)
 					this.changeType(CurrentBlock.Dialogue)
 					return 1
@@ -594,7 +596,7 @@ class DialogueParser implements LeafBlockParser {
 				this.context.addNode(Type.Character, this.start)
 				return 1
 			} else if(this.current == CurrentBlock.Parenthetical) {
-				if(!this.nextPart(parseParenthetical(content, this.pos, this.start))) {
+				if(this.nextPart(parseParenthetical(content, this.pos, this.start))) {
 					// this.context.addNode(Type.Dialogue, this.start)
 					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
 					let blip = this.context.parser.parseInline(content, this.start)
@@ -1491,7 +1493,7 @@ function propLogger(node, state) {
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
-	console.debug("nodetype", name)
+	// console.debug("nodetype", name)
 	let properties = [];
 	if(name === "SceneHeading") {
 		properties.push(foldNodeProp.add((type) => {
