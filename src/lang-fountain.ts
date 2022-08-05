@@ -535,25 +535,32 @@ class DialogueParser implements LeafBlockParser {
 				parseParenthetical(line.text, this.pos, this.start), 
 				parseCharacter(line.text, this.pos, this.start))
 			if(parseCharacter(line.text, this.pos, this.start)) {
+				console.log("ipc")
 				cx.addNode(Type.Character, this.start)
 				this.changeType(CurrentBlock.Character)
+				return true
 			} else if(parseParenthetical(line.text, this.pos, this.start)) {
+				console.log("ipp")
 				// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, line.text.length + this.start))
 				// this.changeType(CurrentBlock.Dialogue)
 				cx.addNode(Type.Parenthetical, this.start)
 				this.changeType(CurrentBlock.Parenthetical)
+				return true
 
-			} else{
+			} else {
+				console.log("ipd")
 				this.changeType(CurrentBlock.Dialogue)
 				let blip = cx.parser.parseInline(line.text, this.start)
 				cx.addNode(
 					elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(cx.parser.nodeSet),
 					cx.lineStart
 				)
+				return true
 			}
 		} else if(this.current == CurrentBlock.Character) {
 				cx.addNode(Type.Character, this.start)
 				this.changeType(CurrentBlock.Dialogue)
+				return true
 			// return 1
 		} else if(this.current == CurrentBlock.Parenthetical) {
 			// cx.addNode(Type.Dialogue, this.start)
@@ -565,6 +572,8 @@ class DialogueParser implements LeafBlockParser {
 				// 	cx.lineStart
 				// )
 				this.changeType(CurrentBlock.Dialogue)
+				return true
+
 			// return 1
 		} else if(this.current === CurrentBlock.Dialogue) {
 
@@ -586,13 +595,13 @@ class DialogueParser implements LeafBlockParser {
 			// 	} */
 			// }
 			let blip = this.context.parser.parseInline(line.text, this.start)
-
 			this.context.addNode(
 				elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(this.context.parser.nodeSet),
 				this.context.lineStart
 			)
+			return true
 		}
-		return this.complete(cx, leaf, line.scrub().length + leaf.content.length + 1)
+		return true
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
