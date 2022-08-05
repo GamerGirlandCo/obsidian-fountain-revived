@@ -103,7 +103,7 @@
 .screenplay-marker.bold {
 	font-weight: bold !important;
 }
-.screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-dialogue.screenplay-parenthetical.cm-line {
+.screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-parenthetical.cm-line {
 	 padding-left: 20% !important;
 }
 
