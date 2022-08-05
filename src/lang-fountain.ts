@@ -522,7 +522,7 @@ class DialogueParser implements LeafBlockParser {
 		this.current = arg
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		// console.log("calling dialparse nextline", line.text, CurrentBlock[this.current])
+		console.log("calling dialparse nextline", line.text, CurrentBlock[this.current])
 		if(this.current == CurrentBlock.Action) return false
 		if(this.current == CurrentBlock.Begin) {
 			// let blip = cx.parser.parseInline(line.text, this.start)
