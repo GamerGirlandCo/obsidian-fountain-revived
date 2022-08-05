@@ -31,45 +31,45 @@ const theme = EditorView.theme({
 })
 
 export const exts = [
-	theme, 
+	// theme, 
 	inlinePlugin(), 
 	ftn(), 
-	...basicSetup
+	EditorView.lineWrapping
+	// ...basicSetup
 ]
 
 // ...
-export class FountainView extends TextFileView {
+export class FountainView extends MarkdownView {
 	document: string;
-	cm: EditorView;
+	// cm: EditorView;
 	extensions: Extension[]
 	// state: EditorState
 	// mev: MarkdownEditView
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
-		this.extensions = exts.concat(
-			EditorView.updateListener.of((update) => {
-			if (!update.docChanged) return
-			let string = update.view.state.doc.toString()
-			const countParent = document.querySelector("div.status-bar-item.plugin-word-count");
-			const words = countParent.children[0]
-			const characters = countParent.children[1]
-			words.innerHTML = `${string.split(/\r|\n|\s/g).length} words`
-			characters.innerHTML = `${string.split("").length} characters`
-		}))
+		this.extensions = exts
+		/* 	.concat(
+				EditorView.updateListener.of((update) => {
+				if (!update.docChanged) return
+				let string = update.view.state.doc.toString()
+				const countParent = document.querySelector("div.status-bar-item.plugin-word-count");
+				const words = countParent.children[0]
+				const characters = countParent.children[1]
+				words.innerHTML = `${string.split(/\r|\n|\s/g).length} words`
+				characters.innerHTML = `${string.split("").length} characters`
+			})) */
 		// super.onLoadFile(this.file)
-		this.cm = new EditorView({
-			state: EditorState.create({
-				doc: "",
-				extensions: this.extensions
-			}),
+		/* this.cm = new EditorView({
+			state: ,
 			parent: this.containerEl.getElementsByClassName("view-content")[0],
-		})
+		}) */
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
+
 	}
 
 	async onUnloadFile(file: TFile): Promise<void> {
-		console.log(":::")
-		await this.app.vault.adapter.write(normalizePath(file.path), this.cm.state.doc.toString())
+		console.log(":::", file)
+		await this.app.vault.adapter.write(normalizePath(file.path), this.getViewData())
 		this.clear()
 	}
 	async onLoadFile(filee: TFile) {
@@ -79,18 +79,17 @@ export class FountainView extends TextFileView {
 		// console.debug(f)
 		
 		let state = EditorState.create({
-			doc: this.document,
 			extensions: this.extensions
 		})
-		this.cm.setState(state)
+		this.editor.cm.setState(state)
 		this.containerEl.setAttr("data-type", "fountain")
 		this.setViewData(this.document, false)
 		
 		// console.log("constructor", this.file)
-		this.app.workspace.updateOptions()
+		// this.app.workspace.updateOptions()
 		this.app.workspace.on('editor-change', () => {
 			// console.log("sav")
-			this.setViewData(this.cm.state.doc.toString(), false)
+			// this.setViewData(this.cm.state.doc.toString(), false)
 			// status-bar-item.plugin-word-count
 			// await this.app.vault.adapter.write(normalizePath(filee.path), this.cm.state.doc.toString())
 			this.requestSave();
@@ -100,15 +99,15 @@ export class FountainView extends TextFileView {
 	getViewType() {
 		return "fountain"
 	}
-	getViewData() { return this.document }
+	getViewData() { return this.editor.getValue() }
 	setViewData(data: string, clear: boolean): void {
-		// this.cm.setState
-		this.document = data;
+		this.editor.setValue(data)
+		/* this.document = data;
 		this.cm.setState(EditorState.create({
 			doc: this.document,
 			extensions: this.extensions
 			
-		}))
+		})) */
 	}
 	
 	clear() {
@@ -129,6 +128,7 @@ export class FountainView extends TextFileView {
 		else return "fountain (no file opened)";
 	}
 	canAcceptExtension(extension: string) {
-		return extension === 'fountain';
+		console.log("accept?", extension, this.app.workspace.getActiveFile())
+		return extension === 'fountain' || this.file.path.endsWith("fountain.md") || this.file.name.endsWith("fountain");
 	}
 }

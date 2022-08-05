@@ -41,4 +41,4 @@ export const regex = {
     cleaner: /^\n+|\n+$/,
     standardizer: /\r\n|\r/g,
     whitespacer: /^\t+|^ {3,}/gm
-  };
+};

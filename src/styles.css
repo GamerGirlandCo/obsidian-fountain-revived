@@ -5,7 +5,7 @@
     position: unset;
 }
 
-[data-type="fountain"] > .view-content .cm-editor {
+ .view-content .cm-editor {
     margin: 0;
     padding: 0;
     border: 0;
@@ -15,13 +15,13 @@
     vertical-align: baseline;
 }
 
-[data-type="fountain"] > .view-content .cm-editor {
+ .view-content .cm-editor {
     display: block;
 }
 
 
-[data-type="fountain"] > .view-content .cm-editor {
-    margin: auto;
+ .view-content .cm-editor {
+    /* margin: auto; */
     /* width: 60%; */
     text-align: left;
     font: 12pt 'Courier Final Draft', 'Courier Screenplay', Courier;
@@ -31,23 +31,23 @@
 
 
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-header:not(.screenplay-scene-heading) {
+ .view-content .cm-editor .screenplay-header:not(.screenplay-scene-heading) {
 	text-align: center;
 	font-weight: 600 !important;
 	/* font-size: 1.25em; */
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-footer {
+ .view-content .cm-editor .screenplay-footer {
     margin-top: 1em;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-transition:not(.screenplay-note) {
+ .view-content .cm-editor .screenplay-transition:not(.screenplay-note) {
     font-style: italic;
 	/* font-size: 0.85em; */
 	color: var(--cerulean, var(--purple, var(--text-sub-accent)))
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-scene-heading {
+ .view-content .cm-editor .screenplay-scene-heading {
 	color: var(--text-accent);
     font-weight: bold;
 	/* font-size: 1.25em; */
@@ -66,14 +66,14 @@
 	font-style: italic;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-lyric:not(.screenplay-note) {
+ .view-content .cm-editor .screenplay-lyric:not(.screenplay-note) {
 	font-style: italic;
 	opacity: 0.6;
 }
 
 /* Dialogue */
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-character {
+ .view-content .cm-editor .screenplay-character {
     padding-left: 20%;
     color: var(--yellow) !important;
     font-weight: 600 !important;
@@ -84,7 +84,7 @@
 	text-align: center;
 }
 
-[data-type="fountain"] > .view-content .cm-editor .screenplay-dialogue:not(.screenplay-character):not(.screenplay-parenthetical) {
+ .view-content .cm-editor .screenplay-dialogue:not(.screenplay-character):not(.screenplay-parenthetical) {
     text-align: left;
     margin-left: 10%;
 }
@@ -111,7 +111,7 @@
 
 /* Headers */
 
-[data-type="fountain"] > .view-content .cm-editor>h3 {
+ .view-content .cm-editor>h3 {
     margin-top: 2em;
     text-transform: uppercase;
     font-weight: bold !important;

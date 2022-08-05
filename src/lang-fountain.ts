@@ -456,7 +456,7 @@ enum CurrentBlock {
 
 
 function parseCharacter(text: string, start: number, offset: number): null | Element {
-	console.debug("parsing character", text, text.match(regex.character))
+	// console.debug("parsing character", text, text.match(regex.character))
 	if(text.match(regex.character)) {
 		return elt(Type.Character, start + offset, text.length + offset)
 	}
@@ -464,7 +464,7 @@ function parseCharacter(text: string, start: number, offset: number): null | Ele
 }
 
 function parseParenthetical(text: string, start: number, offset: number): null | Element {
-	console.debug("parsing parenthetical", text.match(regex.parenthetical))
+	// console.debug("parsing parenthetical", text.match(regex.parenthetical))
 	if(text.match(regex.parenthetical)) {
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
 	}
@@ -549,8 +549,8 @@ class DialogueParser implements LeafBlockParser {
 	}
 
 	advance(content: string, cx: BlockContext, line: Line) {
-		console.log("LEAFCONTENT:", this.leaf2.content, this.leaf2.start, "LINETEXT:", line.text, cx.lineStart)
-		console.log("prevnode", Type[cx.prevNode[0]])
+		// console.log("LEAFCONTENT:", this.leaf2.content, this.leaf2.start, "LINETEXT:", line.text, cx.lineStart)
+		// console.log("prevnode", Type[cx.prevNode[0]])
 		if(this.current == CurrentBlock.Begin) {
 			if(cx.prevNode[0] == Type.Action || cx.prevNode[0] == Type.Dialogue) {
 				if(this.nextPart(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start))) {
@@ -2072,7 +2072,7 @@ export const parser = new FountainParser(
 const data = defineLanguageFacet({block: {open: "<!--", close: "-->"}})
 const fold = defineLanguageFacet(Facet.define())
 
-export function mkLang(parser: FountainParser) { console.debug("node:types", nodeTypes); return new Language(data, parser)}
+export function mkLang(parser: FountainParser) { /* console.debug("node:types", nodeTypes); */ return new Language(data, parser)}
 
 export function ftn(exts?: Extension[]) { 
 	const lang =  new Language(data, parser)
