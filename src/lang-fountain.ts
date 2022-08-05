@@ -550,9 +550,9 @@ class DialogueParser implements LeafBlockParser {
 
 	advance(content: string, cx: BlockContext, line: Line) {
 		console.log("LEAFCONTENT:", this.leaf2.content, this.leaf2.start, "LINETEXT:", line.text, cx.lineStart)
-
+		console.log("prevnode", Type[cx.prevNode[0]])
 		if(this.current == CurrentBlock.Begin) {
-			if(cx.prevNode[0] == Type.Action) {
+			if(cx.prevNode[0] == Type.Action || cx.prevNode[0] == Type.Dialogue) {
 				if(this.nextPart(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start))) {
 					this.changeType(CurrentBlock.Character)
 					return true
@@ -583,7 +583,7 @@ class DialogueParser implements LeafBlockParser {
 				)
 			}
 
-			if(cx.prevNode[0] == Type.Dialogue || cx.prevNode[0] == Type.Character) {
+			if(cx.prevNode[1] == Type.Dialogue && cx.prevNode[0] == Type.Action) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addLeafElement(
 					this.leaf2,
@@ -619,7 +619,7 @@ class DialogueParser implements LeafBlockParser {
 			if(parseParenthetical(line.text, this.pos, cx.lineStart)) {	
 				cx.addLeafElement(this.leaf2, parseParenthetical(line.text, this.pos, cx.lineStart))
 				// cx.addNode(Type.Parenthetical, cx.lineStart)
-				this.changeType(CurrentBlock.Dialogue)
+				this.changeType(CurrentBlock.Parenthetical)
 			} else {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addLeafElement(
@@ -629,7 +629,7 @@ class DialogueParser implements LeafBlockParser {
 			}
 			this.changeType(CurrentBlock.Dialogue)
 			return true
-		} else if(this.current == CurrentBlock.Dialogue || cx.prevNode[0] == Type.Dialogue) {
+		} else if(this.current == CurrentBlock.Dialogue || cx.prevNode[1] == Type.Dialogue) {
 			// cx.addNode(Type.Dialogue, cx.lineStart)
 			// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
 			let blip = cx.parser.parseInline(line.text, cx.lineStart)
@@ -663,7 +663,7 @@ class NoteBlockParser implements LeafBlockParser {
 	pos = 0;
 	start: number;
 
-	constructor(leaf: LeafBlock, readonly context: BlockContext) {
+	constructor(readonly leaf: LeafBlock, readonly context: BlockContext) {
 		this.start = leaf.start;
 		this.change(NoteStage.Begin)
 		this.change((leaf.content.match(regex.note)) ?
@@ -750,7 +750,7 @@ class NoteBlockParser implements LeafBlockParser {
 					this.context.lineStart
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
-				this.context.addElement(pNE)
+				this.context.addLeafElement(this.leaf, pNE)
 				
 				this.change(NoteStage.End)
 				return 1
@@ -759,7 +759,7 @@ class NoteBlockParser implements LeafBlockParser {
 				
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
-				this.context.addElement(pNE)
+				this.context.addLeafElement(this.leaf, pNE)
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
