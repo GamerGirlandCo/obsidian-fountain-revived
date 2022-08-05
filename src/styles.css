@@ -91,6 +91,7 @@
 
 .screenplay-note {
 	/* font-size: 10px !important; */
+	font-size: 0.9em !important;
 	color: var(--text-title-h5, var(--green))
 }
 
