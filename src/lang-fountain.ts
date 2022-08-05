@@ -621,43 +621,6 @@ class DialogueParser implements LeafBlockParser {
 	}
 }
 
-function lineEnd(text: string, pos: number) {
-	for (; pos < text.length; pos++) {
-		let next = text.charCodeAt(pos);
-		if (next == 10) break;
-		if (!space(next)) return -1;
-	}
-	return pos;
-}
-
-class SectionParser implements LeafBlockParser {
-	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		let underline = line.depth < cx.stack.length ? -1 : isSetextUnderline(line);
-		let next = line.next;
-		if (underline < 0) return false;
-		let underlineMark = elt(
-			Type.SectionMark,
-			cx.lineStart + line.pos,
-			cx.lineStart + underline
-		);
-		cx.nextLine();
-		cx.addLeafElement(
-			leaf,
-			elt(
-				next == 61 ? Type.Action : Type.Parenthetical,
-				leaf.start,
-				cx.prevLineEnd(),
-				[...cx.parser.parseInline(leaf.content, leaf.start), underlineMark]
-			)
-		);
-		return true;
-	}
-
-	finish() {
-		return false;
-	}
-}
-
 const enum NoteStage {
 	None = -1,
 	Begin,
