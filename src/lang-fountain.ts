@@ -456,7 +456,7 @@ enum CurrentBlock {
 
 
 function parseCharacter(text: string, start: number, offset: number): null | Element {
-	console.log("parsing character", text, text.match(regex.character))
+	console.debug("parsing character", text, text.match(regex.character))
 	if(text.match(regex.character)) {
 		return elt(Type.Character, start + offset, text.length + offset)
 	}
@@ -464,7 +464,7 @@ function parseCharacter(text: string, start: number, offset: number): null | Ele
 }
 
 function parseParenthetical(text: string, start: number, offset: number): null | Element {
-	console.log("parsing parenthetical", text.match(regex.parenthetical))
+	console.debug("parsing parenthetical", text.match(regex.parenthetical))
 	if(text.match(regex.parenthetical)) {
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
 	}
@@ -498,7 +498,6 @@ function parseNoteElement(text: string, start: number, offset: number): null | E
 	}
 	return null
 }
-
 class DialogueParser implements LeafBlockParser {
 	elts: Element[] = [];
 	pos = 0;
@@ -510,7 +509,9 @@ class DialogueParser implements LeafBlockParser {
 	constructor(leaf: LeafBlock, cx: BlockContext) {
 		this.start = leaf.start;
 		this.leaf2 = leaf
-		this.current = CurrentBlock.Begin
+		this.current = leaf.content.match(regex.character) ? CurrentBlock.Character :
+			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
+			: CurrentBlock.Begin
 		this.context = cx
 		this.advance(leaf.content);
 	}
@@ -522,86 +523,9 @@ class DialogueParser implements LeafBlockParser {
 		this.current = arg
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		console.log("calling dialparse nextline", line.text, CurrentBlock[this.current])
 		if(this.current == CurrentBlock.Action) return false
-		if(this.current == CurrentBlock.Begin) {
-			// let blip = cx.parser.parseInline(line.text, this.start)
-			// cx.addNode(
-			// 	elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(cx.parser.nodeSet),
-			// 	cx.lineStart
-			// )
-			console.log("begin block", line.text)
-			console.log("parse:", line.text, 
-				parseParenthetical(line.text, this.pos, this.start), 
-				parseCharacter(line.text, this.pos, this.start))
-			if(parseCharacter(line.text, this.pos, this.start)) {
-				console.log("ipc")
-				cx.addNode(Type.Character, this.start)
-				this.changeType(CurrentBlock.Character)
-				return true
-			} else if(parseParenthetical(line.text, this.pos, this.start)) {
-				console.log("ipp")
-				// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, line.text.length + this.start))
-				// this.changeType(CurrentBlock.Dialogue)
-				cx.addNode(Type.Parenthetical, this.start)
-				this.changeType(CurrentBlock.Parenthetical)
-				return true
-
-			} else {
-				console.log("ipd")
-				this.changeType(CurrentBlock.Dialogue)
-				let blip = cx.parser.parseInline(line.text, this.start)
-				cx.addNode(
-					elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(cx.parser.nodeSet),
-					cx.lineStart
-				)
-				return true
-			}
-		} else if(this.current == CurrentBlock.Character) {
-				cx.addNode(Type.Character, this.start)
-				this.changeType(CurrentBlock.Dialogue)
-				return true
-			// return 1
-		} else if(this.current == CurrentBlock.Parenthetical) {
-			// cx.addNode(Type.Dialogue, this.start)
-				// cx.addElement(elt(Type.Dialogue, this.start, this.start + line.text.length + 1, cx.parser.parseInline(line.text, this.start)))
-				// let blip = cx.parser.parseInline(line.text, this.start)
-				cx.addNode(Type.Parenthetical, this.start)
-				// cx.addNode(
-				// 	elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(cx.parser.nodeSet),
-				// 	cx.lineStart
-				// )
-				this.changeType(CurrentBlock.Dialogue)
-				return true
-
-			// return 1
-		} else if(this.current === CurrentBlock.Dialogue) {
-
-			// this.context.addNode(Type.Dialogue, this.start)
-			// this.context.addElement(elt(Type.Dialogue, this.start, this.start + line.text.length + 1, this.context.parser.parseInline(line.text, this.start)))
-			// if(this.context.prevNode[0] !== Type.Character && 
-			// 	this.context.prevNode[0] !== Type.Parenthetical 
-			// 	&& this.context.prevNode[0] !== Type.Dialogue
-			// 	&& this.context.prevNode[0] !==  Type.Action
-			// 	&& this.context.prevNode[0] !== Type.Note
-			// 	&& this.context.prevNode[0] !== Type.BlockNote
-			// ) {
-						// 		this.changeType(CurrentBlock.Character)
-			// 		return 1
-			// 	/* if(parseCharacter(line.text, this.pos, this.start)) {
-					
-			// 	} else {
-			// 		return -1
-			// 	} */
-			// }
-			let blip = this.context.parser.parseInline(line.text, this.start)
-			this.context.addNode(
-				elt(Type.Dialogue, this.start, this.start + line.text.length, blip).toTree(this.context.parser.nodeSet),
-				this.context.lineStart
-			)
-			return true
-		}
-		return true
+		this.advance(line.text)
+		return this.complete(cx, leaf, line.scrub().length + leaf.content.length + 1)
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
@@ -612,7 +536,6 @@ class DialogueParser implements LeafBlockParser {
 		return false;
 	}
 	nextPart(elt: Element | null | false, dbgtxt?: string) {
-		console.log("nextpart:", elt)
 		if (elt) {
 			this.pos = elt.to - this.start;
 			this.elts.push(elt);
@@ -626,7 +549,78 @@ class DialogueParser implements LeafBlockParser {
 	}
 
 	advance(content: string) {
-		
+		for(;;) {
+			if(this.current == CurrentBlock.Action) {
+				return -1
+			} else if(this.current == CurrentBlock.Begin) {
+				if(this.context.prevNode[0] !== Type.Character && this.context.prevNode[0] !== Type.Parenthetical && this.context.prevNode[0] !== Type.Dialogue) {
+					if(this.nextPart(parseCharacter(content, this.pos, this.start))) {
+						this.changeType(CurrentBlock.Character)
+						return 1
+					}
+					if(this.nextPart(parseParenthetical(content, this.pos, this.start))) {
+						// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, content.length + this.start))
+						// this.changeType(CurrentBlock.Dialogue)
+						this.context.addNode(Type.Parenthetical, this.start)
+						return 1
+					}
+					return 1
+				} else {
+					if(parseCharacter(content, this.pos, this.start)) {
+						this.changeType(CurrentBlock.Character)
+					} else {
+						this.changeType(CurrentBlock.Dialogue)
+					}
+					// this.context.addNode(Type.Dialogue, this.context.lineStart)
+					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+					let blip = this.context.parser.parseInline(content, this.start)
+					this.context.addNode(
+						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
+						this.context.lineStart
+					)
+				}
+				return -1
+				
+			} else if(this.current == CurrentBlock.Character) {
+				if(!this.nextPart(parseCharacter(content, this.pos, this.start))) {
+					this.changeType(CurrentBlock.Dialogue)
+					let blip = this.context.parser.parseInline(content, this.start)
+					this.context.addNode(
+						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
+						this.context.lineStart
+					)
+					return 1
+				}
+				this.changeType(CurrentBlock.Character)
+				this.context.addNode(Type.Character, this.start)
+				return 1
+			} else if(this.current == CurrentBlock.Parenthetical) {
+				if(!this.nextPart(parseParenthetical(content, this.pos, this.start))) {
+					// this.context.addNode(Type.Dialogue, this.start)
+					// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+					let blip = this.context.parser.parseInline(content, this.start)
+					this.context.addNode(
+						elt(Type.Dialogue, this.start, this.start + content.length, blip).toTree(this.context.parser.nodeSet),
+						this.context.lineStart
+					)
+					this.changeType(CurrentBlock.Begin)
+					return 1
+				}
+				this.context.addNode(Type.Parenthetical, this.start)
+				this.changeType(CurrentBlock.Begin)
+				return 1
+			} else {
+				// this.context.addNode(Type.Dialogue, this.start)
+				// this.context.addElement(elt(Type.Dialogue, this.start, this.start + content.length + 1, this.context.parser.parseInline(content, this.start)))
+				let blip = this.context.parser.parseInline(content, this.start)
+				this.context.addNode(
+					elt(Type.Dialogue, this.start, this.start + content.length + 1, blip).toTree(this.context.parser.nodeSet),
+					this.context.lineStart
+				)
+				return 1
+			}
+				
+		}
 	}
 }
 
