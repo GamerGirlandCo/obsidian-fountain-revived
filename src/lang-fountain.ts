@@ -534,7 +534,6 @@ class DialogueParser implements LeafBlockParser {
 			console.log("parse:", line.text, 
 				parseParenthetical(line.text, this.pos, this.start), 
 				parseCharacter(line.text, this.pos, this.start))
-			this.changeType(CurrentBlock.Character)
 			if(parseCharacter(line.text, this.pos, this.start)) {
 				cx.addNode(Type.Character, this.start)
 				this.changeType(CurrentBlock.Character)
@@ -542,6 +541,8 @@ class DialogueParser implements LeafBlockParser {
 				// this.elts.push(elt(Type.Parenthetical, this.pos + this.start, line.text.length + this.start))
 				// this.changeType(CurrentBlock.Dialogue)
 				cx.addNode(Type.Parenthetical, this.start)
+				this.changeType(CurrentBlock.Parenthetical)
+
 			} else{
 				this.changeType(CurrentBlock.Dialogue)
 				let blip = cx.parser.parseInline(line.text, this.start)
