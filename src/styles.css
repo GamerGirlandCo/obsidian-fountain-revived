@@ -5,7 +5,7 @@
     position: unset;
 }
 
- .view-content .cm-editor {
+[data-type="fountain"] .view-content .cm-editor {
     margin: 0;
     padding: 0;
     border: 0;
@@ -15,12 +15,12 @@
     vertical-align: baseline;
 }
 
- .view-content .cm-editor {
+[data-type="fountain"] .view-content .cm-editor {
     display: block;
 }
 
 
- .view-content .cm-editor {
+ [data-type="fountain"] .view-content .cm-editor {
     /* margin: auto; */
     /* width: 60%; */
     text-align: left;

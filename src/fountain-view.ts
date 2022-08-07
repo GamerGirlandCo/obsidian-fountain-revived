@@ -64,7 +64,7 @@ export class FountainView extends MarkdownView {
 			parent: this.containerEl.getElementsByClassName("view-content")[0],
 		}) */
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
-
+		
 	}
 
 	async onUnloadFile(file: TFile): Promise<void> {
