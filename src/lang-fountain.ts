@@ -15,7 +15,7 @@ import {
 	TreeFragment,
 } from "@lezer/common";
 
-import { regex } from "./fountain/regexes";
+import { regex } from "./regexes";
 
 import { Tag, styleTags, tags as t } from "@lezer/highlight";
 import { Extension, Facet } from "@codemirror/state";
