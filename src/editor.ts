@@ -35,7 +35,7 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
 	const all = view.state.doc.toString()
-	// visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
@@ -110,6 +110,9 @@ function inlineRender(view: EditorView) {
 						break;
 					case "PageBreak":
 						cssClass = "page-break"
+						break;
+					case "BoneYard":
+						cssClass = "boneyard"
 						break;
 					case "Dialogue":
 						cssClass = "dialogue"
