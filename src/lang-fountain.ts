@@ -122,7 +122,6 @@ export enum Type {
 	Underline,
 	Emphasis, // catch all thingy?
 	
-	BoneMark,
 	BoldMark,
 	ItalicMark,
 	UnderlineMark,
@@ -247,16 +246,6 @@ const DefaultSkipMarkup: {
 	[Type.Screenplay]() {
 		return true;
 	},
-	[Type.BoneYard](block, cx, line) {
-		if(line.next != "/".charCodeAt(0) || line.next != "*".charCodeAt(0)) return false;
-		line.markers.push(
-			elt(Type.BoneMark, cx.lineStart + line.pos, cx.lineStart + line.pos + 2)
-		)
-		line.moveBase(line.pos + 1)
-		block.end = cx.lineStart + line.text.length
-		return true
-		// line.moveBase(line.pos)
-	}
 	// [Type.Action](bl, cx, line) {
 	// 	bl.addChild(
 	// 		elt(
@@ -283,12 +272,6 @@ function isBlockquote(line: Line) {
 		: line.text.charCodeAt(line.pos + 1) == 32
 		? 2
 		: 1;
-}
-function isBoneYard(line: Line) {
-	return (line.next == 47 || line.next == 42) && (line.text.charCodeAt(line.pos + 1) == 42 || line.text.charCodeAt(line.pos + 1) == 47)
-		? 1
-		: -1
-
 }
 
 function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
@@ -414,14 +397,7 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
-	BoneYard(cx, line) {
-		let size = isBoneYard(line)
-		if(size < 0) return false;
-		cx.startContext(Type.BoneYard, cx.lineStart + line.pos,
-			cx.lineStart + line.text.length)
-		line.moveBase(line.pos + 1)
-		return null
-	},
+
 	// Character(cx, line) {
 	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 	// 	let from = cx.lineStart + line.pos;
@@ -450,7 +426,6 @@ const DefaultBlockParsers: {
 	// 	}
 	// 	return false
 	// }
-
 	Action(cx, line) {
 		let objOfEverythingExcept = {...regex}
 		delete objOfEverythingExcept.action;
