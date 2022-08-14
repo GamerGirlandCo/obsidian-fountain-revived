@@ -84,11 +84,9 @@
 	text-align: center;
 }
 
- .view-content .cm-editor .screenplay-dialogue.cm-line
- 	:not(.screenplay-parenthetical)
-	 {
-    text-align: left;
-    margin-left: 10%;
+.screenplay-dialogue.cm-line:not(.screenplay-parenthetical) {
+	margin-left: 10%;
+	text-align: left;
 }
 
 .screenplay-note {

@@ -152,32 +152,23 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-						if((name !=="TitlePage" && name !== "PlainText") && cssClass !== "") {
-							widgets.push(
-								Decoration.line({
-									class: `screenplay-${cssClass}`,
-									block: true,
-								}).range(whichline.from),
-							);
-						}
-					// if((cssClass === "scene-number" || cssClass === "underline" || cssClass === "bold" || cssClass === "italic")) {
-					// 	// console.log("inline", cssClass)
-					// 	Decoration.mark({
-					// 		class: `screenplay-${cssClass}`,
-					// 		// attributes: { 'data-contents': 'string' },
-					// 	}).range(start, end)
-						
-					// } else {
-					// }
-				}
-				/* if(name == "Dialogue") {
-					widgets.push(
-						Decoration.line({
-							class: `screenplay-dialogue`,
-							block: true,
-						}).range(whichline.from),
-					);
-				} */			
+					if((name !=="TitlePage" && name !== "PlainText") && cssClass !== "") {
+						widgets.push(
+							Decoration.line({
+								class: `screenplay-${cssClass}`,
+								block: true,
+							}).range(whichline.from),
+						);
+					}
+					if(name == "Dialogue") {
+						widgets.push(
+							Decoration.line({
+								class: `screenplay-dialogue`,
+								block: true,
+							}).range(whichline.from),
+						);
+					}	
+				}		
 				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",
@@ -191,6 +182,7 @@ function inlineRender(view: EditorView) {
 		return Decoration.set(widgets, true);
 	}
 }
+
 
 export enum Enum {
 	Document = 1,

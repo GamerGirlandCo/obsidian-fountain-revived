@@ -565,7 +565,7 @@ class DialogueParser implements LeafBlockParser {
 			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
 				this.changeType(CurrentBlock.Character)
 				return true
-			} else if((cx.prevNode[0] == Type.BoneYard || cx.prevNode[0] == Type.SceneHeading)) {
+			} else if((cx.prevNode[0] == Type.Character || cx.prevNode[0] == Type.Dialogue || cx.prevNode[0] == Type.Parenthetical)) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addLeafElement(
 					this.leaf2,
