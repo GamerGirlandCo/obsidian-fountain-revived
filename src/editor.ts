@@ -183,7 +183,6 @@ function inlineRender(view: EditorView) {
 	}
 }
 
-
 export enum Enum {
 	Document = 1,
 	Fuck,
