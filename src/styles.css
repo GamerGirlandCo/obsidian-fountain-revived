@@ -84,8 +84,9 @@
 	text-align: center;
 }
 
- .view-content .cm-editor .screenplay-dialogue
- 	:not(.screenplay-character, .screenplay-parenthetical, .screenplay-marker) {
+ .view-content .cm-editor .screenplay-dialogue.cm-line
+ 	:not(.screenplay-parenthetical)
+	 {
     text-align: left;
     margin-left: 10%;
 }
@@ -98,11 +99,14 @@
 
 .screenplay-marker.underline {
     text-decoration: underline;
+	margin-left: 0 !Important;
 }
 .screenplay-marker.italic {
+	margin-left: 0 !Important;
 	font-style: italic;
 }
 .screenplay-marker.bold {
+	margin-left: 0 !Important;
 	font-weight: bold !important;
 }
 .screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-parenthetical.cm-line {

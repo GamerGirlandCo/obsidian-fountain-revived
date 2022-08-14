@@ -177,7 +177,7 @@ function inlineRender(view: EditorView) {
 							block: true,
 						}).range(whichline.from),
 					);
-				} */
+				} */			
 				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",
@@ -198,6 +198,7 @@ export enum Enum {
 	Going,
 	Outside
 }
+
 
 const something = Enum.Fuck
 

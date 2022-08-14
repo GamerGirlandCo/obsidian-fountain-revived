@@ -855,6 +855,7 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 
 ];
 
+
 const scanLineResult = { text: "", end: 0 };
 
 export class BlockContext implements PartialParse {
