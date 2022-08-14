@@ -39,7 +39,7 @@ export const exts = [
 ]
 
 // ...
-export class FountainView extends MarkdownView {
+export class FountainView extends TextFileView {
 	document: string;
 	cm: EditorView;
 	extensions: Extension[]
