@@ -84,7 +84,9 @@
 	text-align: center;
 }
 
- .view-content .cm-editor .screenplay-dialogue:not(.screenplay-character):not(.screenplay-parenthetical) {
+ .view-content .cm-editor .screenplay-dialogue
+ 	:not(.screenplay-character)
+	:not(.screenplay-parenthetical) {
     text-align: left;
     margin-left: 10%;
 }

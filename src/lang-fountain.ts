@@ -562,26 +562,18 @@ class DialogueParser implements LeafBlockParser {
 					// this.elts.push(elt(Type.Parenthetical, this.pos + cx.lineStart, line.text.length + cx.lineStart))
 					// cx.addNode(Type.Parenthetical, cx.lineStart)
 				}
-			} else {
-				if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
-					this.changeType(CurrentBlock.Character)
-				} else {
-					let blip = cx.parser.parseInline(line.text, cx.lineStart)
-					cx.addLeafElement(
-						this.leaf2,
-						elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-					)
-					this.changeType(CurrentBlock.Dialogue)
-				}
-				// cx.addNode(Type.Dialogue, cx.lineStart)
-				// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
-				/* this.changeType(CurrentBlock.Dialogue)
+			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
+				this.changeType(CurrentBlock.Character)
+			} else if(!(cx.prevNode[0] == Type.BoneYard || cx.prevNode[0] == Type.SceneHeading)) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addLeafElement(
 					this.leaf2,
 					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-				) */
+				)
+				this.changeType(CurrentBlock.Dialogue)
 			}
+				// cx.addNode(Type.Dialogue, cx.lineStart)
+				// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
 
 			/* if(cx.prevNode[1] == Type.Dialogue && cx.prevNode[0] == Type.Action) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)

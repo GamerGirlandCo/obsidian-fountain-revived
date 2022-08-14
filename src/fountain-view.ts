@@ -131,6 +131,6 @@ export class FountainView extends TextFileView {
 	}
 	canAcceptExtension(extension: string) {
 		console.log("accept?", extension, this.app.workspace.getActiveFile())
-		return extension === 'fountain' || this.file.path.endsWith("fountain.md") || this.file.name.endsWith("fountain");
+		return extension === 'fountain' || this.file.path.endsWith(".fountain.md") || this.file.name.endsWith("fountain");
 	}
 }
