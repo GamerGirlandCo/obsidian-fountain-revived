@@ -152,7 +152,7 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-						if((name !=="TitlePage" && name !== "PlainText") || cssClass !== "") {
+						if((name !=="TitlePage" && name !== "PlainText") && cssClass !== "") {
 							widgets.push(
 								Decoration.line({
 									class: `screenplay-${cssClass}`,
@@ -170,6 +170,14 @@ function inlineRender(view: EditorView) {
 					// } else {
 					// }
 				}
+				/* if(name == "Dialogue") {
+					widgets.push(
+						Decoration.line({
+							class: `screenplay-dialogue`,
+							block: true,
+						}).range(whichline.from),
+					);
+				} */
 				if(name=== "SceneNumber" ) {
 					widgets.push(Decoration.mark({
 						class: "screenplay-scene-number",

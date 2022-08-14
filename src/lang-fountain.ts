@@ -564,6 +564,7 @@ class DialogueParser implements LeafBlockParser {
 				}
 			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
 				this.changeType(CurrentBlock.Character)
+				return true
 			} else if((cx.prevNode[0] == Type.BoneYard || cx.prevNode[0] == Type.SceneHeading)) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addLeafElement(
@@ -576,14 +577,14 @@ class DialogueParser implements LeafBlockParser {
 				// cx.addNode(Type.Dialogue, cx.lineStart)
 				// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
 
-			if(cx.prevNode[1] == Type.Dialogue && cx.prevNode[0] == Type.Action) {
+			if(cx.prevNode[0] == Type.Dialogue) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
-				cx.addLeafElement(
-					this.leaf2,
+				cx.addElement(
 					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
 				)
 				return true
 			}
+
 			return false
 		} else if(this.current == CurrentBlock.Character) {
 			if(this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))) {

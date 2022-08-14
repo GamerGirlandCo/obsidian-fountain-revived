@@ -85,8 +85,7 @@
 }
 
  .view-content .cm-editor .screenplay-dialogue
- 	:not(.screenplay-character)
-	:not(.screenplay-parenthetical) {
+ 	:not(.screenplay-character, .screenplay-parenthetical, .screenplay-marker) {
     text-align: left;
     margin-left: 10%;
 }
