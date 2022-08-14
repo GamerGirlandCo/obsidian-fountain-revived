@@ -48,15 +48,15 @@ export class FountainView extends TextFileView {
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
 		this.extensions = exts
-			.concat(
+			/* .concat(
 				EditorView.updateListener.of((update) => {
 				let string = update.view.state.doc.toString()
 				const countParent = document.querySelector("div.status-bar-item.plugin-word-count");
 				const words = countParent.children[0]
 				const characters = countParent.children[1]
-				words.innerHTML = `${string.split(/\r|\n|\s/g).length} words`
+				words.innerHTML = `${string.split(/\W+/g).length} words`
 				characters.innerHTML = `${string.split("").length} characters`
-			}))
+			})) */
 		// super.onLoadFile(this.file)
 		this.cm = new EditorView({
 			state: EditorState.create({
