@@ -152,7 +152,7 @@ function inlineRender(view: EditorView) {
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-					if((name !=="TitlePage" && name !== "PlainText") && cssClass !== "") {
+					if((name !== "PlainText") && cssClass !== "") {
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-${cssClass}`,
