@@ -50,7 +50,6 @@ export class FountainView extends TextFileView {
 		this.extensions = exts
 			.concat(
 				EditorView.updateListener.of((update) => {
-				if (!update.docChanged) return
 				let string = update.view.state.doc.toString()
 				const countParent = document.querySelector("div.status-bar-item.plugin-word-count");
 				const words = countParent.children[0]
