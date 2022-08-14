@@ -101,15 +101,15 @@ export class FountainView extends TextFileView {
 	getViewType() {
 		return "fountain"
 	}
-	getViewData() { return this.editor.getValue() }
+	getViewData() { return this.cm.state.doc.toString() }
 	setViewData(data: string, clear: boolean): void {
-		this.editor.setValue(data)
-		/* this.document = data;
+		// this.editor.setValue(data)
+		this.document = data;
 		this.cm.setState(EditorState.create({
 			doc: this.document,
 			extensions: this.extensions
 			
-		})) */
+		}))
 	}
 	
 	clear() {
