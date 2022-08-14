@@ -31,7 +31,7 @@ const theme = EditorView.theme({
 })
 
 export const exts = [
-	// theme, 
+	theme, 
 	inlinePlugin(), 
 	ftn(), 
 	EditorView.lineWrapping
@@ -41,14 +41,14 @@ export const exts = [
 // ...
 export class FountainView extends MarkdownView {
 	document: string;
-	// cm: EditorView;
+	cm: EditorView;
 	extensions: Extension[]
 	// state: EditorState
 	// mev: MarkdownEditView
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
 		this.extensions = exts
-		/* 	.concat(
+			.concat(
 				EditorView.updateListener.of((update) => {
 				if (!update.docChanged) return
 				let string = update.view.state.doc.toString()
@@ -57,12 +57,14 @@ export class FountainView extends MarkdownView {
 				const characters = countParent.children[1]
 				words.innerHTML = `${string.split(/\r|\n|\s/g).length} words`
 				characters.innerHTML = `${string.split("").length} characters`
-			})) */
+			}))
 		// super.onLoadFile(this.file)
-		/* this.cm = new EditorView({
-			state: ,
+		this.cm = new EditorView({
+			state: EditorState.create({
+				extensions: this.extensions
+			}),
 			parent: this.containerEl.getElementsByClassName("view-content")[0],
-		}) */
+		})
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
 		
 	}
@@ -81,7 +83,7 @@ export class FountainView extends MarkdownView {
 		let state = EditorState.create({
 			extensions: this.extensions
 		})
-		this.editor.cm.setState(state)
+		this.cm.setState(state)
 		this.containerEl.setAttr("data-type", "fountain")
 		this.setViewData(this.document, false)
 		
