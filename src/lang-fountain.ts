@@ -357,7 +357,7 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Centered(cx, line) {
-		let variable = !(line.text.trim().startsWith(">") && line.text.trim().endsWith("<"))
+		let variable = !(line.text.startsWith(">") && line.text.endsWith("<"))
 		if (variable) return false
 		let from = cx.lineStart + line.pos;
 		cx.nextLine()
@@ -372,7 +372,7 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Lyrics(cx, line) {
-		if(!line.text.trim().startsWith("~")) return false
+		if(!line.text.startsWith("~")) return false
 		cx.addNode(Type.Lyrics, cx.lineStart)
 		cx.nextLine()
 		return true
@@ -397,7 +397,7 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Synopsis, from)
 		return true
 	},
-
+	
 	// Character(cx, line) {
 	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 	// 	let from = cx.lineStart + line.pos;
@@ -409,7 +409,7 @@ const DefaultBlockParsers: {
 	// 	return true
 	// },
 	// Parenthetical(cx, line) {
-	// 	if(!(line.text.trim().startsWith("(") && line.text.trim().endsWith(")"))) return false
+	// 	if(!(line.text.startsWith("(") && line.text.endsWith(")"))) return false
 	// 	let from = cx.lineStart + line.pos
 	// 	// cx.p
 	// 	cx.addNode(Type.Parenthetical, from)
@@ -431,12 +431,20 @@ const DefaultBlockParsers: {
 		delete objOfEverythingExcept.action;
 		let arr = Object.values(objOfEverythingExcept)
 		if(arr.every(a => line.text.match(a) === null)) {
-
+			// if(cx.prevNode[0] == Type.BlockN)
 			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
 			cx.nextLine()
-			return false
+			return true
 		}
 		return false
+	},
+	BoneYard(cx, line) {
+		let boneStart = line.text.indexOf("/*")
+		let boneEnd = line.text.lastIndexOf("*/")
+		if(boneStart < 0 || boneEnd < 0) return false
+		cx.addNode(Type.BoneYard, cx.lineStart)
+		cx.nextLine()
+		return true
 	},
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
@@ -1711,7 +1719,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 			)
 		);
 	},
-	/* Note(cx, next, start) {
+	Note(cx, next, start) {
 		if(next != 91 && next !== 93) return -1
 		if(!cx.text.match(regex.note_inline)) return -1
 		let pos = start + 1
@@ -1719,7 +1727,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let to = pos + cx.text.lastIndexOf("]")
 		while (cx.char(pos) == next) pos++
 		return cx.append(elt(Type.Note, from, to))
-	} */
+	}
 };
 
 // These return `null` when falling off the end of the input, `false`
@@ -1951,7 +1959,7 @@ const NotLast = [
 	// Type.SceneHeading,
 	// Type.Synopsis,
 	Type.Action,
-	// Type.BlockNote,
+	Type.BlockNote,
 	Type.BoneYard
 ];
 
