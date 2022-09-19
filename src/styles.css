@@ -84,7 +84,7 @@
 	text-align: center;
 }
 
-.screenplay-dialogue.cm-line:not(.screenplay-parenthetical) {
+.screenplay-dialogue.cm-line:not(.screenplay-parenthetical, .screenplay-character, .screenplay-note) {
 	margin-left: 10%;
 	text-align: left;
 }

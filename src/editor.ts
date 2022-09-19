@@ -126,14 +126,20 @@ function inlineRender(view: EditorView) {
 					case "BlockNote":
 						cssClass = "note";
 						break;
+					case "OpenNote":
+						cssClass = "note";
+						break;
+					case "CloseNote":
+						cssClass = "note";
+						break;
 					case "Parenthetical":
 						cssClass ="parenthetical"
 						break;
-					case "Action":
-						cssClass="action"
-						break;
 					case "LineBreak":
 						cssClass = "line-break"
+						break;
+					case "BoneYard":
+						cssClass = "bone-yard"
 						break;
 					default:
 						break;

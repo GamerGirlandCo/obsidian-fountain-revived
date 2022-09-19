@@ -122,6 +122,8 @@ export enum Type {
 	Underline,
 	Emphasis, // catch all thingy?
 	
+	BoneMark,
+	CloseBoneMark,
 	BoldMark,
 	ItalicMark,
 	UnderlineMark,
@@ -431,26 +433,56 @@ const DefaultBlockParsers: {
 		delete objOfEverythingExcept.action;
 		let arr = Object.values(objOfEverythingExcept)
 		if(arr.every(a => line.text.match(a) === null)) {
-			// if(cx.prevNode[0] == Type.BlockN)
+			if(cx.prevNode[0] == Type.OpenNote || cx.prevNode[0] == Type.Note) {
+				cx.addNode(Type.BlockNote, cx.lineStart, cx.absoluteLineEnd)
+				return false
+			}
+			if(cx.prevNode[0] == Type.BoneMark || cx.prevNode[0] == Type.BoneYard) {
+				cx.addNode(Type.BoneYard, cx.lineStart, cx.absoluteLineEnd)
+				return false
+			}
 			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
 			cx.nextLine()
 			return true
 		}
 		return false
 	},
+	
 	BoneYard(cx, line) {
 		let boneStart = line.text.indexOf("/*")
-		let boneEnd = line.text.lastIndexOf("*/")
-		if(boneStart < 0 || boneEnd < 0) return false
-		cx.addNode(Type.BoneYard, cx.lineStart)
-		cx.nextLine()
-		return true
+		let boneEnd =  line.text.lastIndexOf("*/")
+		console.debug("bonestartend", line.text, boneStart, boneEnd)
+		// if(boneStart < 0 && boneEnd < 0) return false
+		if(boneStart > -1) {
+			cx.addNode(Type.BoneMark, cx.lineStart + boneStart, cx.lineStart + boneStart + 2)
+			cx.nextLine()
+			return true
+		}
+		if(boneEnd > -1) {
+			cx.addNode(Type.CloseBoneMark, cx.lineStart + boneEnd, cx.lineStart + boneEnd + 2)
+			cx.nextLine()
+			return true
+		}
+		if(cx.prevNode[0] == Type.BoneMark) {
+			cx.addNode(Type.BoneYard, cx.lineStart + boneStart, cx.lineStart + boneStart + 2)
+			cx.nextLine()
+			return true
+		}
+		return false
 	},
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 	BlockNote: undefined,
 	// LinkReference: undefined,
 	TitlePage: undefined,
+	/* TitlePage(cx, line) {
+		if(line.text.toLocaleLowerCase().match(regex.title_page)) {
+			cx.addNode(Type.TitlePage, cx.lineStart, cx.lineStart + line.text.length - 1)
+			cx.nextLine()
+			return true
+		}
+		return false
+	}, */
 	SceneHeading: undefined,
 };
 
@@ -492,7 +524,7 @@ function parseNoteElement(text: string, start: number, offset: number): null | E
 		
 		
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.BlockNote, tio + offset, text.length + offset)
+			return elt(Type.OpenNote, tio + offset, text.length + offset)
 		}
 	} else if(text.match(closing)) {
 		let tio = text.indexOf("]")
@@ -500,7 +532,7 @@ function parseNoteElement(text: string, start: number, offset: number): null | E
 		
 		
 		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
-			return elt(Type.BlockNote, tio + offset, text.length + offset)
+			return elt(Type.CloseNote, tio + offset, text.length + offset)
 		}
 		// return elt
 	}
@@ -551,6 +583,7 @@ class DialogueParser implements LeafBlockParser {
 		}
 		if (elt === false) this.current = CurrentBlock.Action;
 		return false;
+
 	}
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
 		return true;
@@ -753,7 +786,10 @@ class NoteBlockParser implements LeafBlockParser {
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
 				this.context.addLeafElement(this.leaf, pNE)
-				
+				if(pNE.type == Type.OpenNote || pNE.type == Type.BlockNote) {
+					this.change(NoteStage.Inside)
+					return 1
+				}
 				this.change(NoteStage.End)
 				return 1
 			} else if (this.stage == NoteStage.End) {
@@ -765,7 +801,10 @@ class NoteBlockParser implements LeafBlockParser {
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
-				
+				if(this.context.prevEl[0] == Type.OpenNote) {
+					this.change(NoteStage.Inside)
+					this.context.addLeafElement(this.leaf, pNE)
+				}
 			}
 		}
 	}
@@ -808,7 +847,7 @@ class TitlePageParser implements LeafBlockParser {
 	}
 
 	finish() {
-		return false;
+		return true;
 	}
 }
 
@@ -820,7 +859,7 @@ class SceneHeadingParser implements LeafBlockParser {
 		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : null
 		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : null
 		let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
-		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || leaf.content.length)), sn ? [sn] : [])
+		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || _.text.length)), sn ? [sn] : [])
 		cx.addLeafElement(leaf, sh)
 		return true
 	}
@@ -834,10 +873,10 @@ const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
 	BlockNote(cx, bl) {
-		// return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
-		// || bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.BlockNote) ? 
-		return new NoteBlockParser(bl, cx) 
-		// : null
+		return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
+		|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.BlockNote) ? 
+		new NoteBlockParser(bl, cx) 
+		: null
 	},
 	SceneHeading(cx, bl) {
 		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
@@ -1207,13 +1246,22 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
+		if(leaf.content.trim().length) {
+			this.addNode(
+				this.buffer
+					.writeElements(inline, -leaf.start)
+					.finish(Type[Type[this.prevNode[0]]], leaf.content.length),
+				leaf.start
+			);
+		} else {
+			this.addNode(
+				this.buffer
+					.writeElements(inline, -leaf.start)
+					.finish(Type.Action, leaf.content.length),
+				leaf.start
+			);
+		}
 		
-		this.addNode(
-			this.buffer
-				.writeElements(inline, -leaf.start)
-				.finish(Type[Type[this.prevNode[0]]], leaf.content.length),
-			leaf.start
-		);
 	}
 
 	/// Create an [`Element`](#Element) object to represent some syntax
@@ -1719,7 +1767,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 			)
 		);
 	},
-	Note(cx, next, start) {
+	/* Note(cx, next, start) {
 		if(next != 91 && next !== 93) return -1
 		if(!cx.text.match(regex.note_inline)) return -1
 		let pos = start + 1
@@ -1727,7 +1775,7 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let to = pos + cx.text.lastIndexOf("]")
 		while (cx.char(pos) == next) pos++
 		return cx.append(elt(Type.Note, from, to))
-	}
+	} */
 };
 
 // These return `null` when falling off the end of the input, `false`
@@ -1811,8 +1859,8 @@ export class InlineContext {
 			)
 				continue;
 
-			let emp = close.type == EmphasisItalic || close.type === EmphasisBold;
-			let un = close.type == EmphasisUnderline
+			let emp = close.type.mark == EmphasisItalic.mark || close.type.mark == EmphasisBold.mark;
+			let un = close.type.mark == EmphasisUnderline.mark
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
@@ -1958,7 +2006,7 @@ const NotLast = [
 	// Type.TitlePage,
 	// Type.SceneHeading,
 	// Type.Synopsis,
-	Type.Action,
+	// Type.Action,
 	Type.BlockNote,
 	Type.BoneYard
 ];
