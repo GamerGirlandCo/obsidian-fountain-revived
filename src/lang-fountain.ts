@@ -359,11 +359,12 @@ const DefaultBlockParsers: {
 		return true
 	},
 	Centered(cx, line) {
-		let variable = !(line.text.startsWith(">") && line.text.endsWith("<"))
-		if (variable) return false
+		let variable = (line.text.startsWith("> ") && line.text.endsWith(" <"))
+		// console.debug("cen", variable, line.text)
+		if (!variable) return false
 		let from = cx.lineStart + line.pos;
+		cx.addNode(Type.Centered, from, cx.lineStart + line.text.lastIndexOf("<"))
 		cx.nextLine()
-		cx.addNode(Type.Centered, from)
 		return true
 	},
 	PageBreak(cx, line) {
@@ -441,35 +442,19 @@ const DefaultBlockParsers: {
 				cx.addNode(Type.BoneYard, cx.lineStart, cx.absoluteLineEnd)
 				return false
 			}
+			if(line.text == "[[") {
+				cx.addNode(Type.OpenNote, cx.lineStart)
+				return false
+			} else if (line.text == "]]") {
+				cx.addNode(Type.CloseNote, cx.lineStart)
+			}
 			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
 			cx.nextLine()
 			return true
 		}
 		return false
 	},
-	
-	BoneYard(cx, line) {
-		let boneStart = line.text.indexOf("/*")
-		let boneEnd =  line.text.lastIndexOf("*/")
-		console.debug("bonestartend", line.text, boneStart, boneEnd)
-		// if(boneStart < 0 && boneEnd < 0) return false
-		if(boneStart > -1) {
-			cx.addNode(Type.BoneMark, cx.lineStart + boneStart, cx.lineStart + boneStart + 2)
-			cx.nextLine()
-			return true
-		}
-		if(boneEnd > -1) {
-			cx.addNode(Type.CloseBoneMark, cx.lineStart + boneEnd, cx.lineStart + boneEnd + 2)
-			cx.nextLine()
-			return true
-		}
-		if(cx.prevNode[0] == Type.BoneMark) {
-			cx.addNode(Type.BoneYard, cx.lineStart + boneStart, cx.lineStart + boneStart + 2)
-			cx.nextLine()
-			return true
-		}
-		return false
-	},
+	BoneYard : undefined,
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 	BlockNote: undefined,
@@ -519,19 +504,19 @@ function parseNoteElement(text: string, start: number, offset: number): null | E
 		
 		return elt(Type.BlockNote, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
-		let tio = text.indexOf("[")
-		let lio = text.lastIndexOf("[")
+		let tio = text.indexOf("[[")
+		let lio = text.lastIndexOf("[[")
 		
 		
-		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
+		if(tio > -1) {
 			return elt(Type.OpenNote, tio + offset, text.length + offset)
 		}
 	} else if(text.match(closing)) {
-		let tio = text.indexOf("]")
-		let lio = text.lastIndexOf("]")
+		let tio = text.indexOf("]]")
+		let lio = text.lastIndexOf("]]")
 		
 		
-		if(lio == tio + 1 && (tio > -1 && lio > -1)) {
+		if(tio > -1) {
 			return elt(Type.CloseNote, tio + offset, text.length + offset)
 		}
 		// return elt

@@ -5,6 +5,6 @@ Copy-Item main.js $pdir
 Copy-Item .\manifest.json $pdir
 Copy-Item .\src\styles.css $pdir
 
-Copy-Item main.js $output2
-Copy-Item .\manifest.json $output2
-Copy-Item .\src\styles.css $output2
+Copy-Item main.js $output
+Copy-Item .\manifest.json $output
+Copy-Item .\src\styles.css $output
