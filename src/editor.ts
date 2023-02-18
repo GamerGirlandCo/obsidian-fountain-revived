@@ -50,7 +50,7 @@ function inlineRender(view: EditorView) {
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' || name === "TitlePageField") continue;
-				// console.log("tree", name, text2)
+				console.log("tree", name, text2)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -141,11 +141,17 @@ function inlineRender(view: EditorView) {
 					case "BoneYard":
 						cssClass = "bone-yard"
 						break;
+					case "CloseBoneMark":
+						cssClass = "bone-yard"
+						break;
+					case "BoneMark":
+						cssClass = "bone-yard"
+						break;
 					default:
 						break;
 				}
 				const content = view.state.doc.sliceString(start, end);
-				console.debug("namey", name, content)
+				// console.debug("namey", name, content)
 				if(name === "SceneHeading") {
 						widgets.push(
 							Decoration.line({

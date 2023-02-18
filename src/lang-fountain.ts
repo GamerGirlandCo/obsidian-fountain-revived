@@ -102,6 +102,8 @@ export enum Type {
 	
 	Synopsis,
 	BlockNote,
+
+
 	BoneYard,
 	
 	PageBreak,
@@ -250,14 +252,9 @@ const DefaultSkipMarkup: {
 		return true;
 	},
 	[Type.BoneYard](block, cx, line) {
-		if(line.next != "/".charCodeAt(0) || line.next != "*".charCodeAt(0)) return false;
-		line.markers.push(
-			elt(Type.BoneMark, cx.lineStart + line.pos, cx.lineStart + line.pos + 2)
-		)
-		line.moveBase(line.pos + 1)
-		block.end = cx.lineStart + line.text.length
-		cx.nextLine()
-		return true
+		
+		// cx.nextLine()
+		return false
 		// line.moveBase(line.pos)
 	}
 	// [Type.Action](bl, cx, line) {
@@ -381,7 +378,7 @@ const DefaultBlockParsers: {
 		// console.debug("cen", variable, line.text)
 		if (!variable) return false
 		let from = cx.lineStart + line.pos;
-		cx.addNode(Type.Centered, from, cx.lineStart + line.text.lastIndexOf("<"))
+		cx.addNode(Type.Centered, from, cx.lineStart + line.text.lastIndexOf("<") + 2)
 		cx.nextLine()
 		return true
 	},
@@ -414,8 +411,8 @@ const DefaultBlockParsers: {
 	Synopsis(cx, line) {
 		if(!line.text.startsWith("=")) return false
 		let from = cx.lineStart + line.pos;
-		cx.nextLine()
 		cx.addNode(Type.Synopsis, from)
+		cx.nextLine()
 		return true
 	},
 	
@@ -447,18 +444,40 @@ const DefaultBlockParsers: {
 	// 	}
 	// 	return false
 	// }
+	BoneYard(cx, line) {
+		let openy = line.text.indexOf("/*")
+		let closey = line.text.indexOf("*/")
+		console.log("looo", line.text, openy, closey)
+		if(openy != -1 && closey != -1) {
+			cx.addNode(Type.BoneYard, cx.lineStart)
+			cx.nextLine()
+			return true
+		} else if(openy != -1) {
+			cx.addNode(Type.BoneMark, cx.lineStart + openy, cx.lineStart + openy + 2)
+			cx.nextLine()
+			return true
+		} else if (closey != -1) {
+			cx.addNode(Type.CloseBoneMark, cx.lineStart + closey, cx.lineStart + closey + 2);
+			cx.nextLine()
+			return true
+		} else if(cx.prevNode[0] == Type.BoneMark || cx.prevNode[0] == Type.BoneYard) {
+			cx.addNode(Type.BoneYard, cx.lineStart)
+			cx.nextLine()
+			return true
+		} else if(cx.prevNode[0] == Type.CloseBoneMark) {
+			// cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
+			// cx.nextLine()
+			return false;
+		}
+		return false
+	},
 	Action(cx, line) {
 		let objOfEverythingExcept = {...regex}
 		delete objOfEverythingExcept.action;
 		let arr = Object.values(objOfEverythingExcept)
 		if(arr.every(a => line.text.match(a) === null)) {
-			if(cx.prevNode[0] == Type.OpenNote || cx.prevNode[0] == Type.Note) {
+			if(cx.prevNode[0] == Type.OpenNote || cx.prevNode[0] == Type.Note || cx.prevNode[0] == Type.BlockNote) {
 				cx.addNode(Type.BlockNote, cx.lineStart, cx.absoluteLineEnd)
-				cx.nextLine()
-				return false
-			}
-			if(cx.prevNode[0] == Type.BoneMark || cx.prevNode[0] == Type.BoneYard) {
-				cx.addNode(Type.BoneYard, cx.lineStart, cx.absoluteLineEnd)
 				cx.nextLine()
 				return false
 			}
@@ -477,14 +496,6 @@ const DefaultBlockParsers: {
 			return true
 		}
 		return false
-	},
-	BoneYard(cx, line) {
-		let size = isBoneYard(line)
-		if(size < 0) return false;
-		cx.startContext(Type.BoneYard, cx.lineStart + line.pos,
-			cx.lineStart + line.text.length)
-		line.moveBase(line.pos + size)
-		return null
 	},
 	// BoneYard : undefined,
 	Dialogue: undefined,
