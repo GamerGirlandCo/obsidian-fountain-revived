@@ -449,7 +449,7 @@ const DefaultBlockParsers: {
 		let closey = line.text.indexOf("*/")
 		console.log("looo", line.text, openy, closey)
 		if(openy != -1 && closey != -1) {
-			cx.addNode(Type.BoneYard, cx.lineStart)
+			cx.addNode(Type.BoneYard, cx.lineStart + openy, closey + cx.lineStart)
 			cx.nextLine()
 			return true
 		} else if(openy != -1) {
