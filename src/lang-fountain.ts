@@ -54,6 +54,7 @@ class CompositeBlock {
 				child.length,
 				this.hashProp
 			);
+		
 		this.children.push(child);
 		this.positions.push(pos);
 	}
@@ -248,6 +249,16 @@ const DefaultSkipMarkup: {
 	[Type.Screenplay]() {
 		return true;
 	},
+	[Type.BoneYard](block, cx, line) {
+		if(line.next != "/".charCodeAt(0) || line.next != "*".charCodeAt(0)) return false;
+		line.markers.push(
+			elt(Type.BoneMark, cx.lineStart + line.pos, cx.lineStart + line.pos + 2)
+		)
+		line.moveBase(line.pos + 1)
+		block.end = cx.lineStart + line.text.length
+		return true
+		// line.moveBase(line.pos)
+	}
 	// [Type.Action](bl, cx, line) {
 	// 	bl.addChild(
 	// 		elt(
@@ -274,6 +285,12 @@ function isBlockquote(line: Line) {
 		: line.text.charCodeAt(line.pos + 1) == 32
 		? 2
 		: 1;
+}
+function isBoneYard(line: Line) {
+	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) && line.text.charCodeAt(line.pos + 1) == 42
+		? 2
+		: -1
+
 }
 
 function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
@@ -442,11 +459,13 @@ const DefaultBlockParsers: {
 				cx.addNode(Type.BoneYard, cx.lineStart, cx.absoluteLineEnd)
 				return false
 			}
-			if(line.text == "[[") {
+			if(line.text == "[[" || line.text.startsWith("[[")) {
 				cx.addNode(Type.OpenNote, cx.lineStart)
+				cx.nextLine()
 				return false
 			} else if (line.text == "]]") {
 				cx.addNode(Type.CloseNote, cx.lineStart)
+				return false
 			}
 			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
 			cx.nextLine()
@@ -454,7 +473,15 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
-	BoneYard : undefined,
+	BoneYard(cx, line) {
+		let size = isBoneYard(line)
+		if(size < 0) return false;
+		cx.startContext(Type.BoneYard, cx.lineStart + line.pos,
+			cx.lineStart + line.text.length)
+		line.moveBase(line.pos + size)
+		return null
+	},
+	// BoneYard : undefined,
 	Dialogue: undefined,
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 	BlockNote: undefined,
@@ -496,12 +523,13 @@ function parseParenthetical(text: string, start: number, offset: number): null |
 	return null
 }
 
-function parseNoteElement(text: string, start: number, offset: number): null | Element {
+function parseNoteElement(ctxprev: Type, text: string, start: number, offset: number): null | Element {
 	let opening = /\[\[/gm
 	let closing = /\]\]/gm
-	
+	let stst = Object.values(Type)[ctxprev - 1]
 	if(text.match(regex.note)|| text.match(regex.note_inline)) {
 		
+		console.log("pne",text)
 		return elt(Type.BlockNote, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[[")
@@ -519,7 +547,13 @@ function parseNoteElement(text: string, start: number, offset: number): null | E
 		if(tio > -1) {
 			return elt(Type.CloseNote, tio + offset, text.length + offset)
 		}
+		return elt(Type.BlockNote, start + offset, text.length + offset)
+		
 		// return elt
+	} else if(ctxprev == Type.Note || ctxprev == Type.BlockNote) {
+		console.log("pne", text)
+		return elt(Type.BlockNote, start + offset, text.length + offset)
+		
 	}
 	return null
 }
@@ -688,7 +722,7 @@ class NoteBlockParser implements LeafBlockParser {
 		this.change(NoteStage.Begin)
 		this.change((leaf.content.match(regex.note)) ?
 		NoteStage.Inside : leaf.content.match(regex.opening_note) ? NoteStage.Begin :
-		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Begin)
+		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Inside)
 		
 		this.advance(leaf.content);
 	}
@@ -710,11 +744,11 @@ class NoteBlockParser implements LeafBlockParser {
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
 		if (
-			(this.stage == NoteStage.Begin || this.stage == NoteStage.Inside) &&
-			skipSpace(leaf.content, this.pos) == leaf.content.length
+			(this.stage == NoteStage.Begin || this.stage == NoteStage.Inside) /* &&
+			skipSpace(leaf.content, this.pos) == leaf.content.length */
 		)
 			return this.complete(cx, leaf, leaf.content.length);
-		return false;
+		return true;
 	}
 
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
@@ -734,14 +768,15 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 
 	advance(content: string) {
-		let blip = parseNoteElement(content, this.pos, this.start)
+		let blip = parseNoteElement(this.context.prevNode[0],content, this.pos, this.start)
 		for (;;) {
-			let pNE = parseNoteElement(content, this.pos, this.start)
+			let pNE = parseNoteElement(this.context.prevNode[0], content, this.pos, this.start)
 			
 			if (this.stage == NoteStage.None) {
 				// console.debug("none")
 				return false;
 			} else if (this.stage == NoteStage.Begin) {
+				
 				
 				if ((this.previous[0] == NoteStage.Begin) ) {
 						
@@ -771,24 +806,25 @@ class NoteBlockParser implements LeafBlockParser {
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
 				this.context.addLeafElement(this.leaf, pNE)
-				if(pNE.type == Type.OpenNote || pNE.type == Type.BlockNote) {
+				if(pNE.type == Type.OpenNote || pNE.type == Type.BlockNote || pNE.type == Type.Note) {
 					this.change(NoteStage.Inside)
+					this.context.addElement(/* this.leaf,  */pNE)
 					return 1
 				}
 				this.change(NoteStage.End)
 				return 1
 			} else if (this.stage == NoteStage.End) {
-				if (!parseNoteElement(content, this.pos, this.start)) return -1;
+				if (!parseNoteElement(this.context.prevNode[0], content, this.pos, this.start)) return -1;
 				
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
-				this.context.addLeafElement(this.leaf, pNE)
+				this.context.addElement(/* this.leaf,  */pNE)
 				this.change(NoteStage.Begin)
 				return 1
 			} else {
-				if(this.context.prevEl[0] == Type.OpenNote) {
+				if(this.context.prevEl[0] == Type.OpenNote || this.context.prevNode[0] == Type.Note) {
 					this.change(NoteStage.Inside)
-					this.context.addLeafElement(this.leaf, pNE)
+					this.context.addElement(/* this.leaf,  */pNE)
 				}
 			}
 		}
@@ -859,7 +895,7 @@ const DefaultLeafBlocks: {
 } = {
 	BlockNote(cx, bl) {
 		return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
-		|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.BlockNote) ? 
+		|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note || cx.prevEl[0] == Type.BlockNote) ? 
 		new NoteBlockParser(bl, cx) 
 		: null
 	},
@@ -882,7 +918,7 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	// (_, line) => isFencedCode(line) >= 0,
 	(_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
-	(p, line) => !!parseNoteElement(line.text, 0, p.lineStart)
+	(p, line) => !!parseNoteElement(p.prevNode[0], line.text, 0, p.lineStart)
 	// (p, line) => isLyric(line, p) >= 0
 
 ];
@@ -946,6 +982,7 @@ export class BlockContext implements PartialParse {
 		// this.prevNode.unshift(t.type.id)
 		if(block instanceof Tree) block = block.type.id;
 		this.prevNode.unshift(block)
+		this.prevEl.unshift(block)
 	}
 
 	advance() {
@@ -1164,12 +1201,16 @@ export class BlockContext implements PartialParse {
 	/// @internal
 	addNode(block: Type | Tree, from: number, to?: number) {
 		if (typeof block == "number")
-		block = new Tree(
+		{
+			this.prevEl.unshift(block)
+			this.prevNode.unshift(block)
+			block = new Tree(
 			this.parser.nodeSet.types[block],
 			none,
 			none,
 			(to ?? this.prevLineEnd()) - from
 			);
+		}
 		this.setPrevCurr(block)
 		this.block.addChild(block, from - this.block.from);
 	}
@@ -1993,6 +2034,7 @@ const NotLast = [
 	// Type.Synopsis,
 	// Type.Action,
 	Type.BlockNote,
+	Type.Note,
 	Type.BoneYard
 ];
 
