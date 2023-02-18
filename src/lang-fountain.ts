@@ -256,6 +256,7 @@ const DefaultSkipMarkup: {
 		)
 		line.moveBase(line.pos + 1)
 		block.end = cx.lineStart + line.text.length
+		cx.nextLine()
 		return true
 		// line.moveBase(line.pos)
 	}
@@ -453,10 +454,12 @@ const DefaultBlockParsers: {
 		if(arr.every(a => line.text.match(a) === null)) {
 			if(cx.prevNode[0] == Type.OpenNote || cx.prevNode[0] == Type.Note) {
 				cx.addNode(Type.BlockNote, cx.lineStart, cx.absoluteLineEnd)
+				cx.nextLine()
 				return false
 			}
 			if(cx.prevNode[0] == Type.BoneMark || cx.prevNode[0] == Type.BoneYard) {
 				cx.addNode(Type.BoneYard, cx.lineStart, cx.absoluteLineEnd)
+				cx.nextLine()
 				return false
 			}
 			if(line.text == "[[" || line.text.startsWith("[[")) {
@@ -464,7 +467,9 @@ const DefaultBlockParsers: {
 				cx.nextLine()
 				return false
 			} else if (line.text == "]]") {
+				
 				cx.addNode(Type.CloseNote, cx.lineStart)
+				cx.nextLine()
 				return false
 			}
 			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
@@ -825,6 +830,7 @@ class NoteBlockParser implements LeafBlockParser {
 				if(this.context.prevEl[0] == Type.OpenNote || this.context.prevNode[0] == Type.Note) {
 					this.change(NoteStage.Inside)
 					this.context.addElement(/* this.leaf,  */pNE)
+					this.context.nextLine()
 				}
 			}
 		}
@@ -1280,12 +1286,12 @@ export class BlockContext implements PartialParse {
 				leaf.start
 			);
 		} else {
-			this.addNode(
-				this.buffer
-					.writeElements(inline, -leaf.start)
-					.finish(Type.Action, leaf.content.length),
-				leaf.start
-			);
+			// this.addNode(
+			// 	this.buffer
+			// 		.writeElements(inline, -leaf.start)
+			// 		.finish(Type.Action, leaf.content.length),
+			// 	leaf.start
+			// );
 		}
 		
 	}

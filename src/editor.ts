@@ -144,6 +144,8 @@ function inlineRender(view: EditorView) {
 					default:
 						break;
 				}
+				const content = view.state.doc.sliceString(start, end);
+				console.debug("namey", name, content)
 				if(name === "SceneHeading") {
 						widgets.push(
 							Decoration.line({
@@ -151,7 +153,6 @@ function inlineRender(view: EditorView) {
 							}).range(whichline.from + 1),
 						);
 				} else if( name === "SceneNumber" || name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
-					const content = view.state.doc.sliceString(start, end);
 					widgets.push(Decoration.mark({
 						class: name === "SceneNumber" ? `screenplay-scene-number` : `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
