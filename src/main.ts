@@ -14,6 +14,7 @@ export default class ObsidianFountain extends Plugin {
 	async onload() {
 		console.log(`Loading Fountain Plugin - v${this.manifest.version}`)
 		// this.editor
+		
 		this.registerExtensions(["fountain", "fountain.md"], "fountain")
 		this.registerView("fountain", this.makeView)
 		this.app.workspace.updateOptions()
