@@ -469,6 +469,7 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
+	TitlePage: undefined,
 	Action(cx, line) {
 		let objOfEverythingExcept = {...regex}
 		delete objOfEverythingExcept.action;
@@ -500,7 +501,6 @@ const DefaultBlockParsers: {
 	SetextHeading: undefined, // Specifies relative precedence for block-continue function
 	BlockNote: undefined,
 	// LinkReference: undefined,
-	TitlePage: undefined,
 	/* TitlePage(cx, line) {
 		if(line.text.toLocaleLowerCase().match(regex.title_page)) {
 			cx.addNode(Type.TitlePage, cx.lineStart, cx.lineStart + line.text.length - 1)
