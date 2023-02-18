@@ -375,7 +375,6 @@ const DefaultBlockParsers: {
 	},
 	Centered(cx, line) {
 		let variable = (line.text.startsWith("> ") && line.text.endsWith(" <"))
-		// console.debug("cen", variable, line.text)
 		if (!variable) return false
 		let from = cx.lineStart + line.pos;
 		cx.addNode(Type.Centered, from, cx.lineStart + line.text.lastIndexOf("<") + 2)
@@ -447,7 +446,6 @@ const DefaultBlockParsers: {
 	BoneYard(cx, line) {
 		let openy = line.text.indexOf("/*")
 		let closey = line.text.indexOf("*/")
-		console.log("looo", line.text, openy, closey)
 		if(openy != -1 && closey != -1) {
 			cx.addNode(Type.BoneYard, cx.lineStart + openy, closey + cx.lineStart)
 			cx.nextLine()
@@ -524,7 +522,6 @@ enum CurrentBlock {
 
 
 function parseCharacter(text: string, start: number, offset: number): null | Element {
-	// console.debug("parsing character", text, text.match(regex.character))
 	if(text.match(regex.character)) {
 		return elt(Type.Character, start + offset, text.length + offset)
 	}
@@ -532,7 +529,6 @@ function parseCharacter(text: string, start: number, offset: number): null | Ele
 }
 
 function parseParenthetical(text: string, start: number, offset: number): null | Element {
-	// console.debug("parsing parenthetical", text.match(regex.parenthetical))
 	if(text.match(regex.parenthetical)) {
 		return elt(Type.Parenthetical, start + offset, text.length + offset)
 	}
@@ -544,8 +540,6 @@ function parseNoteElement(ctxprev: Type, text: string, start: number, offset: nu
 	let closing = /\]\]/gm
 	let stst = Object.values(Type)[ctxprev - 1]
 	if(text.match(regex.note)|| text.match(regex.note_inline)) {
-		
-		console.log("pne",text)
 		return elt(Type.BlockNote, start + offset, text.length + offset)
 	} else if(text.match(opening)) {
 		let tio = text.indexOf("[[")
@@ -567,7 +561,6 @@ function parseNoteElement(ctxprev: Type, text: string, start: number, offset: nu
 		
 		// return elt
 	} else if(ctxprev == Type.Note || ctxprev == Type.BlockNote) {
-		console.log("pne", text)
 		return elt(Type.BlockNote, start + offset, text.length + offset)
 		
 	}
@@ -600,7 +593,6 @@ class DialogueParser implements LeafBlockParser {
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
 		if(this.current == CurrentBlock.Action) return false
 		this.advance(leaf.content, cx, line)
-		// console.log("start vs linestart")
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
@@ -625,8 +617,6 @@ class DialogueParser implements LeafBlockParser {
 	}
 
 	advance(content: string, cx: BlockContext, line: Line) {
-		// console.log("LEAFCONTENT:", this.leaf2.content, this.leaf2.start, "LINETEXT:", line.text, cx.lineStart)
-		// console.log("prevnode", Type[cx.prevNode[0]])
 		if(this.current == CurrentBlock.Begin) {
 			if(cx.prevNode[0] == Type.Action || cx.prevNode[0] == Type.Dialogue) {
 				if(this.nextPart(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start))) {
@@ -635,8 +625,6 @@ class DialogueParser implements LeafBlockParser {
 				} else if(this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))) {
 					this.changeType(CurrentBlock.Parenthetical)
 					return true
-					// this.elts.push(elt(Type.Parenthetical, this.pos + cx.lineStart, line.text.length + cx.lineStart))
-					// cx.addNode(Type.Parenthetical, cx.lineStart)
 				}
 			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
 				this.changeType(CurrentBlock.Character)
@@ -651,9 +639,6 @@ class DialogueParser implements LeafBlockParser {
 				this.changeType(CurrentBlock.Dialogue)
 				return true
 			}
-				// cx.addNode(Type.Dialogue, cx.lineStart)
-				// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
-
 			if(cx.prevNode[0] == Type.Dialogue) {
 				let blip = cx.parser.parseInline(line.text, cx.lineStart)
 				cx.addElement(
@@ -769,7 +754,6 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
-		// console.debug("compleetion", this.elts)
 		return true;
 	}
 
@@ -790,7 +774,6 @@ class NoteBlockParser implements LeafBlockParser {
 			let pNE = parseNoteElement(this.context.prevNode[0], content, this.pos, this.start)
 			
 			if (this.stage == NoteStage.None) {
-				// console.debug("none")
 				return false;
 			} else if (this.stage == NoteStage.Begin) {
 				
@@ -1568,7 +1551,6 @@ function propLogger(node, state) {
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
-	// console.debug("nodetype", name)
 	let properties = [];
 	if(name === "SceneHeading") {
 		properties.push(foldNodeProp.add((type) => {
@@ -1580,7 +1562,6 @@ for (let i = 1, name; (name = Type[i]); i++) {
 			}
 		}))
 	}
-	// console.debug("node:deffine", i)
 	nodeTypes[i] = NodeType.define({
 		id: i,
 		name,
@@ -1603,7 +1584,6 @@ function extender(): NodePropSource[] {
 			nextsibling && console.debug("prop:ns", nextsibling)
 	}
 	/* properties.push(foldNodeProp.add(type => {
-		console.log("prop:type", type.name)
 		if(type.id === Type.Screenplay || type.id === Type.TitlePageField) return null
 		return function (node, state) {
 			let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
@@ -1612,7 +1592,6 @@ function extender(): NodePropSource[] {
 		}
 	})) */
 	properties.push(foldNodeProp.add(type => {
-		// console.log("prop:type", type.name)
 		// if(type.is("Screenplay")) return undefined
 		if(type.is("SceneHeading")) 
 		return function (node, state) {
@@ -1622,7 +1601,6 @@ function extender(): NodePropSource[] {
 		}
 		// return (node, state) => undefined
 	}))
-	// console.log("props", properties)
 	return properties;
 }
 
@@ -2168,12 +2146,10 @@ export const parser = new FountainParser(
 const data = defineLanguageFacet({block: {open: "<!--", close: "-->"}})
 const fold = defineLanguageFacet(Facet.define())
 
-export function mkLang(parser: FountainParser) { /* console.debug("node:types", nodeTypes); */ return new Language(data, parser)}
+export function mkLang(parser: FountainParser) {  return new Language(data, parser)}
 
 export function ftn(exts?: Extension[]) { 
 	const lang =  new Language(data, parser)
 	const ls = new LanguageSupport(lang)
-	// console.log("derrr", extender())
-	// console.log("lag", parser.nodeSet);  
 	return ls
 }
