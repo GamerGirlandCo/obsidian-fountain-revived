@@ -14,8 +14,9 @@ import {
 	EditableFileView,
 } from 'obsidian';
 import { exts } from './fountain-view';
-import {parser} from "./lang-fountain"
+import {ftn} from "./lang-fountain"
 import {visualize} from "@colin_t/lezer-tree-visualizer";
+import { foldable } from '@codemirror/language';
 
 function selectionAndRangeOverlap(
 	selection: EditorSelection,
@@ -35,7 +36,8 @@ function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
 	let iiii = 1;
 	const all = view.state.doc.toString()
-	visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	let parser = ftn().language.parser
+	// visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
@@ -50,7 +52,7 @@ function inlineRender(view: EditorView) {
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' || name === "TitlePageField") continue;
-				console.log("tree", name, text2)
+				console.debug("tree", name, text2)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -229,6 +231,8 @@ export function inlinePlugin(): ViewPlugin<any> {
 					update.viewportChanged ||
 					update.selectionSet
 				) {
+					let selly = update.view.state.selection.main.head
+					console.log("node", selly, update.view.state.doc.lineAt(selly))
 					// this.render(update.view);
 					this.render(update.view)
 				}

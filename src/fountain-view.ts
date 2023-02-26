@@ -17,7 +17,7 @@ import {EditorView, Decoration, DecorationSet, ViewUpdate} from "@codemirror/vie
 import { Fountain } from "fountain-js";
 import { basicSetup } from "./extensions";
 import { inlinePlugin } from "./editor";
-import { FountainParser, parser, ftn } from "./lang-fountain";
+import { FountainParser, ftn } from "./lang-fountain";
 
 const theme = EditorView.theme({
 	".cm-line": {
@@ -34,8 +34,8 @@ export const exts = [
 	theme, 
 	inlinePlugin(), 
 	ftn(), 
-	EditorView.lineWrapping
-	// ...basicSetup
+	EditorView.lineWrapping,
+	...basicSetup
 ]
 
 // ...
@@ -43,7 +43,7 @@ export class FountainView extends TextFileView {
 	document: string;
 	cm: EditorView;
 	extensions: Extension[]
-	// state: EditorState
+	state: EditorState
 	// mev: MarkdownEditView
 	constructor(leaf: WorkspaceLeaf) {
 		super(leaf)
@@ -58,10 +58,11 @@ export class FountainView extends TextFileView {
 				characters.innerHTML = `${string.split("").length} characters`
 			})) */
 		// super.onLoadFile(this.file)
+		this.state = EditorState.create({
+			extensions: this.extensions
+		})
 		this.cm = new EditorView({
-			state: EditorState.create({
-				extensions: this.extensions
-			}),
+			state: this.state,
 			parent: this.containerEl.getElementsByClassName("view-content")[0],
 		})
 		// this.document = await this.app.vault.read(this.app.workspace.getActiveFile())
@@ -83,6 +84,7 @@ export class FountainView extends TextFileView {
 			extensions: this.extensions
 		})
 		this.cm.setState(state)
+		this.state = state
 		this.containerEl.setAttr("data-type", "fountain")
 		this.setViewData(this.document, false)
 		
@@ -102,13 +104,14 @@ export class FountainView extends TextFileView {
 	}
 	getViewData() { return this.cm.state.doc.toString() }
 	setViewData(data: string, clear: boolean): void {
-		// this.editor.setValue(data)
 		this.document = data;
-		this.cm.setState(EditorState.create({
+		let st = EditorState.create({
 			doc: this.document,
 			extensions: this.extensions
 			
-		}))
+		})
+		this.cm.setState(st)
+		this.state = st
 	}
 	
 	clear() {

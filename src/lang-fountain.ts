@@ -1,4 +1,4 @@
-import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent, foldNodeProp } from "@codemirror/language";
+import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent, foldNodeProp, foldService } from "@codemirror/language";
 import {
 	Input,
 	NodeProp,
@@ -19,6 +19,7 @@ import { regex } from "./regexes";
 
 import { Tag, styleTags, tags as t } from "@lezer/highlight";
 import { Extension, Facet } from "@codemirror/state";
+import { SceneHeading } from "./lang/parser.terms";
 
 class CompositeBlock {
 	static create(
@@ -881,7 +882,7 @@ class SceneHeadingParser implements LeafBlockParser {
 		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : null
 		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : null
 		let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
-		let sh = elt(Type.SceneHeading, cx.lineStart -1, (cx.lineStart + (startup || _.text.length)), sn ? [sn] : [])
+		let sh = elt(Type.SceneHeading, cx.lineStart - 1, (cx.lineStart + (startup || _.text.length)), sn ? [sn] : [])
 		cx.addLeafElement(leaf, sh)
 		return true
 	}
@@ -1462,7 +1463,7 @@ export class FountainParser extends Parser {
 	constructor(
 		/// The parser's syntax [node
 		/// types](https://lezer.codemirror.net/docs/ref/#common.NodeSet).
-		readonly nodeSet: NodeSet,
+		public nodeSet: NodeSet,
 		/// @internal
 		readonly blockParsers: readonly (
 			| ((cx: BlockContext, line: Line) => BlockResult)
@@ -1501,6 +1502,7 @@ export class FountainParser extends Parser {
 	) {
 		super();
 		for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id;
+		console.log("nodeset", nodeSet)
 	}
 
 	createParse(
@@ -1511,6 +1513,10 @@ export class FountainParser extends Parser {
 		let parse: PartialParse = new BlockContext(this, input, fragments, ranges);
 		for (let w of this.wrappers) parse = w(parse, input, fragments, ranges);
 		return parse;
+	}
+
+	configure(np: NodePropSource[]) {
+		this.nodeSet = this.nodeSet.extend(...np)
 	}
 
 	/// @internal
@@ -1544,9 +1550,9 @@ export class FountainParser extends Parser {
 
 
 function propLogger(node, state) {
-	console.debug("we are in a prop")
-	console.debug("prop:state", state)
-	console.debug("prop:node", node)
+	console.log("we are in a prop")
+	console.log("prop:node", node)
+	console.log("prop:state", state)
 }
 
 let nodeTypes = [NodeType.none];
@@ -1554,54 +1560,25 @@ for (let i = 1, name; (name = Type[i]); i++) {
 	let properties = [];
 	if(name === "SceneHeading") {
 		properties.push(foldNodeProp.add((type) => {
-			if(type.name !== "SceneHeading") return undefined
+			// if(!type.is("SceneHeading")) return null
 			return (node, state) => {
-				let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
-				propLogger(node, state)
-				return {from: state.doc.lineAt(node.from).to, to: ns}
+				let gc = node.parent.getChild(Type.SceneHeading, Type.SceneHeading)
+				let ns = node.parent.getChild(Type.SceneHeading, null, SceneHeading)
+				// propLogger(ns, state) lastchild.to
+				let ob = {from: state.doc.lineAt(ns.lastChild.to).from, to: state.doc.lineAt(node.to).from - 1}
+				if (ob.from === ob.to || ob.to < ob.from) return null
+				propLogger(node, ns)
+				console.log("nexts", gc)
+				console.log("obby", ob)
+				return ob
 			}
 		}))
 	}
 	nodeTypes[i] = NodeType.define({
 		id: i,
 		name,
-		props:
-			i <= Type.Escape ? [] :
-			i >= Type.PlainText
-				? []
-				: properties,
+		props: properties
 	});
-}
-
-function extender(): NodePropSource[] {
-	let properties:NodePropSource[] = [
-		languageDataProp.add({data: data})
-	];
-	function logger(node, state, nextsibling?) {
-			console.debug("we are in a prop")
-			console.debug("prop:state", state)
-			console.debug("prop:node", node)
-			nextsibling && console.debug("prop:ns", nextsibling)
-	}
-	/* properties.push(foldNodeProp.add(type => {
-		if(type.id === Type.Screenplay || type.id === Type.TitlePageField) return null
-		return function (node, state) {
-			let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
-			logger(node, state, ns)
-			return {from: state.doc.lineAt(node.from).to, to: ns}
-		}
-	})) */
-	properties.push(foldNodeProp.add(type => {
-		// if(type.is("Screenplay")) return undefined
-		if(type.is("SceneHeading")) 
-		return function (node, state) {
-			logger(node, state)
-			let ns = node.nextSibling.type.id === Type.SceneHeading ? state.doc.lineAt(node.nextSibling.from).to - 1 : null
-			return {from: state.doc.lineAt(node.from).to, to: ns}
-		}
-		// return (node, state) => undefined
-	}))
-	return properties;
 }
 
 const none: readonly any[] = [];
@@ -2130,10 +2107,8 @@ class FragmentCursor {
 	}
 }
 
-
-
-export const parser = new FountainParser(
-	new NodeSet(nodeTypes).extend(...extender()),
+const parser = new FountainParser(
+	new NodeSet(nodeTypes),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultBlockParsers[n]),
 	Object.keys(DefaultBlockParsers).map((n) => DefaultLeafBlocks[n]),
 	Object.keys(DefaultBlockParsers),
@@ -2144,12 +2119,9 @@ export const parser = new FountainParser(
 	[]
 );
 const data = defineLanguageFacet({block: {open: "<!--", close: "-->"}})
-const fold = defineLanguageFacet(Facet.define())
+// const fold = defineLanguageFacet(Facet.define(foldService.of())
 
-export function mkLang(parser: FountainParser) {  return new Language(data, parser)}
-
-export function ftn(exts?: Extension[]) { 
-	const lang =  new Language(data, parser)
-	const ls = new LanguageSupport(lang)
-	return ls
+export function ftn( exts?: Extension[]) {
+	// const ls = 
+	return new LanguageSupport(new Language(data, parser, exts))
 }
