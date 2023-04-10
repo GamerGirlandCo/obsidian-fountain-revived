@@ -37,7 +37,7 @@ function inlineRender(view: EditorView) {
 	let iiii = 1;
 	const all = view.state.doc.toString()
 	let parser = ftn().language.parser
-	// visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	visualize(parser.parse(all).cursor(), view.state.doc.toString())
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
