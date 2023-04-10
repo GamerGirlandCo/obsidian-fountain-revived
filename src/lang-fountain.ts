@@ -1681,14 +1681,6 @@ function elt(
 ) {
 	return new Element(type, from, to, children);
 }
-function findName(names: readonly string[], name: string) {
-  let found = names.indexOf(name)
-  if (found < 0) throw new RangeError(`Position specified relative to unknown parser ${name}`)
-  return found
-}
-function nonEmpty<T>(a: undefined | readonly T[]): a is readonly T[] {
-  return a != null && a.length > 0
-}
 
 const enum Mark {
 	Open = 1,
