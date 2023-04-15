@@ -257,6 +257,19 @@ const DefaultSkipMarkup: {
 		// cx.nextLine()
 		return false
 		// line.moveBase(line.pos)
+	},
+	[Type.TitlePage](bl, cx, line) {
+		cx.addNode(
+			elt(Type.TitlePage, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart + line.text.indexOf(":"))).toTree(cx.parser.nodeSet),
+			cx.lineStart
+		)
+		while((line.text.match(regex.title_page) || line.text.startsWith("\t")) && line.text != "") {
+			cx.addElement(elt(Type.TitlePageField, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
+			// cx.prevLine()
+	
+			cx.cleanLine()
+		}
+		return false
 	}
 	// [Type.Action](bl, cx, line) {
 	// 	bl.addChild(
@@ -378,8 +391,22 @@ type BlockResult = boolean | null;
 const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
+	TitlePage (cx, line) {
+		if(line.text.match(regex.title_page) && !!line.text) {
+			cx.startComposite(Type[Type.TitlePage], cx.lineStart)
+			cx.nextLine()
+			return true
+		}
+		return false
+	},
+	Lyrics(cx, line) {
+		if(!line.text.startsWith("~")) return false
+		cx.addNode(Type.Lyrics, cx.lineStart)
+		cx.nextLine()
+		return true
+	},
 	Transition(cx, line) {
-		if(!line.text.match(regex.transition) || line.text.endsWith("<")) return false
+		if(!line.text.match(regex.transition) && !line.text.endsWith("<")) return false
 		let from = cx.lineStart + line.pos;
 		cx.nextLine()
 		cx.addNode(Type.Transition, from)
@@ -413,12 +440,6 @@ const DefaultBlockParsers: {
 		let from = cx.lineStart + line.pos;
 		cx.nextLine()
 		cx.addNode(Type.PageBreak, from)
-		return true
-	},
-	Lyrics(cx, line) {
-		if(!line.text.startsWith("~")) return false
-		cx.addNode(Type.Lyrics, cx.lineStart)
-		cx.nextLine()
 		return true
 	},
 	Section(cx, line) {
@@ -496,7 +517,7 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
-	TitlePage: undefined,
+	// TitlePage: undefined,
 	SceneHeading (cx, line) {
 		if(line.text.match(regex.scene_heading)) {
 			let startup = line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null
@@ -510,6 +531,8 @@ const DefaultBlockParsers: {
 		cx.nextLine()
 		return false
 	},
+	Action(cx, line) {
+		
 		return false
 	},
 	// BoneYard : undefined,
@@ -525,7 +548,6 @@ const DefaultBlockParsers: {
 		}
 		return false
 	}, */
-	SceneHeading: undefined,
 };
 
 enum CurrentBlock {
@@ -848,64 +870,7 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 }
 
-class TitlePageParser implements LeafBlockParser {
-	myelements: Element[] = []
-	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
-		this.nextLine(bcx, new Line(), this.leafy)
-	}
-	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		let cat = []
-		let zeroed = cx.stack[0]
-		let children = zeroed.children as Tree[];
-		let lastOF = children[children.length - 1]?.type.name
-		if(leaf.content.match(regex.title_page)) {
-			this.myelements.push(
-				elt(Type.TitlePage, leaf.start, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start))
-			);
-		} else if(this.myelements.length) {
-			this.myelements.push(elt(Type.TitlePage, cx.lineStart, leaf.content.length + 1, cx.parser.parseInline(leaf.content, leaf.start)))
-		} /* else if(leaf.content.indexOf("\n") !== -1) {
-			this.myelements.push(
-				elt(Type.TitlePageField, leaf.content.indexOf("\n") + 1, leaf.content.length, cx.parser.parseInline(leaf.content, leaf.start))
-			)
-		} */ else if(lastOF === "TitlePage")  {
-			this.myelements.push(
-				elt(Type.TitlePage, leaf.start, leaf.content.length,
-					cx.parser.parseInline(leaf.content, leaf.start)
-				)
-			)
-		} else {
-			return false
-		}
 
-		
-		cx.addLeafElement(leaf, elt(Type.TitlePage, cx.lineStart, leaf.content.length + 1, this.myelements))
-		return true;
-
-	}
-
-	finish() {
-		return true;
-	}
-}
-
-class SceneHeadingParser implements LeafBlockParser {
-	constructor(readonly leafy: LeafBlock, bcx: BlockContext) {
-		this.nextLine(bcx, new Line(), this.leafy)
-	}
-	nextLine(cx: BlockContext, _: Line, leaf: LeafBlock) {
-		let startup = leaf.content.indexOf("#") !== -1 ? leaf.content.indexOf("#") : null
-		let myend = leaf.content.lastIndexOf("#") !== -1 ? leaf.content.lastIndexOf("#") : null
-		let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
-		let sh = elt(Type.SceneHeading, cx.lineStart - 1, (cx.lineStart + (startup || _.text.length)), sn ? [sn] : [])
-		cx.addLeafElement(leaf, sh)
-		return true
-	}
-
-	finish() {
-		return false;
-	}
-}
 
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
@@ -916,14 +881,9 @@ const DefaultLeafBlocks: {
 		new NoteBlockParser(bl, cx) 
 		: null
 	},
-	SceneHeading(cx, bl) {
-		return bl.content.match(regex.scene_heading) ? new SceneHeadingParser(bl, cx) : null
-	},
-	TitlePage(cx, bl) {
-		return new TitlePageParser(bl, cx)
-	},
 	Dialogue(cx, bl) {
-		return new DialogueParser(bl, cx)
+		return null
+		// return new DialogueParser(bl, cx)
 	},
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
@@ -933,9 +893,9 @@ const DefaultLeafBlocks: {
 const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	(_, line) => isSection(line) >= 0,
 	// (_, line) => isFencedCode(line) >= 0,
-	(_, line) => isBlockquote(line) >= 0,
+	// (_, line) => isBlockquote(line) >= 0,
 	(p, line) => isPageBreak(line, p, true) >= 0,
-	(p, line) => !!parseNoteElement(p.prevNode[0], line.text, 0, p.lineStart)
+	// (p, line) => !!parseNoteElement(p.prevNode[0], line.text, 0, p.lineStart)
 	// (p, line) => isLyric(line, p) >= 0
 
 ];
@@ -997,7 +957,7 @@ export class BlockContext implements PartialParse {
 	setPrevCurr(block: Type | Tree) {
 		if(this.prevNode.length >= 2) this.prevNode.pop()
 		// this.prevNode.unshift(t.type.id)
-		if(block instanceof Tree) block = block.type.id;
+		if(block instanceof Tree) block = block.type?.id;
 		this.prevNode.unshift(block)
 		this.prevEl.unshift(block)
 	}
