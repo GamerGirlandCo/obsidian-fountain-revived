@@ -385,6 +385,21 @@ const DefaultBlockParsers: {
 		cx.addNode(Type.Transition, from)
 		return true
 	},
+	Note(cx, line) {
+			let beginno = cx.lineStart;
+		if(line.text.match(regex.note)) {
+			cx.addNode(Type.Note,beginno)
+			cx.addElement(
+				insertNoteEl(line, beginno)
+				);
+			cx.nextLine()
+			return true
+		} else if(line.text.match(regex.note_inline)) {
+			cx.startComposite(Type[Type.Note], cx.lineStart)
+			return null
+		}
+		return false;
+	},
 	Centered(cx, line) {
 		let variable = (line.text.startsWith("> ") && line.text.endsWith(" <"))
 		if (!variable) return false
