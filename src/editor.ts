@@ -51,8 +51,9 @@ function inlineRender(view: EditorView) {
 				const name = cursor.name;
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
-				if (name === 'Screenplay' || name === "TitlePageField") continue;
-				console.debug("tree", name, text2)
+				if (name === 'Screenplay' /* || name === "TitlePageField" */) continue;
+				console.debug("treee", cursor, text2)
+				console.debug(cursor)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -90,6 +91,9 @@ function inlineRender(view: EditorView) {
 				let cssClass: string = '';
 				switch (name) {
 					case 'TitlePage':
+						cssClass = 'header';
+						break;
+					case 'TitlePageField':
 						cssClass = 'header';
 						break;
 					case "SceneHeading":
