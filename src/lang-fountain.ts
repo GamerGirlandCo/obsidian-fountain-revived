@@ -1150,6 +1150,28 @@ export class BlockContext implements PartialParse {
 		return r;
 	}
 
+	cleanLine() {
+		this.lineStart += this.line.text.length
+		function localReadLine() {
+		
+			if(!(this.absoluteLineEnd >= this.to)) this.moveRangeI()
+			let {text, end} = this.scanLine(this.absoluteLineStart)
+			this.absoluteLineEnd = end;
+			this.line.reset(text);
+			this.line.forward()
+		}
+		if (this.absoluteLineEnd >= this.to) {
+			this.absoluteLineStart = this.absoluteLineEnd;
+			this.atEnd = true;
+			localReadLine.bind(this)()
+			return false;
+		} else {
+			this.lineStart++;
+			this.absoluteLineStart = this.absoluteLineEnd + 1;
+			localReadLine.bind(this)()
+			return true;
+		}
+	}
 	/// @internal
 	readLine() {
 		let { line } = this,
