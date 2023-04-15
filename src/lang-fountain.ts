@@ -482,30 +482,19 @@ const DefaultBlockParsers: {
 		return false
 	},
 	TitlePage: undefined,
-	Action(cx, line) {
-		let objOfEverythingExcept = {...regex}
-		delete objOfEverythingExcept.action;
-		let arr = Object.values(objOfEverythingExcept)
-		if(arr.every(a => line.text.match(a) === null)) {
-			if(cx.prevNode[0] == Type.OpenNote || cx.prevNode[0] == Type.Note || cx.prevNode[0] == Type.BlockNote) {
-				cx.addNode(Type.BlockNote, cx.lineStart, cx.absoluteLineEnd)
-				cx.nextLine()
-				return false
-			}
-			if(line.text == "[[" || line.text.startsWith("[[")) {
-				cx.addNode(Type.OpenNote, cx.lineStart)
-				cx.nextLine()
-				return false
-			} else if (line.text == "]]") {
-				
-				cx.addNode(Type.CloseNote, cx.lineStart)
-				cx.nextLine()
-				return false
-			}
-			cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
+	SceneHeading (cx, line) {
+		if(line.text.match(regex.scene_heading)) {
+			let startup = line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null
+			let myend = line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null
+			let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
+			let sh = elt(Type.SceneHeading, cx.lineStart - 1, (cx.lineStart + (startup || line.text.length)), sn ? [sn] : [])
+			cx.addElement(sh)
 			cx.nextLine()
 			return true
 		}
+		cx.nextLine()
+		return false
+	},
 		return false
 	},
 	// BoneYard : undefined,
