@@ -291,6 +291,17 @@ function isBoneYard(line: Line) {
 		: -1
 
 }
+function insertNoteEl(line: Line, start: number) {
+	if(line.text.match(regex.note)) {
+		let iof = line.text.indexOf("[[")
+		let liof = line.text.indexOf("]]")
+		return elt(Type.Note, start, start + line.text.length, [
+			elt(Type.OpenNote, start + iof, start + iof + 2),
+			elt(Type.CloseNote, start + liof, start + liof + 2)
+		])
+	}
+	return null
+}
 
 function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 	if (line.next != 61 /* '_-*' */)
