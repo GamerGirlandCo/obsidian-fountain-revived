@@ -50,7 +50,7 @@ function inlineRender(view: EditorView) {
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' || name === "TitlePageField") continue;
-				console.log("tree", name, text2)
+				console.debug("tree", name, text2)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
