@@ -7,7 +7,6 @@ import {
 	PluginSettingTab,
 	Setting,
 	debounce, editorLivePreviewField, normalizePath } from "obsidian";
-	import {writeFileSync} from "node:fs"
 import { Language, syntaxTree, tokenClassNodeProp } from "@codemirror/language";
 
 import {EditorState, Text, Range, StateEffect, StateEffectType, StateField, Extension} from "@codemirror/state";

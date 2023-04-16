@@ -87,7 +87,7 @@ function inlineRender(view: EditorView) {
 				// }
 				let cssClass: string = '';
 				switch (name) {
-					case 'TitlePage':
+					case 'TitlePageField':
 						cssClass = 'header';
 						break;
 					case "SceneHeading":
