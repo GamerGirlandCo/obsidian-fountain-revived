@@ -51,8 +51,8 @@
 	color: var(--text-accent);
     font-weight: bold;
 	/* font-size: 1.25em; */
-	padding-top: 2em !important;
-	padding-bottom: 1.5em !important;
+	/* padding-top: 2em !important; */
+	/* padding-bottom: 1.5em !important; */
 }
 .screenplay-scene-number {
 	opacity: 0.8;
