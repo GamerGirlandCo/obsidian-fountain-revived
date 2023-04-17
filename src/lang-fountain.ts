@@ -339,13 +339,27 @@ const DefaultSkipMarkup: {
 		}
 
 		function doLocal() {
-			while (!regex.scene_heading.exec(line.text) && cx.lineStart < cx.to) {
+			if (line.text.match(regex.scene_heading)) {
+				console.debug("scone", line.text);
+				shutUpBitch()	
+			}
+			mainL: while (!regex.scene_heading.exec(line.text) && cx.lineStart < cx.to) {
 				console.debug("scone", line.text);
 				if(line.text == "") {
 				
 					last += line.text.length;
+					children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
 					cx.cleanLine()
 					continue
+				} else if(isSection(line) != -1) {
+					let size = isSection(line)
+					if (size === 1) {
+						children.push(elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length))
+					} else if (size === 2) {
+						children.push(elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length))
+					} else if (size === 3) {
+						children.push(elt(Type.SceneSection, cx.lineStart, cx.lineStart + line.text.length))
+					}
 				} else if (
 					line.text.match(regex.transition) &&
 					!line.text.endsWith("<")
