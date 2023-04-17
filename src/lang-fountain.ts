@@ -723,8 +723,8 @@ const DefaultBlockParsers: {
 
 	TitlePage(cx, line) {
 		if (
-			line.text.toLocaleLowerCase().match(regex.title_page) &&
-			line.text != ""
+			line.text.toLocaleLowerCase().match(regex.title_page)/*  &&
+			line.text != "" */
 		) {
 			let children = [];
 			let orig = cx.lineStart;
