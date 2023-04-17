@@ -1,4 +1,13 @@
-import { ParseContext, defineLanguageFacet, languageDataProp, Language, LanguageSupport, continuedIndent, foldNodeProp, foldService } from "@codemirror/language";
+import {
+	ParseContext,
+	defineLanguageFacet,
+	languageDataProp,
+	Language,
+	LanguageSupport,
+	continuedIndent,
+	foldNodeProp,
+	foldService,
+} from "@codemirror/language";
 import {
 	Input,
 	NodeProp,
@@ -19,7 +28,6 @@ import { regex } from "./regexes";
 
 import { Tag, styleTags, tags as t } from "@lezer/highlight";
 import { Extension, Facet } from "@codemirror/state";
-import { SceneHeading } from "./lang/parser.terms";
 
 class CompositeBlock {
 	static create(
@@ -55,7 +63,7 @@ class CompositeBlock {
 				child.length,
 				this.hashProp
 			);
-		
+
 		this.children.push(child);
 		this.positions.push(pos);
 	}
@@ -86,34 +94,39 @@ export enum Type {
 	TitlePage,
 	TitlePageField,
 
+	Scene,
 	SceneHeading,
 	Transition,
+
+	DialogueBlock,
 	Dialogue,
 	Character,
 	CharacterExt,
 	Parenthetical,
 	Action,
 	Centered,
-	
+
 	Lyrics,
-	
+
 	Act,
 	Sequence,
-	Scene,
-	
+	SceneSection,
+
 	Synopsis,
 	BlockNote,
 
-
 	BoneYard,
-	
+
 	PageBreak,
 	LineBreak,
-	
+
 	// inlines
 	SceneNumber,
 	Note,
 	
+	
+	
+
 	
 	OpenNote,
 	CloseNote,
@@ -125,7 +138,7 @@ export enum Type {
 	Italic,
 	Underline,
 	Emphasis, // catch all thingy?
-	
+
 	BoneMark,
 	CloseBoneMark,
 	BoldMark,
@@ -133,7 +146,7 @@ export enum Type {
 	UnderlineMark,
 	SectionMark,
 	EmphasisMark,
-	PlainText
+	PlainText,
 }
 
 export class LeafBlock {
@@ -253,28 +266,142 @@ const DefaultSkipMarkup: {
 		return true;
 	},
 	[Type.BoneYard](block, cx, line) {
-		
 		// cx.nextLine()
-		return false
+		return false;
 		// line.moveBase(line.pos)
 	},
 	[Type.TitlePage](bl, cx, line) {
-		cx.addNode(
-			elt(Type.TitlePage, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart + line.text.indexOf(":"))).toTree(cx.parser.nodeSet),
-			cx.lineStart
-		)
-		while((line.text.match(regex.title_page) || line.text.startsWith("\t")) && line.text != "") {
-			cx.addElement(elt(Type.TitlePageField, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
-			// cx.prevLine()
-	
-			cx.cleanLine()
+		
+		return  true;
+	},
+	[Type.DialogueBlock](bl, cx, line) {
+		cx.addNode(Type.DialogueBlock, cx.lineStart);
+		let paran;
+		if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
+			paran = elt(
+				Type.Parenthetical,
+				cx.lineStart + line.text.indexOf("("),
+				cx.lineStart + line.text.indexOf(")")
+			);
 		}
-		return false
+		if (regex.character.exec(line.text)) {
+			let ex = regex.character.exec(line.text);
+			console.log(ex);
+			cx.addElement(
+				elt(
+					Type.Character,
+					cx.lineStart,
+					cx.lineStart + line.text.length,
+					paran ? [paran] : undefined
+				)
+			);
+			cx.nextLine();
+		} /* if(regex.dialogue.exec(line.text))  */ else {
+			cx.addElement(
+				elt(
+					Type.Dialogue,
+					cx.lineStart,
+					cx.lineStart + line.text.length,
+					cx.parser.parseInline(line.text, cx.lineStart)
+				)
+			);
+		}
+		return true;
+	},
+	[Type.Scene](bl, cx, line) {
+		let ret = false;
+		let children = [];
+		let orig = cx.lineStart;
+		let last = cx.lineStart;
+		function shutUpBitch() {
+			let startup =
+					line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
+				let myend =
+					line.text.lastIndexOf("#") !== -1
+						? line.text.lastIndexOf("#")
+						: null;
+				let sn = myend
+					? elt(
+							Type.SceneNumber,
+							cx.lineStart + startup,
+							cx.lineStart + myend + 1
+					  )
+					: null;
+				let sh = elt(
+					Type.SceneHeading,
+					cx.lineStart,
+					cx.lineStart + (startup || line.text.length),
+					sn ? [sn] : []
+				);
+				children.push(sh);
+				last += line.text.length;
+				cx.cleanLine()
+		}
+
+		function doLocal() {
+			while (!regex.scene_heading.exec(line.text) && cx.lineStart < cx.to) {
+				console.debug("scone", line.text);
+				if(line.text == "") {
+				
+					last += line.text.length;
+					cx.cleanLine()
+					continue
+				} else if (
+					line.text.match(regex.transition) &&
+					!line.text.endsWith("<")
+				) {
+					children.push(elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length));
+					// cx.cleanLine()
+				} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
+					children.push(
+						elt(
+							Type.Centered,
+							cx.lineStart,
+							cx.lineStart + line.text.lastIndexOf("<") + 1
+						)
+					);
+					// cx.cleanLine()
+				} else if (line.text.match(regex.note)) {
+					children.push(
+						insertNoteEl(cx.line, cx.lineStart)
+						// elt(Type.Note,cx.lineStart, cx.lineStart + cx.lineStart + line.text.length, [insertNoteEl(line, cx.lineStart)])
+					);
+				} /* else if(line.text.match(regex.note_inline)) {
+					cx.startComposite(Type[Type.Note], cx.lineStart)
+					// return null
+				}  */ else if (line.text.startsWith("~")) {
+					children.push(elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length));
+				} else if(line.text.startsWith("=")) {
+					children.push(elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length))
+				} else if (
+					line.text.match(regex.character) &&
+					cx.prevEl[0] == Type.Character &&
+					!line.text.match(regex.scene_heading)
+				) {
+					cx.startContext(Type.DialogueBlock, cx.lineStart);
+					cx.cleanLine();
+				} else {
+					children.push(elt(Type.Action, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)));
+					// cx.cleanLine()
+					// cx.cleanLine()
+				}
+				last += line.text.length;
+				cx.cleanLine()
+				continue
+			}
+			if (line.text.match(regex.scene_heading)) {
+				console.debug("scone", line.text);
+				shutUpBitch()	
+			}
+		}
+		doLocal()
+		cx.addNode(elt(Type.Scene, orig, orig + 1, children).toTree(cx.parser.nodeSet), orig)
+		return true
 	}
 	// [Type.Action](bl, cx, line) {
 	// 	bl.addChild(
 	// 		elt(
-	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length, 
+	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length,
 	// 			cx.parser.parseInline(line.text, cx.lineStart
 	// 	)).toTree(cx.parser.nodeSet), cx.lineStart
 	// 	)
@@ -299,26 +426,25 @@ function isBlockquote(line: Line) {
 		: 1;
 }
 function isBoneYard(line: Line) {
-	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) && line.text.charCodeAt(line.pos + 1) == 42
+	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) &&
+		line.text.charCodeAt(line.pos + 1) == 42
 		? 2
-		: -1
-
+		: -1;
 }
 function insertNoteEl(line: Line, start: number) {
-	if(line.text.match(regex.note)) {
-		let iof = line.text.indexOf("[[")
-		let liof = line.text.indexOf("]]")
+	if (line.text.match(regex.note)) {
+		let iof = line.text.indexOf("[[");
+		let liof = line.text.indexOf("]]");
 		return elt(Type.Note, start, start + line.text.length, [
 			elt(Type.OpenNote, start + iof, start + iof + 2),
-			elt(Type.CloseNote, start + liof, start + liof + 2)
-		])
+			elt(Type.CloseNote, start + liof, start + liof + 2),
+		]);
 	}
-	return null
+	return null;
 }
 
 function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
-	if (line.next != 61 /* '_-*' */)
-		return -1;
+	if (line.next != 61 /* '_-*' */) return -1;
 	let count = 1;
 	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
 		let ch = line.text.charCodeAt(pos);
@@ -337,15 +463,14 @@ function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 }
 
 function isLyric(line: Line, cx: BlockContext) {
-	
-	if(line.next != 126 /* '~' */) return -1
+	if (line.next != 126 /* '~' */) return -1;
 	let count = 1;
 	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
 		let ch = line.text.charCodeAt(pos);
 		if (ch == line.next) count++;
 	}
-	
-	return count ===1 ? 1 :-1
+
+	return count === 1 ? 1 : -1;
 }
 
 function isSection(line: Line) {
@@ -371,7 +496,6 @@ function isSetextUnderline(line: Line) {
 	return pos == line.text.length ? end : -1;
 }
 
-
 // Return type for block parsing functions. Can be either:
 //
 // - false to indicate that nothing was matched and lower-precedence
@@ -391,83 +515,99 @@ type BlockResult = boolean | null;
 const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
-	TitlePage (cx, line) {
-		if(line.text.match(regex.title_page) && !!line.text) {
-			cx.startComposite(Type[Type.TitlePage], cx.lineStart)
-			cx.nextLine()
-			return true
+	Scene(cx, line) {
+		
+		
+		if(line.text.match(regex.scene_heading)) {
+			cx.startComposite(Type[Type.Scene], cx.lineStart)
+				cx.nextLine()
+			return null;
 		}
 		return false
 	},
-	Lyrics(cx, line) {
-		if(!line.text.startsWith("~")) return false
-		cx.addNode(Type.Lyrics, cx.lineStart)
-		cx.nextLine()
-		return true
-	},
-	Transition(cx, line) {
-		if(!line.text.match(regex.transition) && !line.text.endsWith("<")) return false
-		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.Transition, from)
-		return true
-	},
-	Note(cx, line) {
-			let beginno = cx.lineStart;
-		if(line.text.match(regex.note)) {
-			cx.addNode(Type.Note,beginno)
-			cx.addElement(
-				insertNoteEl(line, beginno)
-				);
-			cx.nextLine()
-			return true
-		} else if(line.text.match(regex.note_inline)) {
-			cx.startComposite(Type[Type.Note], cx.lineStart)
-			return null
+	// Lyrics(cx, line) {
+	// 	if(!line.text.startsWith("~")) return false
+	// 	cx.addNode(Type.Lyrics, cx.lineStart)
+	// 	cx.nextLine()
+	// 	return true
+	// },
+	/* Dialogue(cx, line) {
+		if (
+			line.text.match(regex.character) &&
+			cx.prevEl[0] == Type.Character &&
+			!line.text.match(regex.scene_heading)
+		) {
+			cx.startContext(Type.DialogueBlock, cx.lineStart + 1);
+			cx.nextLine();
+			return true;
 		}
 		return false;
 	},
-	Centered(cx, line) {
-		let variable = (line.text.startsWith("> ") && line.text.endsWith(" <"))
-		if (!variable) return false
+	Transition(cx, line) {
+		if (!line.text.match(regex.transition) || line.text.endsWith("<"))
+			return false;
 		let from = cx.lineStart + line.pos;
-		cx.addNode(Type.Centered, from, cx.lineStart + line.text.lastIndexOf("<") + 2)
-		cx.nextLine()
-		return true
+
+		cx.nextLine();
+		return true;
+	}, */
+	// Note(cx, line) {
+	// 		let beginno = cx.lineStart;
+
+	// 	return false;
+	// },
+	/* Centered(cx, line) {
+		let centerVar = line.text.startsWith("> ") && line.text.endsWith(" <");
+		if (!centerVar) return false;
+		let from = cx.lineStart + line.pos;
+		cx.addNode(
+			Type.Centered,
+			from,
+			cx.lineStart + line.text.lastIndexOf("<") + 1
+		);
+		cx.nextLine();
+		return true;
 	},
 	PageBreak(cx, line) {
-		if(isPageBreak(line, cx, false) < 0) return false;
+		if (isPageBreak(line, cx, false) < 0) return false;
 		let from = cx.lineStart + line.pos;
-		cx.nextLine()
-		cx.addNode(Type.PageBreak, from)
-		return true
+		cx.nextLine();
+		cx.addNode(Type.PageBreak, from);
+		return true;
 	},
 	Section(cx, line) {
 		let size = isSection(line);
-		if(size < 0) return false;
-		if(size === 1) {
-			cx.addNode(Type.Act, cx.lineStart)
-		} else if(size === 2) {
-			cx.addNode(Type.Sequence, cx.lineStart)
-		} else if(size === 3) {
-			cx.addNode(Type.Scene, cx.lineStart)
+		if (size < 0) return false;
+		if (size === 1) {
+			cx.addNode(Type.Act, cx.lineStart);
+		} else if (size === 2) {
+			cx.addNode(Type.Sequence, cx.lineStart);
+		} else if (size === 3) {
+			cx.addNode(Type.SceneSection, cx.lineStart);
 		}
-		cx.nextLine()
-		return true
+		cx.nextLine();
+		return true;
 	},
 	Synopsis(cx, line) {
-		if(!line.text.startsWith("=")) return false
+		if (!line.text.startsWith("=")) return false;
 		let from = cx.lineStart + line.pos;
-		cx.addNode(Type.Synopsis, from)
-		cx.nextLine()
-		return true
-	},
-	
+		cx.addNode(Type.Synopsis, from);
+		cx.nextLine();
+		return true;
+	}, */
+	/* TitlePage(cx, line) {
+		if (line.text.match(regex.title_page) && !!line.text) {
+			cx.startComposite(Type[Type.TitlePage], cx.lineStart);
+			cx.nextLine();
+			return true;
+		}
+		return false;
+	}, */
 	// Character(cx, line) {
 	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
 	// 	let from = cx.lineStart + line.pos;
 	// 	// cx.addElement(elt(Type.Character, from, cx.lineStart + line.text.length, [
-			
+
 	// 	// ]))
 	// 	cx.addNode(Type.Character, from)
 	// 	cx.nextLine()
@@ -483,7 +623,7 @@ const DefaultBlockParsers: {
 	// },
 	// Dialogue(cx, line) {
 	// 	let from = cx.lineStart + line.pos;
-	// 	
+	//
 	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical || cx.prevNode[0] === Type.Dialogue) {
 	// 		cx.addNode(Type.Dialogue, from)
 	// 		cx.nextLine()
@@ -492,62 +632,48 @@ const DefaultBlockParsers: {
 	// 	return false
 	// }
 	BoneYard(cx, line) {
-		let openy = line.text.indexOf("/*")
-		let closey = line.text.indexOf("*/")
-		if(openy != -1 && closey != -1) {
-			cx.addNode(Type.BoneYard, cx.lineStart + openy, closey + cx.lineStart)
-			cx.nextLine()
-			return true
-		} else if(openy != -1) {
-			cx.addNode(Type.BoneMark, cx.lineStart + openy, cx.lineStart + openy + 2)
-			cx.nextLine()
-			return true
+		let openy = line.text.indexOf("/*");
+		let closey = line.text.indexOf("*/");
+		if (openy != -1 && closey != -1) {
+			cx.addNode(Type.BoneYard, cx.lineStart + openy, closey + cx.lineStart);
+			cx.nextLine();
+			return true;
+		} else if (openy != -1) {
+			cx.addNode(Type.BoneMark, cx.lineStart + openy, cx.lineStart + openy + 2);
+			cx.nextLine();
+			return true;
 		} else if (closey != -1) {
-			cx.addNode(Type.CloseBoneMark, cx.lineStart + closey, cx.lineStart + closey + 2);
-			cx.nextLine()
-			return true
-		} else if(cx.prevNode[0] == Type.BoneMark || cx.prevNode[0] == Type.BoneYard) {
-			cx.addNode(Type.BoneYard, cx.lineStart)
-			cx.nextLine()
-			return true
-		} else if(cx.prevNode[0] == Type.CloseBoneMark) {
+			cx.addNode(
+				Type.CloseBoneMark,
+				cx.lineStart + closey,
+				cx.lineStart + closey + 2
+			);
+			cx.nextLine();
+			return true;
+		} else if (
+			cx.prevNode[0] == Type.BoneMark ||
+			cx.prevNode[0] == Type.BoneYard
+		) {
+			cx.addNode(Type.BoneYard, cx.lineStart);
+			cx.nextLine();
+			return true;
+		} else if (cx.prevNode[0] == Type.CloseBoneMark) {
 			// cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
 			// cx.nextLine()
 			return false;
 		}
-		return false
+		return false;
 	},
 	// TitlePage: undefined,
-	SceneHeading (cx, line) {
-		if(line.text.match(regex.scene_heading)) {
-			let startup = line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null
-			let myend = line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null
-			let sn = myend ? elt(Type.SceneNumber, (cx.lineStart + startup), cx.lineStart + myend + 1) : null
-			let sh = elt(Type.SceneHeading, cx.lineStart - 1, (cx.lineStart + (startup || line.text.length)), sn ? [sn] : [])
-			cx.addElement(sh)
-			cx.nextLine()
-			return true
-		}
-		cx.nextLine()
-		return false
-	},
-	Action(cx, line) {
-		
-		return false
-	},
-	// BoneYard : undefined,
-	Dialogue: undefined,
-	SetextHeading: undefined, // Specifies relative precedence for block-continue function
-	BlockNote: undefined,
-	// LinkReference: undefined,
-	/* TitlePage(cx, line) {
-		if(line.text.toLocaleLowerCase().match(regex.title_page)) {
-			cx.addNode(Type.TitlePage, cx.lineStart, cx.lineStart + line.text.length - 1)
+
+	TitlePage(cx, line) {
+		if(line.text.toLocaleLowerCase().match(regex.title_page) && line.text != "") {
+			cx.startComposite(Type[Type.TitlePage], cx.lineStart)
 			cx.nextLine()
 			return true
 		}
 		return false
-	}, */
+	},
 };
 
 enum CurrentBlock {
@@ -558,85 +684,99 @@ enum CurrentBlock {
 	Dialogue,
 }
 
-
-function parseCharacter(text: string, start: number, offset: number): null | Element {
-	if(text.match(regex.character)) {
-		return elt(Type.Character, start + offset, text.length + offset)
+function parseCharacter(
+	text: string,
+	start: number,
+	offset: number
+): null | Element {
+	if (text.match(regex.character)) {
+		return elt(Type.Character, start + offset, text.length + offset);
 	}
-	return null
+	return null;
 }
 
-function parseParenthetical(text: string, start: number, offset: number): null | Element {
-	if(text.match(regex.parenthetical)) {
-		return elt(Type.Parenthetical, start + offset, text.length + offset)
+function parseParenthetical(
+	text: string,
+	start: number,
+	offset: number
+): null | Element {
+	if (text.match(regex.parenthetical)) {
+		return elt(Type.Parenthetical, start + offset, text.length + offset);
 	}
-	return null
+	return null;
 }
 
-function parseNoteElement(ctxprev: Type, text: string, start: number, offset: number): null | Element {
-	let opening = /\[\[/gm
-	let closing = /\]\]/gm
-	let stst = Object.values(Type)[ctxprev - 1]
-	if(text.match(regex.note)|| text.match(regex.note_inline)) {
-		return elt(Type.BlockNote, start + offset, text.length + offset)
-	} else if(text.match(opening)) {
-		let tio = text.indexOf("[[")
-		let lio = text.lastIndexOf("[[")
-		
-		
-		if(tio > -1) {
-			return elt(Type.OpenNote, tio + offset, text.length + offset)
+function parseNoteElement(
+	ctxprev: Type,
+	text: string,
+	start: number,
+	offset: number
+): null | Element {
+	let opening = /\[\[/gm;
+	let closing = /\]\]/gm;
+	let stst = Object.values(Type)[ctxprev - 1];
+	if (text.match(regex.note) || text.match(regex.note_inline)) {
+		return elt(Type.BlockNote, start + offset, text.length + offset);
+	} else if (text.match(opening)) {
+		let tio = text.indexOf("[[");
+		let lio = text.lastIndexOf("[[");
+
+		if (tio > -1) {
+			return elt(Type.OpenNote, tio + offset, text.length + offset);
 		}
-	} else if(text.match(closing)) {
-		let tio = text.indexOf("]]")
-		let lio = text.lastIndexOf("]]")
-		
-		
-		if(tio > -1) {
-			return elt(Type.CloseNote, tio + offset, text.length + offset)
+	} else if (text.match(closing)) {
+		let tio = text.indexOf("]]");
+		let lio = text.lastIndexOf("]]");
+
+		if (tio > -1) {
+			return elt(Type.CloseNote, tio + offset, text.length + offset);
 		}
-		return elt(Type.BlockNote, start + offset, text.length + offset)
-		
+		return elt(Type.BlockNote, start + offset, text.length + offset);
+
 		// return elt
-	} else if(ctxprev == Type.Note || ctxprev == Type.BlockNote) {
-		return elt(Type.BlockNote, start + offset, text.length + offset)
-		
+	} else if (ctxprev == Type.Note || ctxprev == Type.BlockNote) {
+		return elt(Type.BlockNote, start + offset, text.length + offset);
 	}
-	return null
+	return null;
 }
 class DialogueParser implements LeafBlockParser {
 	elts: Element[] = [];
 	pos = 0;
 	start: number;
 	previous: CurrentBlock[] = [];
-	current : CurrentBlock;
+	current: CurrentBlock;
 	context: BlockContext;
-	leaf2: LeafBlock
+	leaf2: LeafBlock;
 	constructor(leaf: LeafBlock, cx: BlockContext) {
 		this.start = leaf.start;
-		this.leaf2 = leaf
-		this.current = leaf.content.match(regex.character) ? CurrentBlock.Character :
-			leaf.content.match(regex.parenthetical) ? CurrentBlock.Parenthetical
-			: CurrentBlock.Begin
-		this.context = cx
+		this.leaf2 = leaf;
+		this.current = leaf.content.match(regex.character)
+			? CurrentBlock.Character
+			: leaf.content.match(regex.parenthetical)
+			? CurrentBlock.Parenthetical
+			: CurrentBlock.Begin;
+		this.context = cx;
 		this.advance(leaf.content, cx, cx.line);
 	}
 	changeType(arg: CurrentBlock) {
-		if(this.previous.length>= 3) {
-			this.previous.shift()
-		} 
-		this.previous.push(arg)
-		this.current = arg
+		if (this.previous.length >= 3) {
+			this.previous.shift();
+		}
+		this.previous.push(arg);
+		this.current = arg;
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
-		if(this.current == CurrentBlock.Action) return false
-		this.advance(leaf.content, cx, line)
+		if (this.current == CurrentBlock.Action) return false;
+		this.advance(leaf.content, cx, line);
 	}
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
-		if((this.current == CurrentBlock.Dialogue || this.current == CurrentBlock.Parenthetical)
-		&& skipSpace(leaf.content, this.pos) == leaf.content.length) {
-			return this.complete(cx, leaf, leaf.content.length)
+		if (
+			(this.current == CurrentBlock.Dialogue ||
+				this.current == CurrentBlock.Parenthetical) &&
+			skipSpace(leaf.content, this.pos) == leaf.content.length
+		) {
+			return this.complete(cx, leaf, leaf.content.length);
 		}
 		return false;
 	}
@@ -648,90 +788,137 @@ class DialogueParser implements LeafBlockParser {
 		}
 		if (elt === false) this.current = CurrentBlock.Action;
 		return false;
-
 	}
 	complete(cx: BlockContext, leaf: LeafBlock, len: number) {
 		return true;
 	}
 
 	advance(content: string, cx: BlockContext, line: Line) {
-		if(this.current == CurrentBlock.Begin) {
-			if(cx.prevNode[0] == Type.Action || cx.prevNode[0] == Type.Dialogue) {
-				if(this.nextPart(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start))) {
-					this.changeType(CurrentBlock.Character)
-					return true
-				} else if(this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))) {
-					this.changeType(CurrentBlock.Parenthetical)
-					return true
+		if (this.current == CurrentBlock.Begin) {
+			if (cx.prevNode[0] == Type.Action || cx.prevNode[0] == Type.Dialogue) {
+				if (
+					this.nextPart(
+						parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)
+					)
+				) {
+					this.changeType(CurrentBlock.Character);
+					return true;
+				} else if (
+					this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))
+				) {
+					this.changeType(CurrentBlock.Parenthetical);
+					return true;
 				}
-			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
-				this.changeType(CurrentBlock.Character)
-				return true
+			} else if (
+				parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)
+			) {
+				this.changeType(CurrentBlock.Character);
+				return true;
 				// @ts-ignore
-			} else if((cx.prevNode[0] == Type.Character || cx.prevNode[0] == Type.Dialogue || cx.prevNode[0] == Type.Parenthetical)) {
-				let blip = cx.parser.parseInline(line.text, cx.lineStart)
+			} else if (
+				cx.prevNode[0] == Type.Character ||
+				cx.prevNode[0] == Type.Dialogue ||
+				cx.prevNode[0] == Type.Parenthetical
+			) {
+				let blip = cx.parser.parseInline(line.text, cx.lineStart);
 				cx.addLeafElement(
 					this.leaf2,
-					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-				)
-				this.changeType(CurrentBlock.Dialogue)
-				return true
+					elt(
+						Type.Dialogue,
+						cx.lineStart,
+						cx.lineStart + line.text.length,
+						blip
+					)
+				);
+				this.changeType(CurrentBlock.Dialogue);
+				return true;
 			}
-			if(cx.prevNode[0] == Type.Dialogue) {
-				let blip = cx.parser.parseInline(line.text, cx.lineStart)
+			if (cx.prevNode[0] == Type.Dialogue) {
+				let blip = cx.parser.parseInline(line.text, cx.lineStart);
 				cx.addElement(
-					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-				)
-				return true
+					elt(
+						Type.Dialogue,
+						cx.lineStart,
+						cx.lineStart + line.text.length,
+						blip
+					)
+				);
+				return true;
 			}
 
-			return false
-		} else if(this.current == CurrentBlock.Character) {
-			if(this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))) {
+			return false;
+		} else if (this.current == CurrentBlock.Character) {
+			if (
+				this.nextPart(parseParenthetical(line.text, this.pos, cx.lineStart))
+			) {
 				// cx.addNode(Type.Dialogue, cx.lineStart)
 				// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
-				
+
 				// cx.addNode(Type.Parenthetical, cx.lineStart)
-				cx.addLeafElement(this.leaf2, parseParenthetical(line.text, this.pos, cx.lineStart))
-				this.changeType(CurrentBlock.Parenthetical)
-				return true
-			} else if(parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)) {
-				// cx.addNode(Type.Character, this.leaf2.start)
-				this.changeType(CurrentBlock.Dialogue)
-				cx.addLeafElement(this.leaf2, parseCharacter(this.leaf2.content, this.pos, this.leaf2.start))
-			} else {
-				let blip = cx.parser.parseInline(line.text, cx.lineStart)
-				this.changeType(CurrentBlock.Dialogue)
 				cx.addLeafElement(
 					this.leaf2,
-					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-				)
+					parseParenthetical(line.text, this.pos, cx.lineStart)
+				);
+				this.changeType(CurrentBlock.Parenthetical);
+				return true;
+			} else if (
+				parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)
+			) {
+				// cx.addNode(Type.Character, this.leaf2.start)
+				this.changeType(CurrentBlock.Dialogue);
+				cx.addLeafElement(
+					this.leaf2,
+					parseCharacter(this.leaf2.content, this.pos, this.leaf2.start)
+				);
+			} else {
+				let blip = cx.parser.parseInline(line.text, cx.lineStart);
+				this.changeType(CurrentBlock.Dialogue);
+				cx.addLeafElement(
+					this.leaf2,
+					elt(
+						Type.Dialogue,
+						cx.lineStart,
+						cx.lineStart + line.text.length,
+						blip
+					)
+				);
 			}
 			// this.changeType(CurrentBlock.Dialogue)
-			return true
-		} else if(this.current == CurrentBlock.Parenthetical) {
-			if(parseParenthetical(line.text, this.pos, cx.lineStart)) {	
-				cx.addLeafElement(this.leaf2, parseParenthetical(line.text, this.pos, cx.lineStart))
-				// cx.addNode(Type.Parenthetical, cx.lineStart)
-				this.changeType(CurrentBlock.Parenthetical)
-			} else {
-				let blip = cx.parser.parseInline(line.text, cx.lineStart)
+			return true;
+		} else if (this.current == CurrentBlock.Parenthetical) {
+			if (parseParenthetical(line.text, this.pos, cx.lineStart)) {
 				cx.addLeafElement(
 					this.leaf2,
-					elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-				)
+					parseParenthetical(line.text, this.pos, cx.lineStart)
+				);
+				// cx.addNode(Type.Parenthetical, cx.lineStart)
+				this.changeType(CurrentBlock.Parenthetical);
+			} else {
+				let blip = cx.parser.parseInline(line.text, cx.lineStart);
+				cx.addLeafElement(
+					this.leaf2,
+					elt(
+						Type.Dialogue,
+						cx.lineStart,
+						cx.lineStart + line.text.length,
+						blip
+					)
+				);
 			}
-			this.changeType(CurrentBlock.Dialogue)
-			return true
-		} else if(this.current == CurrentBlock.Dialogue || cx.prevNode[1] == Type.Dialogue) {
+			this.changeType(CurrentBlock.Dialogue);
+			return true;
+		} else if (
+			this.current == CurrentBlock.Dialogue ||
+			cx.prevNode[1] == Type.Dialogue
+		) {
 			// cx.addNode(Type.Dialogue, cx.lineStart)
 			// cx.addElement(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length + 1, cx.parser.parseInline(line.text, cx.lineStart)))
-			let blip = cx.parser.parseInline(line.text, cx.lineStart)
+			let blip = cx.parser.parseInline(line.text, cx.lineStart);
 			cx.addLeafElement(
 				this.leaf2,
 				elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, blip)
-			)
-			return true
+			);
+			return true;
 		}
 	}
 }
@@ -740,8 +927,7 @@ const enum NoteStage {
 	None = -1,
 	Begin,
 	Inside,
-	End
-
+	End,
 }
 
 // This implements a state machine that incrementally parses link references. At each
@@ -752,27 +938,33 @@ const enum NoteStage {
 // @ts-ignore
 class NoteBlockParser implements LeafBlockParser {
 	stage = NoteStage.Begin;
-	previous: NoteStage[] = []
+	previous: NoteStage[] = [];
 	elts: Element[] = [];
 	pos = 0;
 	start: number;
 
 	constructor(readonly leaf: LeafBlock, readonly context: BlockContext) {
 		this.start = leaf.start;
-		this.change(NoteStage.Begin)
-		this.change((leaf.content.match(regex.note)) ?
-		NoteStage.Inside : leaf.content.match(regex.opening_note) ? NoteStage.Begin :
-		leaf.content.match(regex.closing_note) ? NoteStage.End : NoteStage.Inside)
-		
+		this.change(NoteStage.Begin);
+		this.change(
+			leaf.content.match(regex.note)
+				? NoteStage.Inside
+				: leaf.content.match(regex.opening_note)
+				? NoteStage.Begin
+				: leaf.content.match(regex.closing_note)
+				? NoteStage.End
+				: NoteStage.Inside
+		);
+
 		this.advance(leaf.content);
 	}
 	change(to: NoteStage) {
-		if(this.previous.length >=3) {
-			this.previous.pop()
-			this.previous.pop()
+		if (this.previous.length >= 3) {
+			this.previous.pop();
+			this.previous.pop();
 		}
 		// this.previous.unshift(this.stage)
-		this.previous.unshift(to)
+		this.previous.unshift(to);
 		this.stage = to;
 	}
 	nextLine(cx: BlockContext, line: Line, leaf: LeafBlock) {
@@ -784,7 +976,8 @@ class NoteBlockParser implements LeafBlockParser {
 
 	finish(cx: BlockContext, leaf: LeafBlock) {
 		if (
-			(this.stage == NoteStage.Begin || this.stage == NoteStage.Inside) /* &&
+			this.stage == NoteStage.Begin ||
+			this.stage == NoteStage.Inside /* &&
 			skipSpace(leaf.content, this.pos) == leaf.content.length */
 		)
 			return this.complete(cx, leaf, leaf.content.length);
@@ -807,30 +1000,36 @@ class NoteBlockParser implements LeafBlockParser {
 	}
 
 	advance(content: string) {
-		let blip = parseNoteElement(this.context.prevNode[0],content, this.pos, this.start)
+		let blip = parseNoteElement(
+			this.context.prevNode[0],
+			content,
+			this.pos,
+			this.start
+		);
 		for (;;) {
-			let pNE = parseNoteElement(this.context.prevNode[0], content, this.pos, this.start)
-			
+			let pNE = parseNoteElement(
+				this.context.prevNode[0],
+				content,
+				this.pos,
+				this.start
+			);
+
 			if (this.stage == NoteStage.None) {
 				return false;
 			} else if (this.stage == NoteStage.Begin) {
-				
-				
-				if ((this.previous[0] == NoteStage.Begin) ) {
-						
+				if (this.previous[0] == NoteStage.Begin) {
 					// this.context.addElement(elt(Type.BlockNote, this.pos + this.start, this.start + content.length))
-					
-					if(content.match(regex.note)) {
-						this.change(NoteStage.End)
+
+					if (content.match(regex.note)) {
+						this.change(NoteStage.End);
 					} else {
-						this.change(NoteStage.Inside)
+						this.change(NoteStage.Inside);
 					}
-					return 1
-				} else if(!pNE) {
-					
+					return 1;
+				} else if (!pNE) {
 					return -1;
 				}
-				return -1
+				return -1;
 				/* this.context.addNode(
 					elt(Type.BlockNote, this.pos + this.start, this.pos + this.start + 1)
 					.toTree(this.context.parser.nodeSet),
@@ -843,46 +1042,59 @@ class NoteBlockParser implements LeafBlockParser {
 					this.context.lineStart
 				)
 				this.context.addNode(Type.BlockNote, this.pos+this.start, content.length + this.start) */
-				this.context.addLeafElement(this.leaf, pNE)
-				if(pNE.type == Type.OpenNote || pNE.type == Type.BlockNote || pNE.type == Type.Note) {
-					this.change(NoteStage.Inside)
-					this.context.addElement(/* this.leaf,  */pNE)
-					return 1
+				this.context.addLeafElement(this.leaf, pNE);
+				if (
+					pNE.type == Type.OpenNote ||
+					pNE.type == Type.BlockNote ||
+					pNE.type == Type.Note
+				) {
+					this.change(NoteStage.Inside);
+					this.context.addElement(/* this.leaf,  */ pNE);
+					return 1;
 				}
-				this.change(NoteStage.End)
-				return 1
+				this.change(NoteStage.End);
+				return 1;
 			} else if (this.stage == NoteStage.End) {
-				if (!parseNoteElement(this.context.prevNode[0], content, this.pos, this.start)) return -1;
-				
+				if (
+					!parseNoteElement(
+						this.context.prevNode[0],
+						content,
+						this.pos,
+						this.start
+					)
+				)
+					return -1;
+
 				// @ts-ignore
 				// this.context.addNode(parseNoteElement(content, this.pos, this.start).toTree(this.context.parser.nodeSet), this.context.lineStart)
-				this.context.addElement(/* this.leaf,  */pNE)
-				this.change(NoteStage.Begin)
-				return 1
+				this.context.addElement(/* this.leaf,  */ pNE);
+				this.change(NoteStage.Begin);
+				return 1;
 			} else {
-				if(this.context.prevEl[0] == Type.OpenNote || this.context.prevNode[0] == Type.Note) {
-					this.change(NoteStage.Inside)
-					this.context.addElement(/* this.leaf,  */pNE)
-					this.context.nextLine()
+				if (
+					this.context.prevEl[0] == Type.OpenNote ||
+					this.context.prevNode[0] == Type.Note
+				) {
+					this.change(NoteStage.Inside);
+					this.context.addElement(/* this.leaf,  */ pNE);
+					this.context.nextLine();
 				}
 			}
 		}
 	}
 }
 
-
-
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
-	BlockNote(cx, bl) {
-		return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
-		|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note || cx.prevEl[0] == Type.BlockNote) ? 
-		new NoteBlockParser(bl, cx) 
-		: null
-	},
+	// BlockNote(cx, bl) {
+	// 	return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
+	// 	|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note || cx.prevEl[0] == Type.BlockNote) ?
+	// 	new NoteBlockParser(bl, cx)
+	// 	: null
+	// },
 	Dialogue(cx, bl) {
-		return null
+		return null;
 		// return new DialogueParser(bl, cx)
 	},
 	// BlockNote(_, leaf) {
@@ -897,9 +1109,7 @@ const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	(p, line) => isPageBreak(line, p, true) >= 0,
 	// (p, line) => !!parseNoteElement(p.prevNode[0], line.text, 0, p.lineStart)
 	// (p, line) => isLyric(line, p) >= 0
-
 ];
-
 
 const scanLineResult = { text: "", end: 0 };
 
@@ -911,7 +1121,7 @@ export class BlockContext implements PartialParse {
 	line = new Line();
 	private atEnd = false;
 	private fragments: FragmentCursor | null;
-	private to: number;
+	to: number;
 	/// @internal
 	dontInject: Set<Tree> = new Set();
 	stoppedAt: number | null = null;
@@ -924,8 +1134,8 @@ export class BlockContext implements PartialParse {
 	rangeI = 0;
 	/// @internal
 	absoluteLineEnd: number;
-	prevNode: Type[] = []
-	prevEl: Type[] = []
+	prevNode: Type[] = [];
+	prevEl: Type[] = [];
 
 	/// @internal
 	constructor(
@@ -942,7 +1152,13 @@ export class BlockContext implements PartialParse {
 			this.absoluteLineStart =
 			this.absoluteLineEnd =
 				ranges[0].from;
-		this.block = CompositeBlock.create(Type.Screenplay, 0, this.lineStart, 0, 0);
+		this.block = CompositeBlock.create(
+			Type.Screenplay,
+			0,
+			this.lineStart,
+			0,
+			0
+		);
 		this.stack = [this.block];
 		this.fragments = fragments.length
 			? new FragmentCursor(fragments, input)
@@ -955,11 +1171,11 @@ export class BlockContext implements PartialParse {
 	}
 
 	setPrevCurr(block: Type | Tree) {
-		if(this.prevNode.length >= 2) this.prevNode.pop()
+		if (this.prevNode.length >= 2) this.prevNode.pop();
 		// this.prevNode.unshift(t.type.id)
-		if(block instanceof Tree) block = block.type?.id;
-		this.prevNode.unshift(block)
-		this.prevEl.unshift(block)
+		if (block instanceof Tree) block = block.type?.id;
+		this.prevNode.unshift(block);
+		this.prevEl.unshift(block);
 	}
 
 	advance() {
@@ -1126,23 +1342,22 @@ export class BlockContext implements PartialParse {
 	}
 
 	cleanLine() {
-		this.lineStart += this.line.text.length
+		this.lineStart += this.line.text.length;
 		function localReadLine() {
-		
-			if(!(this.absoluteLineEnd >= this.to)) this.moveRangeI()
-			let {text, end} = this.scanLine(this.absoluteLineStart)
+			if (!(this.absoluteLineEnd >= this.to)) this.moveRangeI();
+			let { text, end } = this.scanLine(this.absoluteLineStart);
 			this.absoluteLineEnd = end;
 			this.line.reset(text);
-			this.line.forward()
+			this.line.forward();
 		}
 		if (this.absoluteLineEnd >= this.to) {
-			this.absoluteLineStart = this.absoluteLineEnd;
+			this.lineStart = this.absoluteLineStart = this.absoluteLineEnd;
 			this.atEnd = true;
-			localReadLine.bind(this)()
+			localReadLine.bind(this)();
 			return false;
 		} else {
 			this.lineStart++;
-			this.absoluteLineStart = this.absoluteLineEnd + 1;
+			this.lineStart = this.absoluteLineStart = this.absoluteLineEnd + 1;
 			localReadLine.bind(this)()
 			return true;
 		}
@@ -1199,18 +1414,17 @@ export class BlockContext implements PartialParse {
 
 	/// @internal
 	addNode(block: Type | Tree, from: number, to?: number) {
-		if (typeof block == "number")
-		{
-			this.prevEl.unshift(block)
-			this.prevNode.unshift(block)
+		if (typeof block == "number") {
+			this.prevEl.unshift(block);
+			this.prevNode.unshift(block);
 			block = new Tree(
-			this.parser.nodeSet.types[block],
-			none,
-			none,
-			(to ?? this.prevLineEnd()) - from
+				this.parser.nodeSet.types[block],
+				none,
+				none,
+				(to ?? this.prevLineEnd()) - from
 			);
 		}
-		this.setPrevCurr(block)
+		this.setPrevCurr(block);
 		this.block.addChild(block, from - this.block.from);
 	}
 
@@ -1221,10 +1435,10 @@ export class BlockContext implements PartialParse {
 			elt.toTree(this.parser.nodeSet),
 			elt.from - this.block.from
 		);
-		if(this.prevEl.length > 2) {
-			this.prevEl.pop()
+		if (this.prevEl.length > 2) {
+			this.prevEl.pop();
 		}
-		this.prevEl.unshift(elt.type)
+		this.prevEl.unshift(elt.type);
 	}
 
 	/// Add a block element from a [leaf parser](#LeafBlockParser). This
@@ -1271,7 +1485,7 @@ export class BlockContext implements PartialParse {
 			this.parser.parseInline(leaf.content, leaf.start),
 			leaf.marks
 		);
-		if(leaf.content.trim().length) {
+		if (leaf.content.trim().length) {
 			this.addNode(
 				this.buffer
 					.writeElements(inline, -leaf.start)
@@ -1286,7 +1500,6 @@ export class BlockContext implements PartialParse {
 			// 	leaf.start
 			// );
 		}
-		
 	}
 
 	/// Create an [`Element`](#Element) object to represent some syntax
@@ -1451,7 +1664,6 @@ export interface LeafBlockParser {
 	finish(cx: BlockContext, leaf: LeafBlock): boolean;
 }
 
-
 export class FountainParser extends Parser {
 	/// @internal
 	nodeTypes: { [name: string]: number } = Object.create(null);
@@ -1499,7 +1711,7 @@ export class FountainParser extends Parser {
 	) {
 		super();
 		for (let t of nodeSet.types) this.nodeTypes[t.name] = t.id;
-		console.log("nodeset", nodeSet)
+		console.log("nodeset", nodeSet);
 	}
 
 	createParse(
@@ -1513,7 +1725,7 @@ export class FountainParser extends Parser {
 	}
 
 	configure(np: NodePropSource[]) {
-		this.nodeSet = this.nodeSet.extend(...np)
+		this.nodeSet = this.nodeSet.extend(...np);
 	}
 
 	/// @internal
@@ -1545,36 +1757,40 @@ export class FountainParser extends Parser {
 	}
 }
 
-
 function propLogger(node, state) {
-	console.log("we are in a prop")
-	console.log("prop:node", node)
-	console.log("prop:state", state)
+	console.log("we are in a prop");
+	console.log("prop:node", node);
+	console.log("prop:state", state);
 }
 
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
 	let properties = [];
-	if(name === "SceneHeading") {
-		properties.push(foldNodeProp.add((type) => {
-			// if(!type.is("SceneHeading")) return null
-			return (node, state) => {
-				let gc = node.parent.getChild(Type.SceneHeading, Type.SceneHeading)
-				let ns = node.parent.getChild(Type.SceneHeading, null, SceneHeading)
-				// propLogger(ns, state) lastchild.to
-				let ob = {from: state.doc.lineAt(ns.lastChild.to).from, to: state.doc.lineAt(node.to).from - 1}
-				if (ob.from === ob.to || ob.to < ob.from) return null
-				propLogger(node, ns)
-				console.log("nexts", gc)
-				console.log("obby", ob)
-				return ob
-			}
-		}))
+	if (name === "SceneHeading") {
+		properties.push(
+			foldNodeProp.add((type) => {
+				// if(!type.is("SceneHeading")) return null
+				return (node, state) => {
+					let gc = node.parent.getChild(Type.SceneHeading, Type.SceneHeading);
+					let ns = node.parent.getChild(Type.SceneHeading, null, SceneHeading);
+					// propLogger(ns, state) lastchild.to
+					let ob = {
+						from: state.doc.lineAt(ns.lastChild.to).from,
+						to: state.doc.lineAt(node.to).from - 1,
+					};
+					if (ob.from === ob.to || ob.to < ob.from) return null;
+					propLogger(node, ns);
+					console.log("nexts", gc);
+					console.log("obby", ob);
+					return ob;
+				};
+			})
+		);
 	}
 	nodeTypes[i] = NodeType.define({
 		id: i,
 		name,
-		props: properties
+		props: properties,
 	});
 }
 
@@ -1701,9 +1917,6 @@ export interface DelimiterType {
 	mark?: string;
 }
 
-
-
-
 const EmphasisUnderline: DelimiterType = {
 	resolve: "Underline",
 	mark: "UnderlineMark",
@@ -1715,12 +1928,12 @@ const EmphasisBold: DelimiterType = {
 // const Emp
 const EmphasisItalic: DelimiterType = {
 	resolve: "Italic",
-	mark: "ItalicMark"
-}
+	mark: "ItalicMark",
+};
 const CharacterExtension: DelimiterType = {
 	resolve: "CharacterExt",
-	mark: "CharacterExt"
-}
+	mark: "CharacterExt",
+};
 class InlineDelimiter {
 	constructor(
 		readonly type: DelimiterType,
@@ -1730,7 +1943,8 @@ class InlineDelimiter {
 	) {}
 }
 
-let Punctuation = /[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*\._{|}~\xA1\u2010-\u2027]*/;
+let Punctuation =
+	/[!"#$%&'()+,\-.\/:;<=>?@\[\\\]^`\*\._{|}~\xA1\u2010-\u2027]*/;
 try {
 	Punctuation = new RegExp(
 		"[\\p{Pc}|\\p{Pd}|\\p{Pe}|\\p{Pf}|\\p{Pi}|\\p{Po}|\\p{Ps}]",
@@ -1738,7 +1952,9 @@ try {
 	);
 } catch (_) {}
 
-const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: number) => number;} = {
+const DefaultInline: {
+	[name: string]: (cx: InlineContext, next: number, pos: number) => number;
+} = {
 	Emphasis(cx, next, start) {
 		if (next != 95 && next != 42) return -1;
 		let pos = start + 1;
@@ -1753,10 +1969,14 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 		let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter);
 		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
 		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
-		let hasBold = next == 42 && after == "*"
+		let hasBold = next == 42 && after == "*";
 		return cx.append(
 			new InlineDelimiter(
-				next == 95 ? EmphasisUnderline : hasBold ? EmphasisBold : EmphasisItalic,
+				next == 95
+					? EmphasisUnderline
+					: hasBold
+					? EmphasisBold
+					: EmphasisItalic,
 				start,
 				pos,
 				(canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)
@@ -1777,7 +1997,6 @@ const DefaultInline: {	[name: string]: (cx: InlineContext, next: number, pos: nu
 // These return `null` when falling off the end of the input, `false`
 // when parsing fails otherwise (for use in the incremental link
 // reference parser).
-
 
 export class InlineContext {
 	/// @internal
@@ -1855,8 +2074,10 @@ export class InlineContext {
 			)
 				continue;
 
-			let emp = close.type.mark == EmphasisItalic.mark || close.type.mark == EmphasisBold.mark;
-			let un = close.type.mark == EmphasisUnderline.mark
+			let emp =
+				close.type.mark == EmphasisItalic.mark ||
+				close.type.mark == EmphasisBold.mark;
+			let un = close.type.mark == EmphasisUnderline.mark;
 			let closeSize = close.to - close.from;
 			let open: InlineDelimiter | undefined,
 				j = i - 1;
@@ -1994,7 +2215,6 @@ function injectMarks(
 	return elts;
 }
 
-
 // These are blocks that can span blank lines, and should thus only be
 // reused if their next sibling is also being reused.
 const NotLast = [
@@ -2005,7 +2225,7 @@ const NotLast = [
 	// Type.Action,
 	Type.BlockNote,
 	Type.Note,
-	Type.BoneYard
+	Type.BoneYard,
 ];
 
 class FragmentCursor {
@@ -2061,7 +2281,6 @@ class FragmentCursor {
 		return tree && tree.prop(NodeProp.contextHash) == hash;
 	}
 
-
 	takeNodes(cx: BlockContext) {
 		let cur = this.cursor!,
 			off = this.fragment!.offset,
@@ -2115,10 +2334,10 @@ const parser = new FountainParser(
 	Object.keys(DefaultInline),
 	[]
 );
-const data = defineLanguageFacet({block: {open: "<!--", close: "-->"}})
+const data = defineLanguageFacet({ block: { open: "<!--", close: "-->" } });
 // const fold = defineLanguageFacet(Facet.define(foldService.of())
 
-export function ftn( exts?: Extension[]) {
-	// const ls = 
-	return new LanguageSupport(new Language(data, parser, exts))
+export function ftn(exts?: Extension[]) {
+	// const ls =
+	return new LanguageSupport(new Language(data, parser, exts));
 }
