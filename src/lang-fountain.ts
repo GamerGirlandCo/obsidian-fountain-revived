@@ -384,34 +384,80 @@ const DefaultSkipMarkup: {
 					cx.startComposite(Type[Type.Note], cx.lineStart)
 					// return null
 				}  */ else if (line.text.startsWith("~")) {
-					children.push(elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length));
-				} else if(line.text.startsWith("=")) {
-					children.push(elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length))
-				} else if (
-					line.text.match(regex.character) &&
-					cx.prevEl[0] == Type.Character &&
-					!line.text.match(regex.scene_heading)
-				) {
-					cx.startContext(Type.DialogueBlock, cx.lineStart);
-					cx.cleanLine();
+					children.push(
+						elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
+					);
+				} else if (line.text.startsWith("=")) {
+					children.push(
+						elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length)
+					);
+				} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
+					let childses: Element[] = [];
+					let paran: Element;
+					ohshit: while(line.text != "") {
+						if (regex.parenthetical.exec(line.text)) {
+							childses.push(
+								parseParenthetical(line.text, cx.lineStart, 0)
+							);
+							last += line.text.length;
+							cx.cleanLine();
+							continue ohshit
+						}
+						let ex = regex.character.exec(line.text);
+						console.log(ex);
+						if(regex.character.exec(line.text)) {
+							if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
+								paran = elt(
+									Type.Parenthetical,
+									cx.lineStart + line.text.indexOf("("),
+									cx.lineStart + line.text.indexOf(")")
+								);
+							}
+							childses.push(
+								elt(
+									Type.Character,
+									cx.lineStart,
+									cx.lineStart + line.text.length,
+									paran ? [paran] : undefined
+								)
+							);
+							
+							last += line.text.length;
+							cx.cleanLine();
+							continue ohshit
+						} else {
+							childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
+						}
+						console.log(children, "|", childses)
+						children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
+						last += line.text.length;
+						cx.cleanLine();
+						continue ohshit
+					}
 				} else {
-					children.push(elt(Type.Action, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)));
+					children.push(
+						elt(
+							Type.Action,
+							cx.lineStart,
+							cx.lineStart + line.text.length,
+							cx.parser.parseInline(line.text, cx.lineStart)
+						)
+					);
 					// cx.cleanLine()
 					// cx.cleanLine()
 				}
 				last += line.text.length;
-				cx.cleanLine()
-				continue
-			}
-			if (line.text.match(regex.scene_heading)) {
-				console.debug("scone", line.text);
-				shutUpBitch()	
+				cx.cleanLine();
+				continue;
 			}
 		}
-		doLocal()
-		cx.addNode(elt(Type.Scene, orig, orig + 1, children).toTree(cx.parser.nodeSet), orig)
-		return true
-	}
+		doLocal();
+		cx.addNode(
+			elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet),
+			orig
+		);
+		return true;
+	},
 	// [Type.Action](bl, cx, line) {
 	// 	bl.addChild(
 	// 		elt(
