@@ -526,7 +526,7 @@ const DefaultBlockParsers: {
 					ohshit: while(line.text != "") {
 						if (regex.parenthetical.exec(line.text)) {
 							childses.push(
-								parseParenthetical(line.text, cx.lineStart, 0)
+								elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
 							);
 							last += line.text.length;
 							cx.cleanLine();
