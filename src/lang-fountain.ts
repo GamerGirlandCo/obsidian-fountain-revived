@@ -308,63 +308,192 @@ const DefaultSkipMarkup: {
 		}
 		return true;
 	},
-	[Type.Scene](bl, cx, line) {
-		let ret = false;
-		let children = [];
+	// [Type.Action](bl, cx, line) {
+	// 	bl.addChild(
+	// 		elt(
+	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length,
+	// 			cx.parser.parseInline(line.text, cx.lineStart
+	// 	)).toTree(cx.parser.nodeSet), cx.lineStart
+	// 	)
+	// 	return true
+	// }
+};
+
+export function space(ch: number) {
+	return ch == 32 || ch == 9 || ch == 10 || ch == 13;
+}
+
+function skipSpace(line: string, i = 0) {
+	while (i < line.length && space(line.charCodeAt(i))) i++;
+	return i;
+}
+
+function isBlockquote(line: Line) {
+	return line.next != 62 /* '>' */
+		? -1
+		: line.text.charCodeAt(line.pos + 1) == 32
+		? 2
+		: 1;
+}
+function isBoneYard(line: Line) {
+	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) &&
+		line.text.charCodeAt(line.pos + 1) == 42
+		? 2
+		: -1;
+}
+function insertNoteEl(line: Line, start: number) {
+	if (line.text.match(regex.note)) {
+		let iof = line.text.indexOf("[[");
+		let liof = line.text.indexOf("]]");
+		return elt(Type.Note, start, start + line.text.length, [
+			elt(Type.OpenNote, start + iof, start + iof + 2),
+			elt(Type.CloseNote, start + liof, start + liof + 2),
+		]);
+	}
+	return null;
+}
+
+function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
+	if (line.next != 61 /* '_-*' */) return -1;
+	let count = 1;
+	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
+		let ch = line.text.charCodeAt(pos);
+		if (ch == line.next) count++;
+		else if (!space(ch)) return -1;
+	}
+	// Setext headers take precedence
+	if (
+		breaking &&
+		line.next == 61 &&
+		isSetextUnderline(line) > -1 &&
+		line.depth == cx.stack.length
+	)
+		return -1;
+	return count < 3 ? -1 : 1;
+}
+
+function isLyric(line: Line, cx: BlockContext) {
+	if (line.next != 126 /* '~' */) return -1;
+	let count = 1;
+	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
+		let ch = line.text.charCodeAt(pos);
+		if (ch == line.next) count++;
+	}
+
+	return count === 1 ? 1 : -1;
+}
+
+function isSection(line: Line) {
+	if (line.next != 35 /* '#' */) return -1;
+	let pos = line.pos + 1;
+	while (pos < line.text.length && line.text.charCodeAt(pos) == 35) pos++;
+	if (pos < line.text.length && line.text.charCodeAt(pos) != 32) return -1;
+	let size = pos - line.pos;
+	return size > 3 ? -1 : size;
+}
+
+function isSetextUnderline(line: Line) {
+	if (
+		(line.next != 45 && line.next != 61) /* '-=' */ ||
+		line.indent >= line.baseIndent + 4
+	)
+		return -1;
+	let pos = line.pos + 1;
+	while (pos < line.text.length && line.text.charCodeAt(pos) == line.next)
+		pos++;
+	let end = pos;
+	while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++;
+	return pos == line.text.length ? end : -1;
+}
+
+// Return type for block parsing functions. Can be either:
+//
+// - false to indicate that nothing was matched and lower-precedence
+//   parsers should run.
+//
+// - true to indicate that a leaf block was parsed and the stream
+//   was advanced past its content.
+//
+// - null to indicate that a context was opened and block parsing
+//   should continue on this line.
+type BlockResult = boolean | null;
+
+// Rules for parsing blocks. A return value of false means the rule
+// doesn't apply here, true means it does. When true is returned and
+// `p.line` has been updated, the rule is assumed to have consumed a
+// leaf block. Otherwise, it is assumed to have opened a context.
+const DefaultBlockParsers: {
+	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
+} = {
+	Scene(cx, line) {
+		if (regex.scene_heading.exec(line.text)) {
+			let children: Element[] = [];
 		let orig = cx.lineStart;
 		let last = cx.lineStart;
 		function shutUpBitch() {
 			let startup =
-					line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
-				let myend =
-					line.text.lastIndexOf("#") !== -1
-						? line.text.lastIndexOf("#")
-						: null;
-				let sn = myend
-					? elt(
-							Type.SceneNumber,
-							cx.lineStart + startup,
-							cx.lineStart + myend + 1
-					  )
-					: null;
-				let sh = elt(
-					Type.SceneHeading,
-					cx.lineStart,
-					cx.lineStart + (startup || line.text.length),
-					sn ? [sn] : []
-				);
-				children.push(sh);
-				last += line.text.length;
-				cx.cleanLine()
+				line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
+			let myend =
+				line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null;
+			let sn = myend
+				? elt(
+						Type.SceneNumber,
+						cx.lineStart + startup,
+						cx.lineStart + myend + 1
+				  )
+				: null;
+			let sh = elt(
+				Type.SceneHeading,
+				cx.lineStart,
+				cx.lineStart + (startup || line.text.length),
+				sn ? [sn] : []
+			);
+			children.push(sh);
+			last += line.text.length;
+			cx.cleanLine();
 		}
 
 		function doLocal() {
 			if (line.text.match(regex.scene_heading)) {
 				console.debug("scone", line.text);
-				shutUpBitch()	
+				shutUpBitch();
 			}
-			mainL: while (!regex.scene_heading.exec(line.text) && cx.lineStart < cx.to) {
+			mainL: while (
+				!regex.scene_heading.exec(line.text) &&
+				cx.lineStart < cx.to
+			) {
 				console.debug("scone", line.text);
-				if(line.text == "") {
-				
+				if (line.text == "") {
 					last += line.text.length;
-					children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
-					cx.cleanLine()
-					continue
-				} else if(isSection(line) != -1) {
-					let size = isSection(line)
+					// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
+					cx.cleanLine();
+					continue;
+				} else if (isSection(line) != -1) {
+					let size = isSection(line);
 					if (size === 1) {
-						children.push(elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length))
+						children.push(
+							elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length)
+						);
 					} else if (size === 2) {
-						children.push(elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length))
+						children.push(
+							elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length)
+						);
 					} else if (size === 3) {
-						children.push(elt(Type.SceneSection, cx.lineStart, cx.lineStart + line.text.length))
+						children.push(
+							elt(
+								Type.SceneSection,
+								cx.lineStart,
+								cx.lineStart + line.text.length
+							)
+						);
 					}
 				} else if (
 					line.text.match(regex.transition) &&
 					!line.text.endsWith("<")
 				) {
-					children.push(elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length));
+					children.push(
+						elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
+					);
 					// cx.cleanLine()
 				} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
 					children.push(
@@ -456,6 +585,7 @@ const DefaultSkipMarkup: {
 			elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet),
 			orig
 		);
+		return true;
 		return true;
 	},
 	// [Type.Action](bl, cx, line) {
@@ -582,8 +712,134 @@ const DefaultBlockParsers: {
 			cx.startComposite(Type[Type.Scene], cx.lineStart)
 				cx.nextLine()
 			return null;
+			return true;
+	},
+	// [Type.Action](bl, cx, line) {
+	// 	bl.addChild(
+	// 		elt(
+	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length,
+	// 			cx.parser.parseInline(line.text, cx.lineStart
+	// 	)).toTree(cx.parser.nodeSet), cx.lineStart
+	// 	)
+	// 	return true
+	// }
+};
+
+export function space(ch: number) {
+	return ch == 32 || ch == 9 || ch == 10 || ch == 13;
+}
+
+function skipSpace(line: string, i = 0) {
+	while (i < line.length && space(line.charCodeAt(i))) i++;
+	return i;
+}
+
+function isBlockquote(line: Line) {
+	return line.next != 62 /* '>' */
+		? -1
+		: line.text.charCodeAt(line.pos + 1) == 32
+		? 2
+		: 1;
+}
+function isBoneYard(line: Line) {
+	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) &&
+		line.text.charCodeAt(line.pos + 1) == 42
+		? 2
+		: -1;
+}
+function insertNoteEl(line: Line, start: number) {
+	if (line.text.match(regex.note)) {
+		let iof = line.text.indexOf("[[");
+		let liof = line.text.indexOf("]]");
+		return elt(Type.Note, start, start + line.text.length, [
+			elt(Type.OpenNote, start + iof, start + iof + 2),
+			elt(Type.CloseNote, start + liof, start + liof + 2),
+		]);
+	}
+	return null;
+}
+
+function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
+	if (line.next != 61 /* '_-*' */) return -1;
+	let count = 1;
+	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
+		let ch = line.text.charCodeAt(pos);
+		if (ch == line.next) count++;
+		else if (!space(ch)) return -1;
+	}
+	// Setext headers take precedence
+	if (
+		breaking &&
+		line.next == 61 &&
+		isSetextUnderline(line) > -1 &&
+		line.depth == cx.stack.length
+	)
+		return -1;
+	return count < 3 ? -1 : 1;
+}
+
+function isLyric(line: Line, cx: BlockContext) {
+	if (line.next != 126 /* '~' */) return -1;
+	let count = 1;
+	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
+		let ch = line.text.charCodeAt(pos);
+		if (ch == line.next) count++;
+	}
+
+	return count === 1 ? 1 : -1;
+}
+
+function isSection(line: Line) {
+	if (line.next != 35 /* '#' */) return -1;
+	let pos = line.pos + 1;
+	while (pos < line.text.length && line.text.charCodeAt(pos) == 35) pos++;
+	if (pos < line.text.length && line.text.charCodeAt(pos) != 32) return -1;
+	let size = pos - line.pos;
+	return size > 3 ? -1 : size;
+}
+
+function isSetextUnderline(line: Line) {
+	if (
+		(line.next != 45 && line.next != 61) /* '-=' */ ||
+		line.indent >= line.baseIndent + 4
+	)
+		return -1;
+	let pos = line.pos + 1;
+	while (pos < line.text.length && line.text.charCodeAt(pos) == line.next)
+		pos++;
+	let end = pos;
+	while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++;
+	return pos == line.text.length ? end : -1;
+}
+
+// Return type for block parsing functions. Can be either:
+//
+// - false to indicate that nothing was matched and lower-precedence
+//   parsers should run.
+//
+// - true to indicate that a leaf block was parsed and the stream
+//   was advanced past its content.
+//
+// - null to indicate that a context was opened and block parsing
+//   should continue on this line.
+type BlockResult = boolean | null;
+
+// Rules for parsing blocks. A return value of false means the rule
+// doesn't apply here, true means it does. When true is returned and
+// `p.line` has been updated, the rule is assumed to have consumed a
+// leaf block. Otherwise, it is assumed to have opened a context.
+const DefaultBlockParsers: {
+	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
+} = {
+	Scene(cx, line) {
+		
+		
+		if(line.text.match(regex.scene_heading)) {
+			cx.startComposite(Type[Type.Scene], cx.lineStart)
+				cx.nextLine()
+			return null;
 		}
-		return false
+		return false;
 	},
 	// Lyrics(cx, line) {
 	// 	if(!line.text.startsWith("~")) return false
