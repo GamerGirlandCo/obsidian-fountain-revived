@@ -261,15 +261,6 @@ const DefaultSkipMarkup: {
 	[Type.BoneYard](block, cx, line) {
 		// cx.nextLine()
 		return false;
-		// line.moveBase(line.pos)
-	},
-	[Type.TitlePage](bl, cx, line) {
-		if(line.text.match(regex.title_page)) {
-			
-		}
-		return true;
-		return false
-		
 	},
 	[Type.DialogueBlock](bl, cx, line) {
 		cx.addNode(Type.DialogueBlock, cx.lineStart);
@@ -305,15 +296,6 @@ const DefaultSkipMarkup: {
 		}
 		return true;
 	},
-	// [Type.Action](bl, cx, line) {
-	// 	bl.addChild(
-	// 		elt(
-	// 			Type.Action, cx.lineStart, cx.lineStart + line.text.length,
-	// 			cx.parser.parseInline(line.text, cx.lineStart
-	// 	)).toTree(cx.parser.nodeSet), cx.lineStart
-	// 	)
-	// 	return true
-	// }
 };
 
 export function space(ch: number) {
@@ -325,19 +307,6 @@ function skipSpace(line: string, i = 0) {
 	return i;
 }
 
-function isBlockquote(line: Line) {
-	return line.next != 62 /* '>' */
-		? -1
-		: line.text.charCodeAt(line.pos + 1) == 32
-		? 2
-		: 1;
-}
-function isBoneYard(line: Line) {
-	return (line.next == "/".charCodeAt(0) || line.next == "*".charCodeAt(0)) &&
-		line.text.charCodeAt(line.pos + 1) == 42
-		? 2
-		: -1;
-}
 function insertNoteEl(line: Line, start: number) {
 	if (line.text.match(regex.note)) {
 		let iof = line.text.indexOf("[[");
@@ -367,17 +336,6 @@ function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 	)
 		return -1;
 	return count < 3 ? -1 : 1;
-}
-
-function isLyric(line: Line, cx: BlockContext) {
-	if (line.next != 126 /* '~' */) return -1;
-	let count = 1;
-	for (let pos = line.pos + 1; pos < line.text.length; pos++) {
-		let ch = line.text.charCodeAt(pos);
-		if (ch == line.next) count++;
-	}
-
-	return count === 1 ? 1 : -1;
 }
 
 function isSection(line: Line) {
