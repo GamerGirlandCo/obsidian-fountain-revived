@@ -491,7 +491,7 @@ const DefaultBlockParsers: {
 					children.push(
 						elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
 					);
-					// cx.cleanLine()
+
 				} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
 					children.push(
 						elt(
@@ -500,11 +500,10 @@ const DefaultBlockParsers: {
 							cx.lineStart + line.text.lastIndexOf("<") + 1
 						)
 					);
-					// cx.cleanLine()
+
 				} else if (line.text.match(regex.note)) {
 					children.push(
 						insertNoteEl(cx.line, cx.lineStart)
-						// elt(Type.Note,cx.lineStart, cx.lineStart + cx.lineStart + line.text.length, [insertNoteEl(line, cx.lineStart)])
 					);
 				} /* else if(line.text.match(regex.note_inline)) {
 					cx.startComposite(Type[Type.Note], cx.lineStart)
@@ -569,8 +568,6 @@ const DefaultBlockParsers: {
 							cx.parser.parseInline(line.text, cx.lineStart)
 						)
 					);
-					// cx.cleanLine()
-					// cx.cleanLine()
 				}
 				last += line.text.length;
 				cx.cleanLine();
