@@ -12,50 +12,41 @@
     font-size: 100%;
     font: inherit;
     overflow-y: hidden;
-    vertical-align: baseline;
-}
-
-[data-type="fountain"] .view-content .cm-editor {
     display: block;
-}
-
-
- [data-type="fountain"] .view-content .cm-editor {
-    /* margin: auto; */
-    /* width: 60%; */
     text-align: left;
     font: 12pt 'Courier Final Draft', 'Courier Screenplay', Courier;
     padding: 0pt 0 0 0pt;
     position: static;
 }
 
-
-
- .view-content .cm-editor .screenplay-header:not(.screenplay-scene-heading) {
-	text-align: center;
-	font-weight: 600 !important;
-	/* font-size: 1.25em; */
+[data-type="fountain"] .view-content .cm-editor::selection, 
+[data-type="fountain"] .cm-line::selection {
+	background-color: var(--text-highlight-bg) !important;
 }
 
- .view-content .cm-editor .screenplay-footer {
+.view-content .cm-editor .screenplay-header:not(.screenplay-scene-heading) {
+	text-align: center;
+	font-weight: 600 !important;
+	font-size: 1.625em;
+}
+
+.view-content .cm-editor .screenplay-footer {
     margin-top: 1em;
 }
 
  .view-content .cm-editor .screenplay-transition:not(.screenplay-note) {
-    font-style: italic;
-	/* font-size: 0.85em; */
-	color: var(--cerulean, var(--purple, var(--text-sub-accent)))
+  font-style: italic;
+	color: var(--color-orange);
+	font-size: 1.2em;
 }
 
  .view-content .cm-editor .screenplay-scene-heading {
 	color: var(--text-accent);
-    font-weight: bold;
-	/* font-size: 1.25em; */
-	/* padding-top: 2em !important; */
-	/* padding-bottom: 1.5em !important; */
+  font-weight: bold;
+	font-size: 1.5em;
 }
 .screenplay-scene-number {
-	opacity: 0.8;
+	opacity: 0.6;
 	font-size: small;
 }
 
@@ -66,18 +57,22 @@
 	font-style: italic;
 }
 
- .view-content .cm-editor .screenplay-lyric:not(.screenplay-note) {
+.view-content .cm-editor .screenplay-lyric:not(.screenplay-note) {
 	font-style: italic;
-	opacity: 0.6;
+	color: var(--color-purple);
+	opacity: 0.75;
 }
-
+.view-content .cm-editor .screenplay-synopsis:not(.screenplay-note) {
+	font-size: 1em;
+	color: var(--color-pink);
+}
 /* Dialogue */
 
  .view-content .cm-editor .screenplay-character {
     padding-left: 20%;
-    color: var(--yellow) !important;
+    color: var(--color-yellow) !important;
     font-weight: 600 !important;
-    /* font-size: 18px !important; */
+    font-size: 18px !important;
 }
 
 .screenplay-centered {
@@ -90,9 +85,8 @@
 }
 
 .screenplay-note {
-	/* font-size: 10px !important; */
 	font-size: 0.9em !important;
-	color: var(--text-title-h5, var(--green))
+	color: var(--text-title-h5, var(--color-green))
 }
 
 .screenplay-marker.underline {
@@ -113,9 +107,32 @@
 
 .screenplay-bone-yard {
 	font-size: 0.6em;
+	color: var(--text-muted);
 	opacity: 0.5;
 }
 
+.screenplay-foldwidget, .screenplay-foldwidget::before {
+	height: 1em;
+	display: inline-block;
+	cursor: pointer;
+	color: var(--color-red);
+	font-size: 0.7em;
+	margin-left: 5px;
+	font-style: italic;
+}
+.screenplay-fold-gutter-sym {
+	display: block;
+	opacity: 100% !important;
+	color: var(--text-normal);
+	position: relative;
+	top: 3px;
+}
+.screenplay-foldwidget::before {
+	content: "<...>";
+	padding-left: 2px;
+	padding-right: 2px;
+	opacity: 0.5;
+}
 /* Headers */
 
  .view-content .cm-editor>h3 {

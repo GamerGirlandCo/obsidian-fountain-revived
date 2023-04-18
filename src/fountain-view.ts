@@ -17,7 +17,8 @@ const theme = EditorView.theme({
 		"font-family": "'Courier Final Draft', 'Courier Screenplay', Courier !important"
 	},
 	".cm-foldGutter": {
-		opacity: "0.5"
+		minWidth: "0.9em",
+		display: "block"
 	},
 	".cm-gutters": {
 		backgroundColor: "rgba(var(--ctp-accent, var(--color-blue-rgb)), 0.5)",
@@ -25,8 +26,6 @@ const theme = EditorView.theme({
 		borderRight: 0
 	},
 	".cm-gutterElement span": {
-		position: "relative",
-		top: "-4px"
 	}
 })
 
