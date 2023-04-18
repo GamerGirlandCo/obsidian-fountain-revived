@@ -386,135 +386,135 @@ const DefaultBlockParsers: {
 			cx.cleanLine();
 		}
 
-		function doLocal() {
-			if (line.text.match(regex.scene_heading)) {
-				console.debug("scone", line.text);
-				shutUpBitch();
-			}
-			mainL: while (
-				!regex.scene_heading.exec(line.text) &&
-				cx.lineStart < cx.to
-			) {
-				console.debug("scone", line.text);
-				if (line.text == "") {
-					last += line.text.length;
-					// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
-					cx.cleanLine();
-					continue;
-				} else if (isSection(line) != -1) {
-					let size = isSection(line);
-					if (size === 1) {
+			function doLocal() {
+				if (line.text.match(regex.scene_heading)) {
+					console.debug("scone", line.text);
+					shutUpBitch();
+				}
+				mainL: while (
+					!regex.scene_heading.exec(line.text) &&
+					cx.lineStart < cx.to
+				) {
+					console.debug("scone", line.text);
+					if (line.text == "") {
+						last += line.text.length;
+						// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
+						cx.cleanLine();
+						continue;
+					} else if (isSection(line) != -1) {
+						let size = isSection(line);
+						if (size === 1) {
+							children.push(
+								elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length)
+							);
+						} else if (size === 2) {
+							children.push(
+								elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length)
+							);
+						} else if (size === 3) {
+							children.push(
+								elt(
+									Type.SceneSection,
+									cx.lineStart,
+									cx.lineStart + line.text.length
+								)
+							);
+						}
+					} else if (
+						line.text.match(regex.transition) &&
+						!line.text.endsWith("<")
+					) {
 						children.push(
-							elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length)
+							elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
 						);
-					} else if (size === 2) {
-						children.push(
-							elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length)
-						);
-					} else if (size === 3) {
+
+					} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
 						children.push(
 							elt(
-								Type.SceneSection,
+								Type.Centered,
 								cx.lineStart,
-								cx.lineStart + line.text.length
+								cx.lineStart + line.text.lastIndexOf("<") + 1
+							)
+						);
+
+					} else if (line.text.match(regex.note)) {
+						children.push(
+							insertNoteEl(cx.line, cx.lineStart)
+						);
+					} /* else if(line.text.match(regex.note_inline)) {
+						cx.startComposite(Type[Type.Note], cx.lineStart)
+						// return null
+					}  */ else if (line.text.startsWith("~")) {
+						children.push(
+							elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
+						);
+					} else if (line.text.startsWith("=")) {
+						children.push(
+							elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length)
+						);
+					} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
+						let childses: Element[] = [];
+						let paran: Element;
+						ohshit: while(line.text != "") {
+							if (regex.parenthetical.exec(line.text)) {
+								childses.push(
+									elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
+								);
+								last += line.text.length;
+								cx.cleanLine();
+								continue ohshit
+							}
+							let ex = regex.character.exec(line.text);
+							console.log(ex);
+							if(regex.character.exec(line.text)) {
+								if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
+									paran = elt(
+										Type.Parenthetical,
+										cx.lineStart + line.text.indexOf("("),
+										cx.lineStart + line.text.indexOf(")")
+									);
+								}
+								childses.push(
+									elt(
+										Type.Character,
+										cx.lineStart,
+										cx.lineStart + line.text.length,
+										paran ? [paran] : undefined
+									)
+								);
+								
+								last += line.text.length;
+								cx.cleanLine();
+								continue ohshit
+							} else {
+								childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
+							}
+							console.log(children, "|", childses)
+							children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
+							last += line.text.length;
+							cx.cleanLine();
+							continue ohshit
+						}
+					} else {
+						children.push(
+							elt(
+								Type.Action,
+								cx.lineStart,
+								cx.lineStart + line.text.length,
+								cx.parser.parseInline(line.text, cx.lineStart)
 							)
 						);
 					}
-				} else if (
-					line.text.match(regex.transition) &&
-					!line.text.endsWith("<")
-				) {
-					children.push(
-						elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
-					);
-
-				} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
-					children.push(
-						elt(
-							Type.Centered,
-							cx.lineStart,
-							cx.lineStart + line.text.lastIndexOf("<") + 1
-						)
-					);
-
-				} else if (line.text.match(regex.note)) {
-					children.push(
-						insertNoteEl(cx.line, cx.lineStart)
-					);
-				} /* else if(line.text.match(regex.note_inline)) {
-					cx.startComposite(Type[Type.Note], cx.lineStart)
-					// return null
-				}  */ else if (line.text.startsWith("~")) {
-					children.push(
-						elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
-					);
-				} else if (line.text.startsWith("=")) {
-					children.push(
-						elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length)
-					);
-				} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
-					let childses: Element[] = [];
-					let paran: Element;
-					ohshit: while(line.text != "") {
-						if (regex.parenthetical.exec(line.text)) {
-							childses.push(
-								elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
-							);
-							last += line.text.length;
-							cx.cleanLine();
-							continue ohshit
-						}
-						let ex = regex.character.exec(line.text);
-						console.log(ex);
-						if(regex.character.exec(line.text)) {
-							if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
-								paran = elt(
-									Type.Parenthetical,
-									cx.lineStart + line.text.indexOf("("),
-									cx.lineStart + line.text.indexOf(")")
-								);
-							}
-							childses.push(
-								elt(
-									Type.Character,
-									cx.lineStart,
-									cx.lineStart + line.text.length,
-									paran ? [paran] : undefined
-								)
-							);
-							
-							last += line.text.length;
-							cx.cleanLine();
-							continue ohshit
-						} else {
-							childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
-						}
-						console.log(children, "|", childses)
-						children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
-						last += line.text.length;
-						cx.cleanLine();
-						continue ohshit
-					}
-				} else {
-					children.push(
-						elt(
-							Type.Action,
-							cx.lineStart,
-							cx.lineStart + line.text.length,
-							cx.parser.parseInline(line.text, cx.lineStart)
-						)
-					);
+					last += line.text.length;
+					cx.cleanLine();
+					continue;
 				}
-				last += line.text.length;
-				cx.cleanLine();
-				continue;
 			}
-		}
-		doLocal();
-		cx.addNode(
-			elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet),
-			orig
-		);
+			doLocal();
+			cx.addNode(
+				elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet),
+				orig
+			);
 			return true;
 		}
 		return false;
