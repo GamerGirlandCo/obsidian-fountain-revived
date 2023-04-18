@@ -3,7 +3,6 @@ import {
 	Language,
 	LanguageSupport,
 	foldNodeProp,
-	foldInside,
 } from "@codemirror/language";
 import {
 	Input,
@@ -259,7 +258,6 @@ const DefaultSkipMarkup: {
 		return true;
 	},
 	[Type.BoneYard](block, cx, line) {
-		// cx.nextLine()
 		return false;
 	},
 	[Type.DialogueBlock](bl, cx, line) {
