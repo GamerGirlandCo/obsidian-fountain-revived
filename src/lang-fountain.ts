@@ -1133,18 +1133,9 @@ class NoteBlockParser implements LeafBlockParser {
 const DefaultLeafBlocks: {
 	[name: string]: (cx: BlockContext, leaf: LeafBlock) => LeafBlockParser | null;
 } = {
-	// BlockNote(cx, bl) {
-	// 	return ((bl.content.match(regex.note_inline) || bl.content.match(regex.note)
-	// 	|| bl.content.match(regex.closing_note) || bl.content.match(regex.opening_note)) || cx.prevEl[0] == Type.Note || cx.prevEl[0] == Type.BlockNote) ?
-	// 	new NoteBlockParser(bl, cx)
-	// 	: null
-	// },
 	Dialogue(cx, bl) {
 		return null;
 	},
-	// BlockNote(_, leaf) {
-	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
-	// }
 };
 
 const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
