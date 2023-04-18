@@ -45,6 +45,7 @@ function inlineRender(view: EditorView) {
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
 			iiii++
+
 			do {
 				const start = cursor.from;
 				const end = cursor.to;
@@ -52,8 +53,11 @@ function inlineRender(view: EditorView) {
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' /* || name === "TitlePageField" */) continue;
-				console.debug("treee", cursor, text2)
-				console.debug(cursor)
+				console.debug("treee", name, text2)
+				console.debug(`${name} cursor | `, cursor)
+				if(name == "Scene") {
+				}
+				// console.debug(cursor)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
 				// if (name === 'DivideSubs') {
@@ -93,7 +97,7 @@ function inlineRender(view: EditorView) {
 					case 'TitlePageField':
 						cssClass = 'header';
 						break;
-					case 'TitlePageField':
+					case 'TitlePage':
 						cssClass = 'header';
 						break;
 					case "SceneHeading":
@@ -162,16 +166,22 @@ function inlineRender(view: EditorView) {
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-scene-heading`,
-							}).range(whichline.from + 1),
+							}).range(whichline.from),
 						);
-				} else if( name === "SceneNumber" || name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
+				} else if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
 					widgets.push(Decoration.mark({
-						class: name === "SceneNumber" ? `screenplay-scene-number` : `screenplay-marker ${name.toLowerCase()}`,
+						class: `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
 						block: false
 					}).range(start, end))
 				} else if(start !== end) {
-					if((name !== "PlainText") && cssClass !== "") {
+					if(name === "SceneNumber" ) {
+						widgets.push(Decoration.mark({
+							class: "screenplay-scene-number",
+							inclusive: true,
+							block: false
+						}).range(start, end))
+					} else if((name !== "PlainText") && cssClass !== "") {
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-${cssClass}`,
@@ -188,13 +198,6 @@ function inlineRender(view: EditorView) {
 						);
 					}	
 				}		
-				if(name=== "SceneNumber" ) {
-					widgets.push(Decoration.mark({
-						class: "screenplay-scene-number",
-						inclusive: false,
-						block: false
-					}).range(start, end))
-				}
 			} while (cursor.next());
 		}
 	} finally {
