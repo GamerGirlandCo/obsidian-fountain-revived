@@ -449,6 +449,8 @@ const DefaultBlockParsers: {
 						children.push(
 							elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
 						);
+					} else if(isPageBreak(line, cx, true) > 0) {
+						children.push(elt(Type.PageBreak, cx.lineStart, cx.lineStart + line.text.length))
 					} else if (line.text.startsWith("=")) {
 						children.push(
 							elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length)
