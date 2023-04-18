@@ -519,37 +519,6 @@ const DefaultBlockParsers: {
 		}
 		return false;
 	},
-	// Lyrics(cx, line) {
-	// 	if(!line.text.startsWith("~")) return false
-	// 	cx.addNode(Type.Lyrics, cx.lineStart)
-	// 	cx.nextLine()
-	// 	return true
-	// },
-	/* Dialogue(cx, line) {
-		if (
-			line.text.match(regex.character) &&
-			cx.prevEl[0] == Type.Character &&
-			!line.text.match(regex.scene_heading)
-		) {
-			cx.startContext(Type.DialogueBlock, cx.lineStart + 1);
-			cx.nextLine();
-			return true;
-		}
-		return false;
-	},
-	Transition(cx, line) {
-		if (!line.text.match(regex.transition) || line.text.endsWith("<"))
-			return false;
-		let from = cx.lineStart + line.pos;
-
-		cx.nextLine();
-		return true;
-	}, */
-	// Note(cx, line) {
-	// 		let beginno = cx.lineStart;
-
-	// 	return false;
-	// },
 	/* Centered(cx, line) {
 		let centerVar = line.text.startsWith("> ") && line.text.endsWith(" <");
 		if (!centerVar) return false;
@@ -589,34 +558,6 @@ const DefaultBlockParsers: {
 		cx.nextLine();
 		return true;
 	}, */
-	// Character(cx, line) {
-	// 	if(!line.text.match(/^[\^\sA-Z]+?(\(|$)/)) return false
-	// 	let from = cx.lineStart + line.pos;
-	// 	// cx.addElement(elt(Type.Character, from, cx.lineStart + line.text.length, [
-
-	// 	// ]))
-	// 	cx.addNode(Type.Character, from)
-	// 	cx.nextLine()
-	// 	return true
-	// },
-	// Parenthetical(cx, line) {
-	// 	if(!(line.text.startsWith("(") && line.text.endsWith(")"))) return false
-	// 	let from = cx.lineStart + line.pos
-	// 	// cx.p
-	// 	cx.addNode(Type.Parenthetical, from)
-	// 	cx.nextLine()
-	// 	return true
-	// },
-	// Dialogue(cx, line) {
-	// 	let from = cx.lineStart + line.pos;
-	//
-	// 	if(cx.prevNode[0] === Type.Character || cx.prevNode[0] === Type.Parenthetical || cx.prevNode[0] === Type.Dialogue) {
-	// 		cx.addNode(Type.Dialogue, from)
-	// 		cx.nextLine()
-	// 		return true
-	// 	}
-	// 	return false
-	// }
 	BoneYard(cx, line) {
 		let openy = line.text.indexOf("/*");
 		let closey = line.text.indexOf("*/");
