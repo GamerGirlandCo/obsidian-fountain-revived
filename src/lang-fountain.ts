@@ -1302,7 +1302,7 @@ for (let i = 1, name; (name = Type[i]); i++) {
 					let line = state.doc.lineAt(node.from);
 					
 					let ret = {
-						from: node.from + line.text.length - 1,
+						from: node.from + line.text.length,
 						to: node.to == state.doc.length ? node.to : node.to - 1,
 					};
 					return ret;
