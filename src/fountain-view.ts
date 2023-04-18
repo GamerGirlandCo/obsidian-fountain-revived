@@ -1,22 +1,15 @@
 import { 
-	EditableFileView, Editor, MarkdownEditView, MarkdownPreviewEvents, 
-	MarkdownSubView, MarkdownView, TFile, TextFileView, WorkspaceLeaf, 
-	editorEditorField, editorViewField, setIcon, App,
-	Modal,
-	Notice,
-	PluginSettingTab,
-	Setting,
-	debounce, editorLivePreviewField, normalizePath } from "obsidian";
-import { Language, syntaxTree, tokenClassNodeProp } from "@codemirror/language";
+	
+	TFile, TextFileView, WorkspaceLeaf, 
+	
+	normalizePath } from "obsidian";
 
-import {EditorState, Text, Range, StateEffect, StateEffectType, StateField, Extension} from "@codemirror/state";
+import {EditorState, Extension} from "@codemirror/state";
 
-import CodeMirror from "codemirror";
-import {EditorView, Decoration, DecorationSet, ViewUpdate} from "@codemirror/view";
-import { Fountain } from "fountain-js";
+import {EditorView} from "@codemirror/view";
 import { basicSetup } from "./extensions";
 import { inlinePlugin } from "./editor";
-import { FountainParser, ftn } from "./lang-fountain";
+import { ftn } from "./lang-fountain";
 
 const theme = EditorView.theme({
 	".cm-line": {
