@@ -359,37 +359,37 @@ const DefaultBlockParsers: {
 	[name: string]: ((cx: BlockContext, line: Line) => BlockResult) | undefined;
 } = {
 	Scene(cx, line) {
-		if (regex.scene_heading.exec(line.text)) {
-			let children: Element[] = [];
 		let orig = cx.lineStart;
 		let last = cx.lineStart;
-		function shutUpBitch() {
-			let startup =
-				line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
-			let myend =
-				line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null;
-			let sn = myend
-				? elt(
-						Type.SceneNumber,
-						cx.lineStart + startup,
-						cx.lineStart + myend + 1
-				  )
-				: null;
-			let sh = elt(
-				Type.SceneHeading,
-				cx.lineStart,
-				cx.lineStart + (startup || line.text.length),
-				sn ? [sn] : []
-			);
-			children.push(sh);
-			last += line.text.length;
-			cx.cleanLine();
-		}
-
+		if (regex.scene_heading.exec(line.text)) {
+			let children: Element[] = [];
+			function shutUpBitch() {
+				let startup =
+					line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
+				let myend =
+					line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null;
+				let sn = myend
+					? elt(
+							Type.SceneNumber,
+							cx.lineStart + startup,
+							cx.lineStart + myend + 1
+						)
+					: null;
+				let sh = elt(
+					Type.SceneHeading,
+					cx.lineStart,
+					cx.lineStart + (startup || line.text.length),
+					sn ? [sn] : []
+				);
+				children.push(sh);
+				last += line.text.length;
+			}
 			function doLocal() {
 				if (line.text.match(regex.scene_heading)) {
 					console.debug("scone", line.text);
 					shutUpBitch();
+					last++
+					cx.cleanLine();
 				}
 				mainL: while (
 					!regex.scene_heading.exec(line.text) &&
@@ -398,6 +398,7 @@ const DefaultBlockParsers: {
 					console.debug("scone", line.text);
 					if (line.text == "") {
 						last += line.text.length;
+						last++
 						// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
 						cx.cleanLine();
 						continue;
@@ -492,6 +493,7 @@ const DefaultBlockParsers: {
 							console.log(children, "|", childses)
 							children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
 							last += line.text.length;
+							last++
 							cx.cleanLine();
 							continue ohshit
 						}
@@ -506,6 +508,7 @@ const DefaultBlockParsers: {
 						);
 					}
 					last += line.text.length;
+					last++
 					cx.cleanLine();
 					continue;
 				}
