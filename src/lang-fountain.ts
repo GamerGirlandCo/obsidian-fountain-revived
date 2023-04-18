@@ -327,14 +327,6 @@ function isPageBreak(line: Line, cx: BlockContext, breaking: boolean) {
 		if (ch == line.next) count++;
 		else if (!space(ch)) return -1;
 	}
-	// Setext headers take precedence
-	if (
-		breaking &&
-		line.next == 61 &&
-		isSetextUnderline(line) > -1 &&
-		line.depth == cx.stack.length
-	)
-		return -1;
 	return count < 3 ? -1 : 1;
 }
 
@@ -345,20 +337,6 @@ function isSection(line: Line) {
 	if (pos < line.text.length && line.text.charCodeAt(pos) != 32) return -1;
 	let size = pos - line.pos;
 	return size > 3 ? -1 : size;
-}
-
-function isSetextUnderline(line: Line) {
-	if (
-		(line.next != 45 && line.next != 61) /* '-=' */ ||
-		line.indent >= line.baseIndent + 4
-	)
-		return -1;
-	let pos = line.pos + 1;
-	while (pos < line.text.length && line.text.charCodeAt(pos) == line.next)
-		pos++;
-	let end = pos;
-	while (pos < line.text.length && space(line.text.charCodeAt(pos))) pos++;
-	return pos == line.text.length ? end : -1;
 }
 
 // Return type for block parsing functions. Can be either:
