@@ -1858,9 +1858,7 @@ const parser = new FountainParser(
 	[]
 );
 const data = defineLanguageFacet({ boneyard: { open: "/*", close: "*/" } });
-// const fold = defineLanguageFacet(Facet.define(foldService.of())
 
 export function ftn(exts?: Extension[]) {
-	// const ls =
 	return new LanguageSupport(new Language(data, parser, exts));
 }
