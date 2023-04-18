@@ -1293,24 +1293,18 @@ function propLogger(node, state) {
 let nodeTypes = [NodeType.none];
 for (let i = 1, name; (name = Type[i]); i++) {
 	let properties = [];
-	if (name === "SceneHeading") {
+	if (name === "Scene") {
 		properties.push(
-			foldNodeProp.add((type) => {
-				// if(!type.is("SceneHeading")) return null
-				return (node, state) => {
-					let gc = node.parent.getChild(Type.SceneHeading, Type.SceneHeading);
-					let ns = node.parent.getChild(Type.SceneHeading, null, SceneHeading);
-					// propLogger(ns, state) lastchild.to
-					let ob = {
-						from: state.doc.lineAt(ns.lastChild.to).from,
-						to: state.doc.lineAt(node.to).from - 1,
+			foldNodeProp.add({
+				Scene: (node, state) => {
+					let line = state.doc.lineAt(node.from);
+					
+					let ret = {
+						from: node.from + line.text.length - 1,
+						to: node.to == state.doc.length ? node.to : node.to - 1,
 					};
-					if (ob.from === ob.to || ob.to < ob.from) return null;
-					propLogger(node, ns);
-					console.log("nexts", gc);
-					console.log("obby", ob);
-					return ob;
-				};
+					return ret;
+				}
 			})
 		);
 	}
