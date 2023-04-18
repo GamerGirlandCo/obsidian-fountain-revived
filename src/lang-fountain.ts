@@ -1,12 +1,9 @@
 import {
-	ParseContext,
 	defineLanguageFacet,
-	languageDataProp,
 	Language,
 	LanguageSupport,
-	continuedIndent,
 	foldNodeProp,
-	foldService,
+	foldInside,
 } from "@codemirror/language";
 import {
 	Input,
@@ -26,8 +23,8 @@ import {
 
 import { regex } from "./regexes";
 
-import { Tag, styleTags, tags as t } from "@lezer/highlight";
-import { Extension, Facet } from "@codemirror/state";
+import { Tag } from "@lezer/highlight";
+import { Extension } from "@codemirror/state";
 
 class CompositeBlock {
 	static create(
@@ -714,8 +711,6 @@ const DefaultBlockParsers: {
 			cx.nextLine();
 			return true;
 		} else if (cx.prevNode[0] == Type.CloseBoneMark) {
-			// cx.addNode(Type.Action, cx.lineStart, cx.absoluteLineEnd)
-			// cx.nextLine()
 			return false;
 		}
 		return false;
@@ -1140,11 +1135,7 @@ const DefaultLeafBlocks: {
 
 const DefaultEndLeaf: readonly ((cx: BlockContext, line: Line) => boolean)[] = [
 	(_, line) => isSection(line) >= 0,
-	// (_, line) => isFencedCode(line) >= 0,
-	// (_, line) => isBlockquote(line) >= 0,
-	(p, line) => isPageBreak(line, p, true) >= 0,
-	// (p, line) => !!parseNoteElement(p.prevNode[0], line.text, 0, p.lineStart)
-	// (p, line) => isLyric(line, p) >= 0
+	(p, line) => isPageBreak(line, p, true) >= 0
 ];
 
 const scanLineResult = { text: "", end: 0 };
