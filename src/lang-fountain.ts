@@ -485,6 +485,7 @@ const DefaultBlockParsers: {
 								);
 								
 								last += line.text.length;
+								last++
 								cx.cleanLine();
 								continue ohshit
 							} else {
@@ -510,7 +511,6 @@ const DefaultBlockParsers: {
 					last += line.text.length;
 					last++
 					cx.cleanLine();
-					continue;
 				}
 			}
 			doLocal();
