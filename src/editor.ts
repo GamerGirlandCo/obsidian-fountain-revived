@@ -180,7 +180,7 @@ function inlineRender(view: EditorView) {
 							class: "screenplay-scene-number",
 							inclusive: true,
 							block: false
-						}).range(start, end))
+						}).range(start, end + 1))
 					} else if((name !== "PlainText") && cssClass !== "") {
 						widgets.push(
 							Decoration.line({
@@ -231,7 +231,6 @@ export function inlinePlugin(): ViewPlugin<any> {
 			build(view: EditorView) {
 				
 			}
-
 			update(update: ViewUpdate) {
 				if (
 					update.docChanged ||
