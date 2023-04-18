@@ -128,7 +128,7 @@
 	top: 3px;
 }
 .screenplay-foldwidget::before {
-	content: "<...>";
+	content: "↔";
 	padding-left: 2px;
 	padding-right: 2px;
 	opacity: 0.5;
