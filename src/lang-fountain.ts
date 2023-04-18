@@ -742,51 +742,15 @@ const DefaultBlockParsers: {
 					)
 				);
 				now += line.text.length;
-				// cx.prevLine()
 
 				cx.nextLine();
 			}
-			// cx.addNode(
-			// 	,
-			// 	cx.lineStart
-			// );
 			cx.addNode(elt(Type.TitlePage, orig, now, children).toTree(cx.parser.nodeSet), orig)
-			// cx.nextLine();
 			return true;
 		}
 		return false;
 	},
 };
-
-enum CurrentBlock {
-	Action = -1,
-	Begin,
-	Character,
-	Parenthetical,
-	Dialogue,
-}
-
-function parseCharacter(
-	text: string,
-	start: number,
-	offset: number
-): null | Element {
-	if (text.match(regex.character)) {
-		return elt(Type.Character, start + offset, text.length + offset);
-	}
-	return null;
-}
-
-function parseParenthetical(
-	text: string,
-	start: number,
-	offset: number
-): null | Element {
-	if (text.match(regex.parenthetical)) {
-		return elt(Type.Parenthetical, start + offset, text.length + offset);
-	}
-	return null;
-}
 
 function parseNoteElement(
 	ctxprev: Type,
@@ -1177,7 +1141,6 @@ const DefaultLeafBlocks: {
 	// },
 	Dialogue(cx, bl) {
 		return null;
-		return new DialogueParser(bl, cx);
 	},
 	// BlockNote(_, leaf) {
 	// 	return leaf.content.charCodeAt(0) === 91 ? new NoteBlockParser() : null
