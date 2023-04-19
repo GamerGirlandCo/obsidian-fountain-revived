@@ -201,9 +201,9 @@ function inlineRender(view: EditorView) {
 					if(name === "Note") {
 						widgets.push(Decoration.mark({
 							class: "screenplay-marker note",
-							inclusive: false,
+							inclusive: true,
 							block: false
-						}).range(start - 1, end))
+						}).range(start, end))
 					} 
 				}		
 			} while (cursor.next());
