@@ -1493,11 +1493,11 @@ const DefaultInline: {
 	[name: string]: (cx: InlineContext, next: number, pos: number) => number;
 } = {
 	Emphasis(cx, next, start) {
-		if (next != 95 && next != 42) return -1;
+		if (next != 95 && next != 42 && next != 91 && next != 93) return -1;
 		let pos = start + 1;
 		while (cx.char(pos) == next) pos++;
 		let before = cx.slice(start - 1, start),
-			after = cx.slice(pos, pos + 1);
+			after = cx.slice(start, start + 1);
 		let pBefore = Punctuation.test(before),
 			pAfter = Punctuation.test(after);
 		let sBefore = /\s|^$/.test(before),
@@ -1507,6 +1507,13 @@ const DefaultInline: {
 		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
 		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
 		let hasBold = next == 42 && after == "*";
+		let doesItHave = (next == 91 && after == "[") || (next == 93 && after == "]")
+		if(doesItHave) {
+			// cx.append(new InlineDelimiter(NoteOpening, start + from + 2, start + from + 2, Mark.Open))
+			
+			// cx.append(new InlineDelimiter(NoteClosing, start + to, start + to + 2, Mark.Close))
+			return cx.append(elt(Type.Note, start, start + cx.text.indexOf("]]")))
+		}
 		return cx.append(
 			new InlineDelimiter(
 				next == 95
@@ -1519,18 +1526,6 @@ const DefaultInline: {
 				(canOpen ? Mark.Open : 0) | (canClose ? Mark.Close : 0)
 			)
 		);
-	},
-	Note(cx, next, start) {
-		let pos = start - 1
-		let from = cx.text.indexOf("[[");
-		let to = cx.text.lastIndexOf("]]")
-		if(from == -1 && to == -1) return -1
-		else if(from == -1) return -1
-		else if (to == -1) return -1
-		cx.append(new InlineDelimiter(NoteOpening, pos + from + 2, pos + from + 2, Mark.Open))
-		cx.append(elt(Type.Note, pos + from + 1, pos + to + 2))
-		cx.append(new InlineDelimiter(NoteClosing, pos + to, pos + to + 2, Mark.Close))
-		return cx.end
 	},
 };
 
