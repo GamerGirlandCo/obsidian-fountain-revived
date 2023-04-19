@@ -440,10 +440,21 @@ const DefaultBlockParsers: {
 						children.push(
 							insertNoteEl(cx.line, cx.lineStart)
 						);
-					} /* else if(line.text.match(regex.note_inline)) {
-						cx.startComposite(Type[Type.Note], cx.lineStart)
-						// return null
-					}  */ else if (line.text.startsWith("~")) {
+					} else if(regex.opening_note.exec(line.text)) {
+						let myint = cx.lineStart;
+						let ic: Element[] = []
+						let iof = line.text.indexOf("[[")
+						ic.push(elt(Type.OpenNote, cx.lineStart, cx.lineStart + iof + 2))
+						while(!regex.closing_note.exec(line.text)) {
+							ic.push(elt(Type.Note, cx.lineStart, cx.lineStart + line.text.length))
+							last += line.text.length;
+							last++
+							cx.cleanLine()
+						}
+						let eon = line.text.indexOf("]]")
+						ic.push(elt(Type.CloseNote, cx.lineStart + eon, cx.lineStart + eon + 2))
+						children.push(elt(Type.BlockNote, myint, cx.lineStart + line.text.length, ic))
+					}  else if (line.text.startsWith("~")) {
 						children.push(
 							elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
 						);
