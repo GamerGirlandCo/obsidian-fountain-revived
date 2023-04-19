@@ -118,7 +118,7 @@
 	cursor: pointer;
 	color: var(--color-red);
 	opacity: 0.55;
-	margin-left: 5px;
+	margin-left: 15px;
 	position: relative;
 	top: 7px;
 }
@@ -126,6 +126,8 @@
 	display: block;
 	width: 20px;
 	height: 20px;
+	position: relative;
+	top: -5px;
 }
 .screenplay-fold-gutter-sym {
 	display: block;
