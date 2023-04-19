@@ -57,6 +57,7 @@ function inlineRender(view: EditorView) {
 				console.debug(`${name} cursor | `, cursor)
 				if(name == "Scene") {
 				}
+				
 				// console.debug(cursor)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
@@ -168,7 +169,13 @@ function inlineRender(view: EditorView) {
 								class: `screenplay-scene-heading`,
 							}).range(whichline.from),
 						);
-				} else if(name === "Underline" || name === "Italic" || name === "CharacterExt" || name === "Bold") {
+				} else if(name === "OpenNote" || name === "CloseNote") {
+					widgets.push(Decoration.mark({
+						class: "screenplay-marker note",
+						inclusive: false,
+						block: false
+					}).range(start, end))
+				} else if(name === "Underline" || name === "Italic" || name === "CharacterExt"||  name === "Bold" ) {
 					widgets.push(Decoration.mark({
 						class: `screenplay-marker ${name.toLowerCase()}`,
 						inclusive: true,
@@ -197,14 +204,6 @@ function inlineRender(view: EditorView) {
 							}).range(whichline.from),
 						);
 					}
-					
-					if(name === "Note") {
-						widgets.push(Decoration.mark({
-							class: "screenplay-marker note",
-							inclusive: true,
-							block: false
-						}).range(start, end))
-					} 
 				}		
 			} while (cursor.next());
 		}
