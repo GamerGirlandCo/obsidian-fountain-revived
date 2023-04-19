@@ -57,7 +57,7 @@ function inlineRender(view: EditorView) {
 				console.debug(`${name} cursor | `, cursor)
 				if(name == "Scene") {
 				}
-				
+
 				// console.debug(cursor)
 				// if (selectionAndRangeOverlap(selection, start, end)) continue;
 	
@@ -169,7 +169,7 @@ function inlineRender(view: EditorView) {
 								class: `screenplay-scene-heading`,
 							}).range(whichline.from),
 						);
-				} else if(name === "OpenNote" || name === "CloseNote") {
+				} else if(name === "OpenNote" || name === "CloseNote" || name == "Note") {
 					widgets.push(Decoration.mark({
 						class: "screenplay-marker note",
 						inclusive: false,
