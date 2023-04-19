@@ -84,8 +84,8 @@
 	text-align: left;
 }
 
-.screenplay-note {
-	font-size: 0.9em !important;
+.screenplay-note, .screenplay-marker.note {
+	font-size: 12px !important;
 	color: var(--text-title-h5, var(--color-green))
 }
 

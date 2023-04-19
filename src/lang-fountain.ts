@@ -136,6 +136,7 @@ export enum Type {
 	BoldMark,
 	ItalicMark,
 	UnderlineMark,
+	NoteMark,
 	SectionMark,
 	EmphasisMark,
 	PlainText,
@@ -309,7 +310,7 @@ function insertNoteEl(line: Line, start: number) {
 	if (line.text.match(regex.note)) {
 		let iof = line.text.indexOf("[[");
 		let liof = line.text.indexOf("]]");
-		return elt(Type.Note, start, start + line.text.length, [
+		return elt(Type.BlockNote, start, start + line.text.length, [
 			elt(Type.OpenNote, start + iof, start + iof + 2),
 			elt(Type.CloseNote, start + liof, start + liof + 2),
 		]);
@@ -1462,10 +1463,14 @@ const EmphasisItalic: DelimiterType = {
 	resolve: "Italic",
 	mark: "ItalicMark",
 };
-const CharacterExtension: DelimiterType = {
-	resolve: "CharacterExt",
-	mark: "CharacterExt",
+const NoteOpening: DelimiterType = {
+	resolve: "Note",
+	mark: "OpenNote",
 };
+const NoteClosing: DelimiterType = {
+	resolve: "Note",
+	mark: "CloseNote"
+}
 class InlineDelimiter {
 	constructor(
 		readonly type: DelimiterType,

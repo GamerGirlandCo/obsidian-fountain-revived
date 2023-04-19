@@ -181,7 +181,7 @@ function inlineRender(view: EditorView) {
 							inclusive: true,
 							block: false
 						}).range(start, end + 1))
-					} else if((name !== "PlainText") && cssClass !== "") {
+					} else if((name !== "PlainText") && cssClass !== "" && name !== "Note") {
 						widgets.push(
 							Decoration.line({
 								class: `screenplay-${cssClass}`,
@@ -196,7 +196,15 @@ function inlineRender(view: EditorView) {
 								block: true,
 							}).range(whichline.from),
 						);
-					}	
+					}
+					
+					if(name === "Note") {
+						widgets.push(Decoration.mark({
+							class: "screenplay-marker note",
+							inclusive: false,
+							block: false
+						}).range(start - 1, end))
+					} 
 				}		
 			} while (cursor.next());
 		}
