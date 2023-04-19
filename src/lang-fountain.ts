@@ -1504,15 +1504,18 @@ const DefaultInline: {
 			)
 		);
 	},
-	/* Note(cx, next, start) {
-		if(next != 91 && next !== 93) return -1
-		if(!cx.text.match(regex.note_inline)) return -1
-		let pos = start + 1
-		let from = pos + cx.text.indexOf("[");
-		let to = pos + cx.text.lastIndexOf("]")
-		while (cx.char(pos) == next) pos++
-		return cx.append(elt(Type.Note, from, to))
-	} */
+	Note(cx, next, start) {
+		let pos = start - 1
+		let from = cx.text.indexOf("[[");
+		let to = cx.text.lastIndexOf("]]")
+		if(from == -1 && to == -1) return -1
+		else if(from == -1) return -1
+		else if (to == -1) return -1
+		cx.append(new InlineDelimiter(NoteOpening, pos + from + 2, pos + from + 2, Mark.Open))
+		cx.append(elt(Type.Note, pos + from + 1, pos + to + 2))
+		cx.append(new InlineDelimiter(NoteClosing, pos + to, pos + to + 2, Mark.Close))
+		return cx.end
+	},
 };
 
 // These return `null` when falling off the end of the input, `false`
