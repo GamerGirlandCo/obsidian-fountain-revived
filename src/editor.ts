@@ -172,8 +172,7 @@ function inlineRender(view: EditorView) {
 				} else if(name === "OpenNote" || name === "CloseNote" || name == "Note") {
 					widgets.push(Decoration.mark({
 						class: "screenplay-marker note",
-						inclusive: false,
-						block: false
+						inclusive: true
 					}).range(start, end))
 				} else if(name === "Underline" || name === "Italic" || name === "CharacterExt"||  name === "Bold" ) {
 					widgets.push(Decoration.mark({

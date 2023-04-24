@@ -18,12 +18,14 @@ export const regex = {
     section: /^(#+)(?: *)(.*)/,
     synopsis: /^(?:\=(?!\=+) *)(.*)/,
 
-    note: /^(?:\[{2})(.+)(?:\]{2})$/,
+    note: /^(?:\[{2})(.+)(?:\]{2})$/m,
     note_inline: /(?:\[{2}(?!\[+))(.+?)(?:\]{2}(?!\[+))/gs,
 	closing_note: /\]\]$/gm,
 	opening_note: /^\[\[/gm,
 
     boneyard: /(^\/\*|^\*\/)$/g,
+    boneyard_open: /^\/\*/gm,
+    boneyard_close: /\*\/$/gm,
 
     page_break: /^\={3,}$/,
     line_break: /^ {2}$/,
