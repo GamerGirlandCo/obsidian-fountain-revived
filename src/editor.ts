@@ -41,7 +41,7 @@ function inlineRender(view: EditorView) {
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
-			const text = view.state.doc.sliceString(0, to, "\n");
+			const text = view.state.doc.sliceString(0, view.state.doc.length, "\n");
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
 			iiii++

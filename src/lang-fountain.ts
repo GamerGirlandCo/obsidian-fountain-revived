@@ -482,7 +482,7 @@ const DefaultBlockParsers: {
 							if(regex.character.exec(line.text)) {
 								if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
 									paran = elt(
-										Type.Parenthetical,
+										Type.CharacterExt,
 										cx.lineStart + line.text.indexOf("("),
 										cx.lineStart + line.text.indexOf(")")
 									);
@@ -1463,6 +1463,10 @@ const EmphasisItalic: DelimiterType = {
 	resolve: "Italic",
 	mark: "ItalicMark",
 };
+const EmphasisMark: DelimiterType = {
+	resolve: "Emphasis",
+	mark: "Emphasis"
+}
 const NoteOpening: DelimiterType = {
 	resolve: "Note",
 	mark: "OpenNote",
@@ -1486,7 +1490,7 @@ try {
 	Punctuation = new RegExp(
 		"[\\p{Pc}|\\p{Pd}|\\p{Pe}|\\p{Pf}|\\p{Pi}|\\p{Po}|\\p{Ps}]",
 		"u"
-	);
+	);9
 } catch (_) {}
 
 const DefaultInline: {
@@ -1507,12 +1511,10 @@ const DefaultInline: {
 		let canOpen = leftFlanking && (next == 42 || !rightFlanking || pBefore);
 		let canClose = rightFlanking && (next == 42 || !leftFlanking || pAfter);
 		let hasBold = next == 42 && after == "*";
-		let doesItHave = (next == 91 && after == "[") || (next == 93 && after == "]")
-		if(doesItHave) {
-			// cx.append(new InlineDelimiter(NoteOpening, start + from + 2, start + from + 2, Mark.Open))
-			
-			// cx.append(new InlineDelimiter(NoteClosing, start + to, start + to + 2, Mark.Close))
-			return cx.append(elt(Type.Note, start, start + cx.text.indexOf("]]")))
+		if(next == 93) {
+			return extraInline.NoteClosing(cx, next, start)
+		} else if(next == 91) {
+			return extraInline.Note(cx, next, start)
 		}
 		return cx.append(
 			new InlineDelimiter(
@@ -1527,8 +1529,74 @@ const DefaultInline: {
 			)
 		);
 	},
+	// Underline(cx, next, start) {
+	// 	if(next != 95) return -1
+	// 	let pos = start + 1;
+	// 	while (cx.char(pos) == next) pos++;
+	// 	let before = cx.slice(start - 1, start),
+	// 		after = cx.slice(pos, pos + 1);
+	// 	let pBefore = Punctuation.test(before),
+	// 		pAfter = Punctuation.test(after);
+	// 	let sBefore = /\s|^$/.test(before),
+	// 		sAfter = /\s|^$/.test(after);
+	// 	let leftFlanking = !sAfter && (!pAfter || sBefore || pBefore);
+	// 	let rightFlanking = !sBefore && (!pBefore || sAfter || pAfter);
+	// 	let canOpen = leftFlanking && (next == 95 || !rightFlanking || pBefore);
+	// 	let canClose = rightFlanking && (next == 95 || !leftFlanking || pAfter);
+	// 	return cx.addDelimiter(EmphasisUnderline, start - 1, pos, canOpen, canClose)
+	// },
+	
 };
 
+let extraInline: {
+	[name: string]: (cx: InlineContext, next: number, pos: number) => number;
+} = {
+	NoteClosing(cx, next, start) {
+    if (next != 93 /* ']' */) return -1
+    // Scanning back to the next link/image start marker
+    for (let i = cx.parts.length - 1; i >= 0; i--) {
+      let part = cx.parts[i]
+      if (part instanceof InlineDelimiter && (part.type == NoteOpening)) {
+        
+        // Finish the content and replace the entire range in
+        // this.parts with the link/image node.
+        let content = cx.takeContent(i)
+        console.log("conty", content)
+				let n = cx.parts[i] = finishNote(cx, content, Type.Note, part.from - 1, start + 2)
+        return n.to
+      }
+    }
+    return -1
+  },
+	Note(cx, next, start) {
+		if(next == 91 || cx.char(start + 1) == 91) {
+			return cx.append(new InlineDelimiter(NoteOpening, start, start + 1, Mark.Open))
+		}
+		return -1
+	}
+}
+
+function parseNoteText(text: string, start: number, offset: number) {
+	for(let pos = start + 1, end = Math.min(text.length, pos + 999); pos < end; pos++) {
+		let ch = text.charCodeAt(pos);
+		if(ch == 93) return elt(Type.Note, start + offset, pos + 1 + offset)
+		else if(ch == 91) return false
+	}
+	return null
+}
+function finishNote(cx: InlineContext, content: Element[], type: Type, start: number, startPos: number) {
+  let {text} = cx, next = cx.char(startPos), endPos = startPos
+  content.unshift(elt(Type.NoteMark, start, start + 2))
+  content.push(elt(Type.NoteMark, startPos - 2, startPos))
+  if (next == 91 /* '[' */) {
+    let label = parseNoteText(text, startPos - cx.offset, cx.offset)
+    if (label) {
+      content.push(label)
+      endPos = label.to
+    }
+  }
+  return elt(type, start, endPos, content)
+}
 // These return `null` when falling off the end of the input, `false`
 // when parsing fails otherwise (for use in the incremental link
 // reference parser).
@@ -1624,7 +1692,7 @@ export class InlineContext {
 						part.side & Mark.Open &&
 						part.type == close.type
 					) ||
-					(emp &&
+					((emp) &&
 						(close.side & Mark.Open || part.side & Mark.Close) &&
 						(part.to - part.from + closeSize) % 3 == 0 &&
 						((part.to - part.from) % 3 || closeSize % 3))
@@ -1640,10 +1708,14 @@ export class InlineContext {
 			let start = open.from,
 				end = close.to;
 			if (emp) {
-				let size = Math.min(2, open.to - open.from, closeSize);
+				let size = Math.min(/* 2, */ open.to - open.from, closeSize);
 				start = open.to - size;
 				end = close.from + size;
 				type = size == 1 ? "Italic" : "Bold";
+			} else if(un) {
+				start = open.to - 1;
+				end = close.from + 1;
+				type = "Underline"
 			}
 			if (open.type.mark)
 				content.push(this.elt(open.type.mark, start, open.to));
