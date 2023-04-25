@@ -14,11 +14,22 @@
     overflow-y: hidden;
     display: block;
     text-align: left;
-    font: 12pt 'Courier Final Draft', 'Courier Screenplay', Courier;
-    padding: 0pt 0 0 0pt;
+		padding: 0pt 0 0 0pt;
     position: static;
 }
 
+[data-type="fountain"] .cm-scroller,
+[data-type="fountain"] .cm-line,
+[data-type="fountain"] .view-content .cm-editor {
+	font-size: 12pt;
+	font-family: 'Courier Final Draft', 'Final Draft', 'Courier Screenplay', 'Courier Prime' !important;
+}
+.is-text-garbled [data-type="fountain"] .cm-scroller,
+.is-text-garbled [data-type="fountain"] *.cm-line,
+.is-text-garbled [data-type="fountain"] .view-content .cm-editor {
+	font-family: 'Flow Circular', sans-serif !important;
+	line-height: 1.45em !important;
+}
 [data-type="fountain"] .view-content .cm-editor::selection, 
 [data-type="fountain"] .cm-line::selection {
 	background-color: var(--text-highlight-bg) !important;
