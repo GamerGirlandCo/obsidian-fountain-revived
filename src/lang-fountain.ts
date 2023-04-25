@@ -257,44 +257,7 @@ const DefaultSkipMarkup: {
 } = {
 	[Type.Screenplay]() {
 		return true;
-	},
-	[Type.BoneYard](block, cx, line) {
-		return false;
-	},
-	[Type.DialogueBlock](bl, cx, line) {
-		cx.addNode(Type.DialogueBlock, cx.lineStart);
-		let paran;
-		if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
-			paran = elt(
-				Type.Parenthetical,
-				cx.lineStart + line.text.indexOf("("),
-				cx.lineStart + line.text.indexOf(")")
-			);
-		}
-		if (regex.character.exec(line.text)) {
-			let ex = regex.character.exec(line.text);
-			console.log(ex);
-			cx.addElement(
-				elt(
-					Type.Character,
-					cx.lineStart,
-					cx.lineStart + line.text.length,
-					paran ? [paran] : undefined
-				)
-			);
-			cx.nextLine();
-		} /* if(regex.dialogue.exec(line.text))  */ else {
-			cx.addElement(
-				elt(
-					Type.Dialogue,
-					cx.lineStart,
-					cx.lineStart + line.text.length,
-					cx.parser.parseInline(line.text, cx.lineStart)
-				)
-			);
-		}
-		return true;
-	},
+	}
 };
 
 export function space(ch: number) {
@@ -552,45 +515,6 @@ const DefaultBlockParsers: {
 		}
 		return false
 	},
-	/* Centered(cx, line) {
-		let centerVar = line.text.startsWith("> ") && line.text.endsWith(" <");
-		if (!centerVar) return false;
-		let from = cx.lineStart + line.pos;
-		cx.addNode(
-			Type.Centered,
-			from,
-			cx.lineStart + line.text.lastIndexOf("<") + 1
-		);
-		cx.nextLine();
-		return true;
-	},
-	PageBreak(cx, line) {
-		if (isPageBreak(line, cx, false) < 0) return false;
-		let from = cx.lineStart + line.pos;
-		cx.nextLine();
-		cx.addNode(Type.PageBreak, from);
-		return true;
-	},
-	Section(cx, line) {
-		let size = isSection(line);
-		if (size < 0) return false;
-		if (size === 1) {
-			cx.addNode(Type.Act, cx.lineStart);
-		} else if (size === 2) {
-			cx.addNode(Type.Sequence, cx.lineStart);
-		} else if (size === 3) {
-			cx.addNode(Type.SceneSection, cx.lineStart);
-		}
-		cx.nextLine();
-		return true;
-	},
-	Synopsis(cx, line) {
-		if (!line.text.startsWith("=")) return false;
-		let from = cx.lineStart + line.pos;
-		cx.addNode(Type.Synopsis, from);
-		cx.nextLine();
-		return true;
-	}, */
 	BoneYard(cx, line) {
 		let openy = line.text.indexOf("/*");
 		let closey = line.text.indexOf("*/");
