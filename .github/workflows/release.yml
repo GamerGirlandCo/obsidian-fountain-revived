@@ -3,8 +3,8 @@ name: Release Obsidian plugin
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "*"
 
 env:
   PLUGIN_NAME: obsidian-fountain-revived # Change this to match the id of your plugin.
