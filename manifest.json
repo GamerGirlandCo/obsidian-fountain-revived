@@ -1,9 +1,9 @@
 {
   "id": "obsidian-fountain-revived",
   "name": "Obsidian Fountain",
-  "description": "fountain support for obsidian but it&#39;s actually actively maintained ;)",
+  "description": "fountain support for obsidian!",
   "author": "The Tablet",
-  "authorUrl": "https://www.instagram.com/gamergirlandco",
+  "authorUrl": "https://www.instagram.com/_.the_tablet._",
   "minAppVersion": "0.15.4",
-  "version": "0.0.1"
+  "version": "0.1.0"
 }

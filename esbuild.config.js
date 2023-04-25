@@ -14,7 +14,7 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === 'production');
+const prod = (process.argv[2] === 'production') || process.env.NODE_ENV.toLowerCase() == "production";
 
 esbuild.build({
 	banner: {
@@ -51,13 +51,13 @@ esbuild.build({
 		'@codemirror/view',
 		...builtins],
 	format: 'cjs',
-	watch: {
+	watch: !prod ? {
 		onRebuild(error, result) {
 			if (error) console.error('watch build failed:', error)
 			else console.log('watch build succeeded:', result)
 			execSync("pwsh.exe ./post-compile.ps1")
 		},
-	},
+	} : false,
 	target: 'es2018',
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
