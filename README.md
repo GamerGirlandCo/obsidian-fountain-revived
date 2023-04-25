@@ -55,4 +55,4 @@ yarn run build
 
 # License
 
-See [LICENSE.md](https://github.com/GamerGirlandCo/obsidian-fountain-revived/blob/main/LICENSE.md).
+See [LICENSE](https://github.com/GamerGirlandCo/obsidian-fountain-revived/blob/main/LICENSE).
