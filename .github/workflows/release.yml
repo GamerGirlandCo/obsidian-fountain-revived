@@ -1,5 +1,6 @@
 name: Release Obsidian plugin
 
+
 on:
   push:
     branches:
