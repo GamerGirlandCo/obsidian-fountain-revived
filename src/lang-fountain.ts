@@ -479,7 +479,7 @@ const DefaultBlockParsers: {
 						}
 						let ex = regex.character.exec(line.text);
 						// console.log(ex);
-						if(regex.character.exec(line.text)) {
+						if(regex.character.exec(line.text.trim()) || line.text.match(regex.character)) {
 							if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
 								paran = elt(
 									Type.CharacterExt,
@@ -492,7 +492,7 @@ const DefaultBlockParsers: {
 									Type.Character,
 									cx.lineStart,
 									cx.lineStart + line.text.length,
-									paran ? [paran] : undefined
+									paran ? [paran] : []
 								)
 							);
 							
