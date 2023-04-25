@@ -433,7 +433,8 @@ const DefaultBlockParsers: {
 							elt(
 								Type.Centered,
 								cx.lineStart,
-								cx.lineStart + line.text.lastIndexOf("<") + 1
+								cx.lineStart + line.text.lastIndexOf("<") + 1,
+								cx.parser.parseInline(line.text, cx.lineStart)
 							)
 						);
 
@@ -463,7 +464,7 @@ const DefaultBlockParsers: {
 						children.push(elt(Type.PageBreak, cx.lineStart, cx.lineStart + line.text.length))
 					} else if (line.text.startsWith("=")) {
 						children.push(
-							elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length)
+							elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart))
 						);
 					} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
 						let childses: Element[] = [];
