@@ -465,6 +465,18 @@ const DefaultBlockParsers: {
 					children.push(
 						elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart))
 					);
+				} else if(regex.boneyard_open.exec(line.text.trim())) {
+					let inc: Element[] = []
+					inc.push(elt(Type.BoneMark, cx.lineStart, cx.lineStart + 2))
+					inner: while(!line.text.trim().match(regex.boneyard_close)) {
+						inc.push(elt(Type.BoneYard, cx.lineStart, cx.lineStart + line.text.length))
+						last += line.text.length;
+						cx.cleanLine()
+						continue inner;
+					}
+					let eob = line.text.indexOf("*/");
+					inc.push(elt(Type.CloseBoneMark, cx.lineStart, cx.lineStart + eob))
+					children.push(elt(Type.BoneYard, cx.lineStart, cx.lineStart + line.text.length, inc))
 				} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
 					let childses: Element[] = [];
 					let paran: Element;
