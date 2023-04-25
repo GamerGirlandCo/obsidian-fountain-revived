@@ -6,7 +6,7 @@ export const regex = {
 
     transition: /^((FADE (TO BLACK|OUT)|CUT TO BLACK)|.+ TO\:)|^>.+/g,
 
-	character: /^([\^\sA-Z\.\p{Lu}]+)(\(.+\))?$/gmu,
+	character: /^([\^\sA-Z\.|\p{Lu}|\-'\u2010-\u2027]+)(\(.+\))?$/gmu,
     dialogue: /^(?:([A-Z*_][0-9A-Z ._\-']*(?:\(.*\))?[ ]*)|\@([A-Za-z*_][0-9A-Za-z (._\-')]*))(\^?)?(?:\n(?!\n+))([\s\S]+)/,
     parenthetical: /^(\(.+\))$/,
 
