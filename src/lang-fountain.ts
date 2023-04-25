@@ -480,14 +480,14 @@ const DefaultBlockParsers: {
 				} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
 					let childses: Element[] = [];
 					let paran: Element;
-					ohshit: while(line.text != "") {
+					inner: while(line.text != "") {
 						if (regex.parenthetical.exec(line.text)) {
 							childses.push(
 								elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
 							);
 							last += line.text.length;
 							cx.cleanLine();
-							continue ohshit
+							continue inner
 						}
 						let ex = regex.character.exec(line.text);
 						// console.log(ex);
@@ -511,7 +511,7 @@ const DefaultBlockParsers: {
 							last += line.text.length;
 							last++
 							cx.cleanLine();
-							continue ohshit
+							continue inner
 						} else {
 							childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
 						}
@@ -520,7 +520,7 @@ const DefaultBlockParsers: {
 						last += line.text.length;
 						last++
 						cx.cleanLine();
-						continue ohshit
+						continue inner
 					}
 				} else {
 					children.push(
