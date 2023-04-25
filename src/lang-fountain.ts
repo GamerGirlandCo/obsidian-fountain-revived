@@ -360,180 +360,185 @@ const DefaultBlockParsers: {
 	Scene(cx, line) {
 		let orig = cx.lineStart;
 		let last = cx.lineStart;
-		if (regex.scene_heading.exec(line.text)) {
-			let children: Element[] = [];
-			function shutUpBitch() {
-				let startup =
-					line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
-				let myend =
-					line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null;
-				let sn = myend
-					? elt(
-							Type.SceneNumber,
-							cx.lineStart + startup,
-							cx.lineStart + myend + 1
-						)
-					: null;
-				let sh = elt(
-					Type.SceneHeading,
-					cx.lineStart,
-					cx.lineStart + (startup || line.text.length),
-					sn ? [sn] : []
-				);
-				children.push(sh);
-				last += line.text.length;
+		let children: Element[] = [];
+		function shutUpBitch() {
+			let startup =
+				line.text.indexOf("#") !== -1 ? line.text.indexOf("#") : null;
+			let myend =
+				line.text.lastIndexOf("#") !== -1 ? line.text.lastIndexOf("#") : null;
+			let sn = myend
+				? elt(
+						Type.SceneNumber,
+						cx.lineStart + startup,
+						cx.lineStart + myend + 1
+					)
+				: null;
+			let sh = elt(
+				Type.SceneHeading,
+				cx.lineStart,
+				cx.lineStart + (startup || line.text.length),
+				sn ? [sn] : []
+			);
+			children.push(sh);
+			last += line.text.length;
+		}
+		function doLocal() {
+			if (line.text.match(regex.scene_heading)) {
+				// console.debug("scone", line.text);
+				shutUpBitch();
+				last++
+				cx.cleanLine();
 			}
-			function doLocal() {
-				if (line.text.match(regex.scene_heading)) {
-					console.debug("scone", line.text);
-					shutUpBitch();
+			mainL: while (
+				!regex.scene_heading.exec(line.text) &&
+				cx.lineStart < cx.to
+			) {
+				// console.debug("scone", line.text);
+				if (line.text == "") {
+					last += line.text.length;
 					last++
+					// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
 					cx.cleanLine();
-				}
-				mainL: while (
-					!regex.scene_heading.exec(line.text) &&
-					cx.lineStart < cx.to
-				) {
-					console.debug("scone", line.text);
-					if (line.text == "") {
-						last += line.text.length;
-						last++
-						// children.push(elt(Type.LineBreak, cx.lineStart, cx.lineStart + line.text.length))
-						cx.cleanLine();
-						continue;
-					} else if (isSection(line) != -1) {
-						let size = isSection(line);
-						if (size === 1) {
-							children.push(
-								elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length)
-							);
-						} else if (size === 2) {
-							children.push(
-								elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length)
-							);
-						} else if (size === 3) {
-							children.push(
-								elt(
-									Type.SceneSection,
-									cx.lineStart,
-									cx.lineStart + line.text.length
-								)
-							);
-						}
-					} else if (
-						line.text.match(regex.transition) &&
-						!line.text.endsWith("<")
-					) {
+					continue;
+				} else if (isSection(line) != -1) {
+					let size = isSection(line);
+					if (size === 1) {
 						children.push(
-							elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
+							elt(Type.Act, cx.lineStart, cx.lineStart + line.text.length)
 						);
-
-					} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
+					} else if (size === 2) {
+						children.push(
+							elt(Type.Sequence, cx.lineStart, cx.lineStart + line.text.length)
+						);
+					} else if (size === 3) {
 						children.push(
 							elt(
-								Type.Centered,
+								Type.SceneSection,
 								cx.lineStart,
-								cx.lineStart + line.text.lastIndexOf("<") + 1,
-								cx.parser.parseInline(line.text, cx.lineStart)
+								cx.lineStart + line.text.length
 							)
 						);
+					}
+				} else if (
+					line.text.match(regex.transition) &&
+					!line.text.endsWith("<")
+				) {
+					children.push(
+						elt(Type.Transition, cx.lineStart, cx.lineStart + line.text.length)
+					);
 
-					} else if (line.text.match(regex.note)) {
-						children.push(
-							insertNoteEl(cx.line, cx.lineStart)
-						);
-					} else if(regex.opening_note.exec(line.text)) {
-						let myint = cx.lineStart;
-						let ic: Element[] = []
-						let iof = line.text.indexOf("[[")
-						ic.push(elt(Type.OpenNote, cx.lineStart, cx.lineStart + iof + 2))
-						while(!regex.closing_note.exec(line.text)) {
-							ic.push(elt(Type.Note, cx.lineStart, cx.lineStart + line.text.length))
+				} else if (line.text.startsWith(">") && line.text.endsWith("<")) {
+					children.push(
+						elt(
+							Type.Centered,
+							cx.lineStart,
+							cx.lineStart + line.text.lastIndexOf("<") + 1,
+							cx.parser.parseInline(line.text, cx.lineStart)
+						)
+					);
+
+				} else if (line.text.match(regex.note)) {
+					children.push(
+						insertNoteEl(cx.line, cx.lineStart)
+					);
+				} else if(regex.opening_note.exec(line.text)) {
+					let myint = cx.lineStart;
+					let ic: Element[] = []
+					let iof = line.text.indexOf("[[")
+					ic.push(elt(Type.OpenNote, cx.lineStart, cx.lineStart + iof + 2))
+					while(!regex.closing_note.exec(line.text)) {
+						ic.push(elt(Type.Note, cx.lineStart, cx.lineStart + line.text.length))
+						last += line.text.length;
+						last++
+						cx.cleanLine()
+					}
+					let eon = line.text.indexOf("]]")
+					ic.push(elt(Type.CloseNote, cx.lineStart + eon, cx.lineStart + eon + 2))
+					children.push(elt(Type.BlockNote, myint, cx.lineStart + line.text.length, ic))
+				}  else if (line.text.startsWith("~")) {
+					children.push(
+						elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
+					);
+				} else if(isPageBreak(line, cx, true) > 0) {
+					children.push(elt(Type.PageBreak, cx.lineStart, cx.lineStart + line.text.length))
+				} else if (line.text.startsWith("=")) {
+					children.push(
+						elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart))
+					);
+				} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
+					let childses: Element[] = [];
+					let paran: Element;
+					ohshit: while(line.text != "") {
+						if (regex.parenthetical.exec(line.text)) {
+							childses.push(
+								elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
+							);
 							last += line.text.length;
-							last++
-							cx.cleanLine()
+							cx.cleanLine();
+							continue ohshit
 						}
-						let eon = line.text.indexOf("]]")
-						ic.push(elt(Type.CloseNote, cx.lineStart + eon, cx.lineStart + eon + 2))
-						children.push(elt(Type.BlockNote, myint, cx.lineStart + line.text.length, ic))
-					}  else if (line.text.startsWith("~")) {
-						children.push(
-							elt(Type.Lyrics, cx.lineStart, cx.lineStart + line.text.length)
-						);
-					} else if(isPageBreak(line, cx, true) > 0) {
-						children.push(elt(Type.PageBreak, cx.lineStart, cx.lineStart + line.text.length))
-					} else if (line.text.startsWith("=")) {
-						children.push(
-							elt(Type.Synopsis, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart))
-						);
-					} else if (regex.character.exec(line.text) || regex.parenthetical.exec(line.text)) {
-						let childses: Element[] = [];
-						let paran: Element;
-						ohshit: while(line.text != "") {
-							if (regex.parenthetical.exec(line.text)) {
-								childses.push(
-									elt(Type.Parenthetical, cx.lineStart, cx.lineStart + line.text.length)
+						let ex = regex.character.exec(line.text);
+						// console.log(ex);
+						if(regex.character.exec(line.text)) {
+							if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
+								paran = elt(
+									Type.CharacterExt,
+									cx.lineStart + line.text.indexOf("("),
+									cx.lineStart + line.text.indexOf(")") + 1
 								);
-								last += line.text.length;
-								cx.cleanLine();
-								continue ohshit
 							}
-							let ex = regex.character.exec(line.text);
-							console.log(ex);
-							if(regex.character.exec(line.text)) {
-								if (line.text.indexOf("(") != -1 && line.text.indexOf(")") != -1) {
-									paran = elt(
-										Type.CharacterExt,
-										cx.lineStart + line.text.indexOf("("),
-										cx.lineStart + line.text.indexOf(")") + 1
-									);
-								}
-								childses.push(
-									elt(
-										Type.Character,
-										cx.lineStart,
-										cx.lineStart + line.text.length,
-										paran ? [paran] : undefined
-									)
-								);
-								
-								last += line.text.length;
-								last++
-								cx.cleanLine();
-								continue ohshit
-							} else {
-								childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
-							}
-							console.log(children, "|", childses)
-							children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
+							childses.push(
+								elt(
+									Type.Character,
+									cx.lineStart,
+									cx.lineStart + line.text.length,
+									paran ? [paran] : undefined
+								)
+							);
+							
 							last += line.text.length;
 							last++
 							cx.cleanLine();
 							continue ohshit
+						} else {
+							childses.push(elt(Type.Dialogue, cx.lineStart, cx.lineStart + line.text.length, cx.parser.parseInline(line.text, cx.lineStart)))
 						}
-					} else {
-						children.push(
-							elt(
-								Type.Action,
-								cx.lineStart,
-								cx.lineStart + line.text.length,
-								cx.parser.parseInline(line.text, cx.lineStart)
-							)
-						);
+						// console.log(children, "|", childses)
+						children.push(elt(Type.DialogueBlock, cx.lineStart, cx.lineStart + line.text.length, childses))
+						last += line.text.length;
+						last++
+						cx.cleanLine();
+						continue ohshit
 					}
-					last += line.text.length;
-					last++
-					cx.cleanLine();
+				} else {
+					children.push(
+						elt(
+							Type.Action,
+							cx.lineStart,
+							cx.lineStart + line.text.length,
+							cx.parser.parseInline(line.text, cx.lineStart)
+						)
+					);
 				}
+				last += line.text.length;
+				last++
+				cx.cleanLine();
 			}
+		}
+		if (regex.scene_heading.exec(line.text)) {
 			doLocal();
 			cx.addNode(
 				elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet),
 				orig
 			);
 			return true;
+		} else if(!regex.title_page.test(line.text)) {
+		
+			doLocal();
+			cx.addNode(elt(Type.Scene, orig, last, children).toTree(cx.parser.nodeSet), orig)
+			return true;
 		}
-		return false;
+		return false
 	},
 	/* Centered(cx, line) {
 		let centerVar = line.text.startsWith("> ") && line.text.endsWith(" <");
