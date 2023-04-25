@@ -85,13 +85,18 @@
 }
 
 .screenplay-note, .screenplay-marker.note {
-	font-size: 12px !important;
-	color: var(--text-title-h5, var(--color-green))
+	font-size: 13px !important;
+	color: var(--text-title-h5, var(--color-green));
+}
+
+.screenplay-marker.character-ext {
+	font-size: 0.8em;
 }
 
 .screenplay-marker.underline {
-    text-decoration: underline;
+  text-decoration: underline;
 	margin-left: 0 !Important;
+	text-underline-offset: 0.1875em;
 }
 .screenplay-marker.italic {
 	margin-left: 0 !Important;
@@ -101,7 +106,7 @@
 	margin-left: 0 !Important;
 	font-weight: bold !important;
 }
-.screenplay-marker.character-ext, .screenplay-parenthetical, .screenplay-parenthetical.cm-line {
+.screenplay-parenthetical, .screenplay-parenthetical.cm-line {
 	 padding-left: 15% !important;
 }
 

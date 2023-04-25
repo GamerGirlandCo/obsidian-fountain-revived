@@ -484,7 +484,7 @@ const DefaultBlockParsers: {
 									paran = elt(
 										Type.CharacterExt,
 										cx.lineStart + line.text.indexOf("("),
-										cx.lineStart + line.text.indexOf(")")
+										cx.lineStart + line.text.indexOf(")") + 1
 									);
 								}
 								childses.push(

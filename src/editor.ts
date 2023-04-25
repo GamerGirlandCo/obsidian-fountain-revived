@@ -41,7 +41,7 @@ function inlineRender(view: EditorView) {
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
-			const text = view.state.doc.sliceString(0, view.state.doc.length, "\n");
+			const text = view.state.doc.sliceString(0, to, "\n");
 			const tree = parser.parse(all);
 			let cursor = tree.cursor();
 			iiii++
@@ -176,7 +176,7 @@ function inlineRender(view: EditorView) {
 					}).range(start, end))
 				} else if(name === "Underline" || name === "Italic" || name === "CharacterExt"||  name === "Bold" ) {
 					widgets.push(Decoration.mark({
-						class: `screenplay-marker ${name.toLowerCase()}`,
+						class: name !== "CharacterExt" ? `screenplay-marker ${name.toLowerCase()}` : "screnplay-marker character-ext",
 						inclusive: true,
 						block: false
 					}).range(start, end))
