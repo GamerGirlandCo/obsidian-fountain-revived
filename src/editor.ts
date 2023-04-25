@@ -31,20 +31,21 @@ function selectionAndRangeOverlap(
 
 	return false;
 }
-
+let nonce = 0;
 function inlineRender(view: EditorView) {
 	const widgets: Range<Decoration>[] = [];
-	let iiii = 1;
-	const all = view.state.doc.toString()
 	let parser = ftn().language.parser
-	visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	if(nonce < 2) {
+		const all = view.state.doc.toString()
+		visualize(parser.parse(all).cursor(), view.state.doc.toString())
+	}
 	// console.log("vr", view.visibleRanges[0])
 	try {
 		for (const { from, to } of view.visibleRanges) {
 			const text = view.state.doc.sliceString(0, to, "\n");
-			const tree = parser.parse(all);
+			const tree = parser.parse(text);
 			let cursor = tree.cursor();
-			iiii++
+			nonce++
 
 			do {
 				const start = cursor.from;
@@ -53,8 +54,8 @@ function inlineRender(view: EditorView) {
 				const text2 = view.state.doc.sliceString(start, end)
 				const whichline = view.state.doc.lineAt(start)
 				if (name === 'Screenplay' /* || name === "TitlePageField" */) continue;
-				console.debug("treee", name, text2)
-				console.debug(`${name} cursor | `, cursor)
+				// console.debug("treee", name, text2)
+				// console.debug(`${name} cursor | `, cursor)
 				if(name == "Scene") {
 				}
 
@@ -243,8 +244,8 @@ export function inlinePlugin(): ViewPlugin<any> {
 					update.viewportChanged ||
 					update.selectionSet
 				) {
-					let selly = update.view.state.selection.main.head
-					console.log("node", selly, update.view.state.doc.lineAt(selly))
+					// let selly = update.view.state.selection.main.head
+					// console.log("node", selly, update.view.state.doc.lineAt(selly))
 					// this.render(update.view);
 					this.render(update.view)
 				}
