@@ -5,8 +5,8 @@
   "main": "lib/main.js",
   "license": "MIT",
   "scripts": {
-    "build": "export NODE_ENV=production && obsidian-plugin build src/main.ts -e esbuild.config.js",
-    "dev": "node esbuild.config.js"
+    "build": "export NODE_ENV=production && obsidian-plugin --with-stylesheet src/styles.css build src/main.ts -e esbuild.config.js",
+    "dev": "export NODE_ENV=development && obsidian-plugin dev --with-stylesheet src/styles.css src/main.ts -e esbuild.config.js"
   },
   "devDependencies": {
     "@codemirror/language": "https://github.com/lishid/cm-language",
