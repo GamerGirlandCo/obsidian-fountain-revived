@@ -13,8 +13,7 @@ import { ftn } from "./lang-fountain";
 
 const theme = EditorView.theme({
 	".cm-line": {
-		caretColor: "var(--text-normal)",
-		"fontFamily": "'Courier Final Draft', 'Courier Screenplay', 'Courier Prime' !important"
+		caretColor: "var(--text-normal)"
 	},
 
 	".cm-foldGutter": {

@@ -22,7 +22,7 @@
 [data-type="fountain"] .cm-line,
 [data-type="fountain"] .view-content .cm-editor {
 	font-size: 12pt;
-	font-family: 'Courier Final Draft', 'Courier Screenplay', 'Courier Prime' !important;
+	font-family: 'Courier Final Draft', 'Courier Screenplay', 'Courier Prime';
 }
 .is-text-garbled [data-type="fountain"] .cm-scroller,
 .is-text-garbled [data-type="fountain"] *.cm-line,
