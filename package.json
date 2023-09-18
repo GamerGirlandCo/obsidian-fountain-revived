@@ -5,10 +5,11 @@
   "main": "lib/main.js",
   "license": "MIT",
   "scripts": {
-    "build": "export NODE_ENV=production && obsidian-plugin build src/main.ts -e esbuild.config.js",
-    "dev": "node esbuild.config.js"
+    "build": "export NODE_ENV=production && obsidian-plugin build src/main.ts --with-stylesheet src/styles.css -e esbuild.config.js",
+    "dev": "export NODE_ENV=development && obsidian-plugin dev src/main.ts --with-stylesheet src/styles.css -e esbuild.config.js"
   },
   "devDependencies": {
+    "@codemirror/autocomplete": "^6.9.1",
     "@codemirror/language": "https://github.com/lishid/cm-language",
     "@codemirror/state": "^6.1.0",
     "@codemirror/view": "^6.1.0",
