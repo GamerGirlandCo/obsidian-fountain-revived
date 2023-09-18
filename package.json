@@ -5,7 +5,7 @@
   "main": "lib/main.js",
   "license": "MIT",
   "scripts": {
-"build": "export NODE_ENV=production && obsidian-plugin build src/main.ts --with-stylesheet src/styles.css -e esbuild.config.js",
+    "build": "export NODE_ENV=production && obsidian-plugin build src/main.ts --with-stylesheet src/styles.css -e esbuild.config.js",
     "dev": "export NODE_ENV=development && obsidian-plugin dev src/main.ts --with-stylesheet src/styles.css -e esbuild.config.js"
   },
   "devDependencies": {
